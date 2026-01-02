@@ -10,7 +10,8 @@ import { Button } from '@/components/ui/button';
 import LanguageSwitcher from '@/components/questions/LanguageSwitcher';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { getResumePreview, PreviewResponse } from '@/lib/api';
-import { downloadResumeAsPDF, downloadResumeAsWord } from '@/lib/downloadResume';
+import { downloadResumeAsWord } from '@/lib/downloadResume';
+import { generateAndDownloadPDF } from '@/lib/generatePDF';
 import { ResumeData } from '@/lib/resumeDataTypes';
 
 export default function ResumePreviewPage() {
@@ -72,19 +73,12 @@ export default function ResumePreviewPage() {
     }
   };
 
-  // Download as PDF
+  // Download as PDF (using text-based PDF generation)
   const handleDownloadPDF = async () => {
     try {
       console.log('[Download] PDF button clicked');
-      console.log('[Download] templateRef.current:', templateRef.current);
       console.log('[Download] resumeData:', resumeData);
       
-      if (!templateRef.current) {
-        console.error('[Download] templateRef.current is null');
-        alert('Resume preview not ready. Please wait a moment and try again.');
-        return false; // Return false to prevent any default behavior
-      }
-
       if (!resumeData) {
         console.error('[Download] resumeData is null');
         alert('Resume data not available. Please wait a moment and try again.');
@@ -94,22 +88,10 @@ export default function ResumePreviewPage() {
       const name = resumeData.name || 'resume';
       const filename = `${name.replace(/\s+/g, '_')}_${selectedTemplate}.pdf`;
       
-      console.log('[Download] Starting PDF generation, filename:', filename);
+      console.log('[Download] Starting text-based PDF generation, filename:', filename);
       
-      // Get the Card element and temporarily reset zoom for better PDF quality
-      const cardElement = templateRef.current;
-      const originalTransform = cardElement.style.transform;
-      
-      // Reset zoom to 100% for PDF generation
-      cardElement.style.transform = 'scale(1)';
-      
-      // Wait a moment for the transform to apply
-      await new Promise(resolve => setTimeout(resolve, 200));
-
-      await downloadResumeAsPDF(cardElement, filename);
-
-      // Restore original transform
-      cardElement.style.transform = originalTransform;
+      // Use the new text-based PDF generation (selectable, searchable text)
+      await generateAndDownloadPDF(resumeData, selectedTemplate, filename);
       
       console.log('[Download] PDF download completed');
       return false; // Prevent any default behavior
