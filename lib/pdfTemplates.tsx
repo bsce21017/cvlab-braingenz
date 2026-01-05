@@ -12,7 +12,7 @@ import {
   StyleSheet,
   Font,
 } from '@react-pdf/renderer';
-import { ResumeData } from './resumeDataTypes';
+import { ResumeData, getSectionOrder, getSectionLabel, getPrimaryColor, SectionKey } from './resumeDataTypes';
 
 // Register fonts using runtime fetch (works with both webpack and Turbopack)
 // This approach fetches fonts from public folder and registers them
@@ -220,43 +220,43 @@ const classicStyles = StyleSheet.create({
 });
 
 export function ClassicPDFTemplate({ data }: { data: ResumeData }) {
-  return (
-    <Document>
-      <Page size="A4" style={classicStyles.page}>
-        {/* Header */}
-        <View style={classicStyles.header}>
-          <Text style={classicStyles.name}>{data.name || 'Your Name'}</Text>
-          <View style={classicStyles.contactRow}>
-            {data.email && <Text style={classicStyles.contactItem}>{data.email}</Text>}
-            {data.email && data.phone && <Text style={classicStyles.separator}>|</Text>}
-            {data.phone && <Text style={classicStyles.contactItem}>{data.phone}</Text>}
-            {(data.email || data.phone) && data.location && <Text style={classicStyles.separator}>|</Text>}
-            {data.location && <Text style={classicStyles.contactItem}>{data.location}</Text>}
-          </View>
-        </View>
-
-        <View style={classicStyles.headerLine} />
-
-        {/* Summary */}
-        {data.summary && (
+  const sectionOrder = getSectionOrder(data);
+  const primaryColor = getPrimaryColor(data, 'classic');
+  
+  const renderSection = (sectionKey: SectionKey) => {
+    switch (sectionKey) {
+      case 'summary':
+        if (!data.summary || data.summary.trim().length === 0) return null;
+        return (
           <>
             <View style={classicStyles.sectionRow}>
               <View style={classicStyles.sectionLabelContainer}>
-                <Text style={classicStyles.sectionLabel}>Summary</Text>
+                <Text style={[classicStyles.sectionLabel, { color: primaryColor }]}>{getSectionLabel(data, 'summary', 'classic')}</Text>
               </View>
               <Text style={[classicStyles.sectionContent, classicStyles.text]}>{data.summary}</Text>
             </View>
-            <View style={classicStyles.divider} />
+            <View style={[classicStyles.divider, { backgroundColor: primaryColor }]} />
           </>
-        )}
-
-        {/* Work Experience */}
-        {data.experience && data.experience.length > 0 && (
+        );
+      
+      case 'experience':
+        if (!data.experience || data.experience.length === 0) return null;
+        return (
           <>
             <View style={classicStyles.sectionRow}>
               <View style={classicStyles.sectionLabelContainer}>
-                <Text style={classicStyles.sectionLabel}>Work</Text>
-                <Text style={classicStyles.sectionLabel}>Experience</Text>
+                {(() => {
+                  const label = getSectionLabel(data, 'experience', 'classic');
+                  if (label === 'Work Experience') {
+                    return (
+                      <>
+                        <Text style={classicStyles.sectionLabel}>Work</Text>
+                        <Text style={classicStyles.sectionLabel}>Experience</Text>
+                      </>
+                    );
+                  }
+                  return <Text style={classicStyles.sectionLabel}>{label}</Text>;
+                })()}
               </View>
               <View style={classicStyles.sectionContent}>
                 {data.experience.map((exp, idx) => (
@@ -275,16 +275,38 @@ export function ClassicPDFTemplate({ data }: { data: ResumeData }) {
                 ))}
               </View>
             </View>
-            <View style={classicStyles.divider} />
+            <View style={[classicStyles.divider, { backgroundColor: primaryColor }]} />
           </>
-        )}
-
-        {/* Education */}
-        {data.education && data.education.length > 0 && (
+        );
+      
+      case 'skills':
+        if (!data.skills || data.skills.length === 0) return null;
+        return (
           <>
             <View style={classicStyles.sectionRow}>
               <View style={classicStyles.sectionLabelContainer}>
-                <Text style={classicStyles.sectionLabel}>Education</Text>
+                <Text style={[classicStyles.sectionLabel, { color: primaryColor }]}>{getSectionLabel(data, 'skills', 'classic')}</Text>
+              </View>
+              <View style={[classicStyles.sectionContent, classicStyles.skillsGrid]}>
+                {data.skills.map((skill, idx) => (
+                  <View key={idx} style={classicStyles.skillItem}>
+                    <Text style={classicStyles.bulletPoint}>•</Text>
+                    <Text style={classicStyles.text}>{skill}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+            <View style={[classicStyles.divider, { backgroundColor: primaryColor }]} />
+          </>
+        );
+      
+      case 'education':
+        if (!data.education || data.education.length === 0) return null;
+        return (
+          <>
+            <View style={classicStyles.sectionRow}>
+              <View style={classicStyles.sectionLabelContainer}>
+                <Text style={[classicStyles.sectionLabel, { color: primaryColor }]}>{getSectionLabel(data, 'education', 'classic')}</Text>
               </View>
               <View style={classicStyles.sectionContent}>
                 {data.education.map((edu, idx) => (
@@ -304,36 +326,47 @@ export function ClassicPDFTemplate({ data }: { data: ResumeData }) {
                 ))}
               </View>
             </View>
-            <View style={classicStyles.divider} />
+            <View style={[classicStyles.divider, { backgroundColor: primaryColor }]} />
           </>
-        )}
-
-        {/* Key Skills */}
-        {data.skills && data.skills.length > 0 && (
+        );
+      
+      case 'projects':
+        if (!data.projects || data.projects.length === 0) return null;
+        return (
           <>
             <View style={classicStyles.sectionRow}>
               <View style={classicStyles.sectionLabelContainer}>
-                <Text style={classicStyles.sectionLabel}>Key Skills</Text>
+                <Text style={[classicStyles.sectionLabel, { color: primaryColor }]}>{getSectionLabel(data, 'projects', 'classic')}</Text>
               </View>
-              <View style={[classicStyles.sectionContent, classicStyles.skillsGrid]}>
-                {data.skills.map((skill, idx) => (
-                  <View key={idx} style={classicStyles.skillItem}>
-                    <Text style={classicStyles.bulletPoint}>•</Text>
-                    <Text style={classicStyles.text}>{skill}</Text>
+              <View style={classicStyles.sectionContent}>
+                {data.projects.map((project, idx) => (
+                  <View key={idx} style={classicStyles.experienceItem}>
+                    <View style={classicStyles.expHeader}>
+                      <Text style={classicStyles.expTitle}>{project.name}</Text>
+                      {project.period && <Text style={classicStyles.expPeriod}>{project.period}</Text>}
+                    </View>
+                    {project.organization && <Text style={classicStyles.text}>{project.organization}</Text>}
+                    {project.details && project.details.map((detail, dIdx) => (
+                      <View key={dIdx} style={classicStyles.bullet}>
+                        <Text style={classicStyles.bulletPoint}>•</Text>
+                        <Text style={classicStyles.bulletText}>{detail}</Text>
+                      </View>
+                    ))}
                   </View>
                 ))}
               </View>
             </View>
-            <View style={classicStyles.divider} />
+            <View style={[classicStyles.divider, { backgroundColor: primaryColor }]} />
           </>
-        )}
-
-        {/* Certifications */}
-        {data.certifications && data.certifications.length > 0 && (
+        );
+      
+      case 'certifications':
+        if (!data.certifications || data.certifications.length === 0) return null;
+        return (
           <>
             <View style={classicStyles.sectionRow}>
               <View style={classicStyles.sectionLabelContainer}>
-                <Text style={classicStyles.sectionLabel}>Certifications</Text>
+                <Text style={[classicStyles.sectionLabel, { color: primaryColor }]}>{getSectionLabel(data, 'certifications', 'classic')}</Text>
               </View>
               <View style={classicStyles.sectionContent}>
                 {data.certifications.map((cert, idx) => (
@@ -344,21 +377,51 @@ export function ClassicPDFTemplate({ data }: { data: ResumeData }) {
                 ))}
               </View>
             </View>
-            <View style={classicStyles.divider} />
+            <View style={[classicStyles.divider, { backgroundColor: primaryColor }]} />
           </>
-        )}
-
-        {/* Languages */}
-        {data.languages && data.languages.length > 0 && (
+        );
+      
+      case 'languages':
+        if (!data.languages || data.languages.length === 0) return null;
+        return (
           <View style={classicStyles.sectionRow}>
             <View style={classicStyles.sectionLabelContainer}>
-              <Text style={classicStyles.sectionLabel}>Languages</Text>
+              <Text style={[classicStyles.sectionLabel, { color: primaryColor }]}>{getSectionLabel(data, 'languages', 'classic')}</Text>
             </View>
             <Text style={[classicStyles.sectionContent, classicStyles.text]}>
               {data.languages.join(', ')}
             </Text>
           </View>
-        )}
+        );
+      
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <Document>
+      <Page size="A4" style={classicStyles.page}>
+        {/* Header */}
+        <View style={classicStyles.header}>
+          <Text style={[classicStyles.name, { color: primaryColor }]}>{data.name || 'Your Name'}</Text>
+          <View style={classicStyles.contactRow}>
+            {data.email && <Text style={classicStyles.contactItem}>{data.email}</Text>}
+            {data.email && data.phone && <Text style={classicStyles.separator}>|</Text>}
+            {data.phone && <Text style={classicStyles.contactItem}>{data.phone}</Text>}
+            {(data.email || data.phone) && data.location && <Text style={classicStyles.separator}>|</Text>}
+            {data.location && <Text style={classicStyles.contactItem}>{data.location}</Text>}
+          </View>
+        </View>
+
+        <View style={[classicStyles.headerLine, { backgroundColor: primaryColor }]} />
+
+        {/* All sections rendered in order */}
+        {sectionOrder.map((sectionKey) => (
+          <React.Fragment key={sectionKey}>
+            {renderSection(sectionKey)}
+          </React.Fragment>
+        ))}
       </Page>
     </Document>
   );
@@ -466,35 +529,25 @@ const modernStyles = StyleSheet.create({
 });
 
 export function ModernPDFTemplate({ data }: { data: ResumeData }) {
-  return (
-    <Document>
-      <Page size="A4" style={modernStyles.page}>
-        {/* Header */}
-        <View style={modernStyles.header}>
-          <Text style={modernStyles.name}>{data.name || 'Your Name'}</Text>
-          <View style={modernStyles.contactRow}>
-            {data.email && <Text style={modernStyles.contactItem}>{data.email}</Text>}
-            {data.email && data.phone && <Text style={modernStyles.separator}>|</Text>}
-            {data.phone && <Text style={modernStyles.contactItem}>{data.phone}</Text>}
-            {(data.email || data.phone) && data.location && <Text style={modernStyles.separator}>|</Text>}
-            {data.location && <Text style={modernStyles.contactItem}>{data.location}</Text>}
-          </View>
-        </View>
-
-        <View style={modernStyles.headerLine} />
-
-        {/* Summary */}
-        {data.summary && (
+  const sectionOrder = getSectionOrder(data);
+  const primaryColor = getPrimaryColor(data, 'modern');
+  
+  const renderSection = (sectionKey: SectionKey) => {
+    switch (sectionKey) {
+      case 'summary':
+        if (!data.summary || data.summary.trim().length === 0) return null;
+        return (
           <View style={modernStyles.section}>
-            <Text style={modernStyles.sectionTitle}>Summary</Text>
+            <Text style={[modernStyles.sectionTitle, { color: primaryColor, borderBottomColor: primaryColor }]}>{getSectionLabel(data, 'summary', 'modern')}</Text>
             <Text style={modernStyles.text}>{data.summary}</Text>
           </View>
-        )}
-
-        {/* Professional Experience */}
-        {data.experience && data.experience.length > 0 && (
+        );
+      
+      case 'experience':
+        if (!data.experience || data.experience.length === 0) return null;
+        return (
           <View style={modernStyles.section}>
-            <Text style={modernStyles.sectionTitle}>Professional Experience</Text>
+            <Text style={[modernStyles.sectionTitle, { color: primaryColor, borderBottomColor: primaryColor }]}>{getSectionLabel(data, 'experience', 'modern')}</Text>
             {data.experience.map((exp, idx) => (
               <View key={idx} style={modernStyles.experienceItem}>
                 <View style={modernStyles.expHeader}>
@@ -510,46 +563,26 @@ export function ModernPDFTemplate({ data }: { data: ResumeData }) {
               </View>
             ))}
           </View>
-        )}
-
-        {/* Projects */}
-        {data.projects && data.projects.length > 0 && (
+        );
+      
+      case 'skills':
+        if (!data.skills || data.skills.length === 0) return null;
+        return (
           <View style={modernStyles.section}>
-            <Text style={modernStyles.sectionTitle}>Projects</Text>
-            {data.projects.map((project, idx) => (
-              <View key={idx} style={modernStyles.experienceItem}>
-                <View style={modernStyles.expHeader}>
-                  <Text style={modernStyles.expTitle}>{project.name}</Text>
-                  {project.period && <Text style={modernStyles.expPeriod}>{project.period}</Text>}
-                </View>
-                {project.organization && <Text style={modernStyles.text}>{project.organization}</Text>}
-                {project.details && project.details.map((detail, dIdx) => (
-                  <View key={dIdx} style={modernStyles.bullet}>
-                    <Text style={modernStyles.bulletPoint}>•</Text>
-                    <Text style={modernStyles.bulletText}>{detail}</Text>
-                  </View>
-                ))}
-              </View>
-            ))}
-          </View>
-        )}
-
-        {/* Skills */}
-        {data.skills && data.skills.length > 0 && (
-          <View style={modernStyles.section}>
-            <Text style={modernStyles.sectionTitle}>Skills</Text>
+            <Text style={[modernStyles.sectionTitle, { color: primaryColor, borderBottomColor: primaryColor }]}>{getSectionLabel(data, 'skills', 'modern')}</Text>
             <View style={modernStyles.skillsGrid}>
               {data.skills.map((skill, idx) => (
                 <Text key={idx} style={modernStyles.skillItem}>{skill}</Text>
               ))}
             </View>
           </View>
-        )}
-
-        {/* Education */}
-        {data.education && data.education.length > 0 && (
+        );
+      
+      case 'education':
+        if (!data.education || data.education.length === 0) return null;
+        return (
           <View style={modernStyles.section}>
-            <Text style={modernStyles.sectionTitle}>Education</Text>
+            <Text style={[modernStyles.sectionTitle, { color: primaryColor, borderBottomColor: primaryColor }]}>{getSectionLabel(data, 'education', 'modern')}</Text>
             {data.education.map((edu, idx) => (
               <View key={idx} style={modernStyles.experienceItem}>
                 <View style={modernStyles.expHeader}>
@@ -566,32 +599,82 @@ export function ModernPDFTemplate({ data }: { data: ResumeData }) {
               </View>
             ))}
           </View>
-        )}
-
-        {/* Additional Information */}
-        {((data.languages && data.languages.length > 0) || (data.certifications && data.certifications.length > 0)) && (
+        );
+      
+      case 'projects':
+        if (!data.projects || data.projects.length === 0) return null;
+        return (
           <View style={modernStyles.section}>
-            <Text style={modernStyles.sectionTitle}>Additional Information</Text>
-            {data.languages && data.languages.length > 0 && (
-              <View style={modernStyles.bullet}>
-                <Text style={modernStyles.bulletPoint}>•</Text>
-                <Text style={modernStyles.bulletText}>
-                  <Text style={{ fontWeight: 700 }}>Languages: </Text>
-                  {data.languages.join(', ')}
-                </Text>
+            <Text style={[modernStyles.sectionTitle, { color: primaryColor, borderBottomColor: primaryColor }]}>{getSectionLabel(data, 'projects', 'modern')}</Text>
+            {data.projects.map((project, idx) => (
+              <View key={idx} style={modernStyles.experienceItem}>
+                <View style={modernStyles.expHeader}>
+                  <Text style={modernStyles.expTitle}>{project.name}</Text>
+                  {project.period && <Text style={modernStyles.expPeriod}>{project.period}</Text>}
+                </View>
+                {project.organization && <Text style={modernStyles.text}>{project.organization}</Text>}
+                {project.details && project.details.map((detail, dIdx) => (
+                  <View key={dIdx} style={modernStyles.bullet}>
+                    <Text style={modernStyles.bulletPoint}>•</Text>
+                    <Text style={modernStyles.bulletText}>{detail}</Text>
+                  </View>
+                ))}
               </View>
-            )}
-            {data.certifications && data.certifications.length > 0 && (
-              <View style={modernStyles.bullet}>
-                <Text style={modernStyles.bulletPoint}>•</Text>
-                <Text style={modernStyles.bulletText}>
-                  <Text style={{ fontWeight: 700 }}>Certifications: </Text>
-                  {data.certifications.join(', ')}
-                </Text>
-              </View>
-            )}
+            ))}
           </View>
-        )}
+        );
+      
+      case 'certifications':
+        if (!data.certifications || data.certifications.length === 0) return null;
+        return (
+          <View style={modernStyles.section}>
+            <Text style={[modernStyles.sectionTitle, { color: primaryColor, borderBottomColor: primaryColor }]}>{getSectionLabel(data, 'certifications', 'modern')}</Text>
+            {data.certifications.map((cert, idx) => (
+              <View key={idx} style={modernStyles.bullet}>
+                <Text style={modernStyles.bulletPoint}>•</Text>
+                <Text style={modernStyles.bulletText}>{cert}</Text>
+              </View>
+            ))}
+          </View>
+        );
+      
+      case 'languages':
+        if (!data.languages || data.languages.length === 0) return null;
+        return (
+          <View style={modernStyles.section}>
+            <Text style={[modernStyles.sectionTitle, { color: primaryColor, borderBottomColor: primaryColor }]}>{getSectionLabel(data, 'languages', 'modern')}</Text>
+            <Text style={modernStyles.text}>{data.languages.join(', ')}</Text>
+          </View>
+        );
+      
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <Document>
+      <Page size="A4" style={modernStyles.page}>
+        {/* Header */}
+        <View style={modernStyles.header}>
+          <Text style={[modernStyles.name, { color: primaryColor }]}>{data.name || 'Your Name'}</Text>
+          <View style={modernStyles.contactRow}>
+            {data.email && <Text style={modernStyles.contactItem}>{data.email}</Text>}
+            {data.email && data.phone && <Text style={modernStyles.separator}>|</Text>}
+            {data.phone && <Text style={modernStyles.contactItem}>{data.phone}</Text>}
+            {(data.email || data.phone) && data.location && <Text style={modernStyles.separator}>|</Text>}
+            {data.location && <Text style={modernStyles.contactItem}>{data.location}</Text>}
+          </View>
+        </View>
+
+        <View style={[modernStyles.headerLine, { backgroundColor: primaryColor }]} />
+
+        {/* All sections rendered in order */}
+        {sectionOrder.map((sectionKey) => (
+          <React.Fragment key={sectionKey}>
+            {renderSection(sectionKey)}
+          </React.Fragment>
+        ))}
       </Page>
     </Document>
   );
@@ -609,6 +692,7 @@ const executiveStyles = StyleSheet.create({
   },
   header: {
     marginBottom: 12,
+    textAlign: 'center',
   },
   name: {
     fontSize: 32,
@@ -626,6 +710,7 @@ const executiveStyles = StyleSheet.create({
   },
   contactRow: {
     flexDirection: 'row',
+    justifyContent: 'center',
     marginTop: 6,
     fontSize: 10,
     color: '#4b5563',
@@ -699,36 +784,25 @@ const executiveStyles = StyleSheet.create({
 });
 
 export function ExecutivePDFTemplate({ data }: { data: ResumeData }) {
-  return (
-    <Document>
-      <Page size="A4" style={executiveStyles.page}>
-        {/* Header */}
-        <View style={executiveStyles.header}>
-          <Text style={executiveStyles.name}>{data.name || 'Your Name'}</Text>
-          {data.title && <Text style={executiveStyles.title}>{data.title}</Text>}
-          <View style={executiveStyles.contactRow}>
-            {data.location && <Text style={executiveStyles.contactItem}>{data.location}</Text>}
-            {data.location && data.email && <Text style={executiveStyles.separator}>|</Text>}
-            {data.email && <Text style={executiveStyles.contactItem}>{data.email}</Text>}
-            {data.email && data.website && <Text style={executiveStyles.separator}>|</Text>}
-            {data.website && <Text style={executiveStyles.contactItem}>{data.website}</Text>}
-          </View>
-        </View>
-
-        <View style={executiveStyles.headerLine} />
-
-        {/* Summary */}
-        {data.summary && (
+  const sectionOrder = getSectionOrder(data);
+  const primaryColor = getPrimaryColor(data, 'executive');
+  
+  const renderSection = (sectionKey: SectionKey) => {
+    switch (sectionKey) {
+      case 'summary':
+        if (!data.summary || data.summary.trim().length === 0) return null;
+        return (
           <View style={executiveStyles.section}>
-            <Text style={executiveStyles.sectionTitle}>Summary</Text>
+            <Text style={[executiveStyles.sectionTitle, { borderBottomColor: primaryColor }]}>{getSectionLabel(data, 'summary', 'executive')}</Text>
             <Text style={executiveStyles.text}>{data.summary}</Text>
           </View>
-        )}
-
-        {/* Professional Experience */}
-        {data.experience && data.experience.length > 0 && (
+        );
+      
+      case 'experience':
+        if (!data.experience || data.experience.length === 0) return null;
+        return (
           <View style={executiveStyles.section}>
-            <Text style={executiveStyles.sectionTitle}>Professional Experience</Text>
+            <Text style={[executiveStyles.sectionTitle, { borderBottomColor: primaryColor }]}>{getSectionLabel(data, 'experience', 'executive')}</Text>
             {data.experience.map((exp, idx) => (
               <View key={idx} style={executiveStyles.experienceItem}>
                 <View style={executiveStyles.expHeader}>
@@ -747,36 +821,26 @@ export function ExecutivePDFTemplate({ data }: { data: ResumeData }) {
               </View>
             ))}
           </View>
-        )}
-
-        {/* Projects */}
-        {data.projects && data.projects.length > 0 && (
+        );
+      
+      case 'skills':
+        if (!data.skills || data.skills.length === 0) return null;
+        return (
           <View style={executiveStyles.section}>
-            <Text style={executiveStyles.sectionTitle}>Projects</Text>
-            {data.projects.map((project, idx) => (
-              <View key={idx} style={executiveStyles.experienceItem}>
-                <View style={executiveStyles.expHeader}>
-                  <View style={executiveStyles.expTitleContainer}>
-                    <Text style={executiveStyles.expTitle}>{project.name}</Text>
-                    {project.organization && <Text style={executiveStyles.expCompany}>{project.organization}</Text>}
-                  </View>
-                  {project.period && <Text style={executiveStyles.expPeriod}>{project.period}</Text>}
-                </View>
-                {project.details && project.details.map((detail, dIdx) => (
-                  <View key={dIdx} style={executiveStyles.bullet}>
-                    <Text style={executiveStyles.bulletPoint}>•</Text>
-                    <Text style={executiveStyles.bulletText}>{detail}</Text>
-                  </View>
-                ))}
-              </View>
-            ))}
+            <Text style={[executiveStyles.sectionTitle, { borderBottomColor: primaryColor }]}>{getSectionLabel(data, 'skills', 'executive')}</Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+              {data.skills.map((skill, idx) => (
+                <Text key={idx} style={[executiveStyles.text, { marginRight: 8, marginBottom: 3 }]}>{skill}</Text>
+              ))}
+            </View>
           </View>
-        )}
-
-        {/* Education */}
-        {data.education && data.education.length > 0 && (
+        );
+      
+      case 'education':
+        if (!data.education || data.education.length === 0) return null;
+        return (
           <View style={executiveStyles.section}>
-            <Text style={executiveStyles.sectionTitle}>Education</Text>
+            <Text style={[executiveStyles.sectionTitle, { borderBottomColor: primaryColor }]}>{getSectionLabel(data, 'education', 'executive')}</Text>
             {data.education.map((edu, idx) => (
               <View key={idx} style={executiveStyles.experienceItem}>
                 <View style={executiveStyles.expHeader}>
@@ -795,32 +859,85 @@ export function ExecutivePDFTemplate({ data }: { data: ResumeData }) {
               </View>
             ))}
           </View>
-        )}
-
-        {/* Additional Information */}
-        {((data.languages && data.languages.length > 0) || (data.certifications && data.certifications.length > 0)) && (
+        );
+      
+      case 'projects':
+        if (!data.projects || data.projects.length === 0) return null;
+        return (
           <View style={executiveStyles.section}>
-            <Text style={executiveStyles.sectionTitle}>Additional Information</Text>
-            {data.languages && data.languages.length > 0 && (
-              <View style={executiveStyles.bullet}>
-                <Text style={executiveStyles.bulletPoint}>•</Text>
-                <Text style={executiveStyles.bulletText}>
-                  <Text style={{ fontWeight: 600 }}>Languages: </Text>
-                  {data.languages.join(', ')}
-                </Text>
+            <Text style={[executiveStyles.sectionTitle, { borderBottomColor: primaryColor }]}>{getSectionLabel(data, 'projects', 'executive')}</Text>
+            {data.projects.map((project, idx) => (
+              <View key={idx} style={executiveStyles.experienceItem}>
+                <View style={executiveStyles.expHeader}>
+                  <View style={executiveStyles.expTitleContainer}>
+                    <Text style={executiveStyles.expTitle}>{project.name}</Text>
+                    {project.organization && <Text style={executiveStyles.expCompany}>{project.organization}</Text>}
+                  </View>
+                  {project.period && <Text style={executiveStyles.expPeriod}>{project.period}</Text>}
+                </View>
+                {project.details && project.details.map((detail, dIdx) => (
+                  <View key={dIdx} style={executiveStyles.bullet}>
+                    <Text style={executiveStyles.bulletPoint}>•</Text>
+                    <Text style={executiveStyles.bulletText}>{detail}</Text>
+                  </View>
+                ))}
               </View>
-            )}
-            {data.certifications && data.certifications.length > 0 && (
-              <View style={executiveStyles.bullet}>
-                <Text style={executiveStyles.bulletPoint}>•</Text>
-                <Text style={executiveStyles.bulletText}>
-                  <Text style={{ fontWeight: 600 }}>Certifications: </Text>
-                  {data.certifications.join(', ')}
-                </Text>
-              </View>
-            )}
+            ))}
           </View>
-        )}
+        );
+      
+      case 'certifications':
+        if (!data.certifications || data.certifications.length === 0) return null;
+        return (
+          <View style={executiveStyles.section}>
+            <Text style={[executiveStyles.sectionTitle, { borderBottomColor: primaryColor }]}>{getSectionLabel(data, 'certifications', 'executive')}</Text>
+            {data.certifications.map((cert, idx) => (
+              <View key={idx} style={executiveStyles.bullet}>
+                <Text style={executiveStyles.bulletPoint}>•</Text>
+                <Text style={executiveStyles.bulletText}>{cert}</Text>
+              </View>
+            ))}
+          </View>
+        );
+      
+      case 'languages':
+        if (!data.languages || data.languages.length === 0) return null;
+        return (
+          <View style={executiveStyles.section}>
+            <Text style={[executiveStyles.sectionTitle, { borderBottomColor: primaryColor }]}>{getSectionLabel(data, 'languages', 'executive')}</Text>
+            <Text style={executiveStyles.text}>{data.languages.join(', ')}</Text>
+          </View>
+        );
+      
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <Document>
+      <Page size="A4" style={executiveStyles.page}>
+        {/* Header */}
+        <View style={executiveStyles.header}>
+          <Text style={executiveStyles.name}>{data.name || 'Your Name'}</Text>
+          {data.title && <Text style={executiveStyles.title}>{data.title}</Text>}
+          <View style={executiveStyles.contactRow}>
+            {data.location && <Text style={executiveStyles.contactItem}>{data.location}</Text>}
+            {data.location && data.email && <Text style={executiveStyles.separator}>|</Text>}
+            {data.email && <Text style={executiveStyles.contactItem}>{data.email}</Text>}
+            {data.email && data.website && <Text style={executiveStyles.separator}>|</Text>}
+            {data.website && <Text style={executiveStyles.contactItem}>{data.website}</Text>}
+          </View>
+        </View>
+
+        <View style={[executiveStyles.headerLine, { backgroundColor: primaryColor }]} />
+
+        {/* All sections rendered in order */}
+        {sectionOrder.map((sectionKey) => (
+          <React.Fragment key={sectionKey}>
+            {renderSection(sectionKey)}
+          </React.Fragment>
+        ))}
       </Page>
     </Document>
   );
@@ -902,7 +1019,7 @@ const technicalStyles = StyleSheet.create({
   },
   expPeriod: {
     fontSize: 10,
-    color: '#6b7280',
+    color: '#1D61CB',
   },
   bullet: {
     flexDirection: 'row',
@@ -936,45 +1053,25 @@ const technicalStyles = StyleSheet.create({
 });
 
 export function TechnicalPDFTemplate({ data }: { data: ResumeData }) {
-  return (
-    <Document>
-      <Page size="A4" style={technicalStyles.page}>
-        {/* Header */}
-        <View style={technicalStyles.header}>
-          <Text style={technicalStyles.name}>{data.name || 'Your Name'}</Text>
-          <View style={technicalStyles.contactRow}>
-            {data.email && <Text style={technicalStyles.contactItem}>{data.email}</Text>}
-            {data.email && data.phone && <Text style={technicalStyles.separator}>|</Text>}
-            {data.phone && <Text style={technicalStyles.contactItem}>{data.phone}</Text>}
-            {(data.email || data.phone) && data.location && <Text style={technicalStyles.separator}>|</Text>}
-            {data.location && <Text style={technicalStyles.contactItem}>{data.location}</Text>}
-          </View>
-        </View>
-
-        {/* Summary */}
-        {data.summary && (
+  const sectionOrder = getSectionOrder(data);
+  const primaryColor = getPrimaryColor(data, 'technical');
+  
+  const renderSection = (sectionKey: SectionKey) => {
+    switch (sectionKey) {
+      case 'summary':
+        if (!data.summary || data.summary.trim().length === 0) return null;
+        return (
           <View style={technicalStyles.section}>
-            <Text style={technicalStyles.sectionTitle}>Summary</Text>
+            <Text style={[technicalStyles.sectionTitle, { color: primaryColor, borderTopColor: primaryColor, borderBottomColor: primaryColor }]}>{getSectionLabel(data, 'summary', 'technical')}</Text>
             <Text style={technicalStyles.text}>{data.summary}</Text>
           </View>
-        )}
-
-        {/* Technical Skills - Before Experience */}
-        {data.skills && data.skills.length > 0 && (
+        );
+      
+      case 'experience':
+        if (!data.experience || data.experience.length === 0) return null;
+        return (
           <View style={technicalStyles.section}>
-            <Text style={technicalStyles.sectionTitle}>Technical Skills</Text>
-            <View style={technicalStyles.skillsGrid}>
-              {data.skills.map((skill, idx) => (
-                <Text key={idx} style={technicalStyles.skillItem}>{skill}</Text>
-              ))}
-            </View>
-          </View>
-        )}
-
-        {/* Professional Experience */}
-        {data.experience && data.experience.length > 0 && (
-          <View style={technicalStyles.section}>
-            <Text style={technicalStyles.sectionTitle}>Professional Experience</Text>
+            <Text style={[technicalStyles.sectionTitle, { color: primaryColor, borderTopColor: primaryColor, borderBottomColor: primaryColor }]}>{getSectionLabel(data, 'experience', 'technical')}</Text>
             {data.experience.map((exp, idx) => (
               <View key={idx} style={technicalStyles.experienceItem}>
                 <View style={technicalStyles.expHeader}>
@@ -982,7 +1079,7 @@ export function TechnicalPDFTemplate({ data }: { data: ResumeData }) {
                     <Text style={technicalStyles.expTitle}>{exp.title}</Text>
                     <Text style={technicalStyles.expCompany}>{exp.company}</Text>
                   </View>
-                  <Text style={technicalStyles.expPeriod}>{exp.period}</Text>
+                  <Text style={[technicalStyles.expPeriod, { color: primaryColor }]}>{exp.period}</Text>
                 </View>
                 {exp.bullets && exp.bullets.map((bullet, bIdx) => (
                   <View key={bIdx} style={technicalStyles.bullet}>
@@ -993,12 +1090,26 @@ export function TechnicalPDFTemplate({ data }: { data: ResumeData }) {
               </View>
             ))}
           </View>
-        )}
-
-        {/* Education */}
-        {data.education && data.education.length > 0 && (
+        );
+      
+      case 'skills':
+        if (!data.skills || data.skills.length === 0) return null;
+        return (
           <View style={technicalStyles.section}>
-            <Text style={technicalStyles.sectionTitle}>Education</Text>
+            <Text style={[technicalStyles.sectionTitle, { color: primaryColor, borderTopColor: primaryColor, borderBottomColor: primaryColor }]}>{getSectionLabel(data, 'skills', 'technical')}</Text>
+            <View style={technicalStyles.skillsGrid}>
+              {data.skills.map((skill, idx) => (
+                <Text key={idx} style={technicalStyles.skillItem}>{skill}</Text>
+              ))}
+            </View>
+          </View>
+        );
+      
+      case 'education':
+        if (!data.education || data.education.length === 0) return null;
+        return (
+          <View style={technicalStyles.section}>
+            <Text style={[technicalStyles.sectionTitle, { color: primaryColor, borderTopColor: primaryColor, borderBottomColor: primaryColor }]}>{getSectionLabel(data, 'education', 'technical')}</Text>
             {data.education.map((edu, idx) => (
               <View key={idx} style={technicalStyles.experienceItem}>
                 <View style={technicalStyles.expHeader}>
@@ -1006,7 +1117,7 @@ export function TechnicalPDFTemplate({ data }: { data: ResumeData }) {
                     <Text style={technicalStyles.expTitle}>{edu.degree}</Text>
                     <Text style={technicalStyles.expCompany}>{edu.institution}</Text>
                   </View>
-                  <Text style={technicalStyles.expPeriod}>{edu.period}</Text>
+                  <Text style={[technicalStyles.expPeriod, { color: primaryColor }]}>{edu.period}</Text>
                 </View>
                 {edu.details && edu.details.map((detail, dIdx) => (
                   <View key={dIdx} style={technicalStyles.bullet}>
@@ -1017,7 +1128,82 @@ export function TechnicalPDFTemplate({ data }: { data: ResumeData }) {
               </View>
             ))}
           </View>
-        )}
+        );
+      
+      case 'projects':
+        if (!data.projects || data.projects.length === 0) return null;
+        return (
+          <View style={technicalStyles.section}>
+            <Text style={[technicalStyles.sectionTitle, { color: primaryColor, borderTopColor: primaryColor, borderBottomColor: primaryColor }]}>{getSectionLabel(data, 'projects', 'technical')}</Text>
+            {data.projects.map((project, idx) => (
+              <View key={idx} style={technicalStyles.experienceItem}>
+                <View style={technicalStyles.expHeader}>
+                  <View style={technicalStyles.expTitleContainer}>
+                    <Text style={technicalStyles.expTitle}>{project.name}</Text>
+                    {project.organization && <Text style={technicalStyles.expCompany}>{project.organization}</Text>}
+                  </View>
+                  {project.period && <Text style={[technicalStyles.expPeriod, { color: primaryColor }]}>{project.period}</Text>}
+                </View>
+                {project.details && project.details.map((detail, dIdx) => (
+                  <View key={dIdx} style={technicalStyles.bullet}>
+                    <Text style={technicalStyles.bulletPoint}>•</Text>
+                    <Text style={technicalStyles.bulletText}>{detail}</Text>
+                  </View>
+                ))}
+              </View>
+            ))}
+          </View>
+        );
+      
+      case 'certifications':
+        if (!data.certifications || data.certifications.length === 0) return null;
+        return (
+          <View style={technicalStyles.section}>
+            <Text style={[technicalStyles.sectionTitle, { color: primaryColor, borderTopColor: primaryColor, borderBottomColor: primaryColor }]}>{getSectionLabel(data, 'certifications', 'technical')}</Text>
+            {data.certifications.map((cert, idx) => (
+              <View key={idx} style={technicalStyles.bullet}>
+                <Text style={technicalStyles.bulletPoint}>•</Text>
+                <Text style={technicalStyles.bulletText}>{cert}</Text>
+              </View>
+            ))}
+          </View>
+        );
+      
+      case 'languages':
+        if (!data.languages || data.languages.length === 0) return null;
+        return (
+          <View style={technicalStyles.section}>
+            <Text style={[technicalStyles.sectionTitle, { color: primaryColor, borderTopColor: primaryColor, borderBottomColor: primaryColor }]}>{getSectionLabel(data, 'languages', 'technical')}</Text>
+            <Text style={technicalStyles.text}>{data.languages.join(', ')}</Text>
+          </View>
+        );
+      
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <Document>
+      <Page size="A4" style={technicalStyles.page}>
+        {/* Header */}
+        <View style={technicalStyles.header}>
+          <Text style={[technicalStyles.name, { color: primaryColor }]}>{data.name || 'Your Name'}</Text>
+          <View style={technicalStyles.contactRow}>
+            {data.email && <Text style={technicalStyles.contactItem}>{data.email}</Text>}
+            {data.email && data.phone && <Text style={technicalStyles.separator}>|</Text>}
+            {data.phone && <Text style={technicalStyles.contactItem}>{data.phone}</Text>}
+            {(data.email || data.phone) && data.location && <Text style={technicalStyles.separator}>|</Text>}
+            {data.location && <Text style={technicalStyles.contactItem}>{data.location}</Text>}
+          </View>
+        </View>
+
+        {/* All sections rendered in order */}
+        {sectionOrder.map((sectionKey) => (
+          <React.Fragment key={sectionKey}>
+            {renderSection(sectionKey)}
+          </React.Fragment>
+        ))}
 
         {/* Additional Information */}
         {((data.languages && data.languages.length > 0) || (data.certifications && data.certifications.length > 0)) && (
