@@ -4,28 +4,62 @@ import { useEffect, useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatDistanceToNow, format } from 'date-fns';
+import { getUser } from '@/lib/admin-api';
 
-export default function AccountInfo() {
+interface AccountInfoProps {
+  userId?: string;
+}
+
+export default function AccountInfo({ userId }: AccountInfoProps) {
   const { t } = useLanguage();
   const { user } = useAuth();
   const [memberSince, setMemberSince] = useState<string>('');
   const [lastSignIn, setLastSignIn] = useState<string>('');
+  const [emailVerified, setEmailVerified] = useState<boolean>(false);
+  const [viewingUser, setViewingUser] = useState<any>(null);
 
   useEffect(() => {
-    if (user) {
-      if (user.created_at) {
-        const createdDate = new Date(user.created_at);
-        setMemberSince(format(createdDate, 'MMMM yyyy'));
-      }
-      
-      if (user.last_sign_in_at) {
-        const lastSignInDate = new Date(user.last_sign_in_at);
-        setLastSignIn(formatDistanceToNow(lastSignInDate, { addSuffix: true }));
-      } else {
-        setLastSignIn('Never');
+    async function loadUserData() {
+      if (userId && userId !== user?.id) {
+        try {
+          const userData = await getUser(userId);
+          setViewingUser(userData);
+          
+          if (userData.created_at) {
+            const createdDate = new Date(userData.created_at);
+            setMemberSince(format(createdDate, 'MMMM yyyy'));
+          }
+          
+          if (userData.last_active) {
+            const lastActiveDate = new Date(userData.last_active);
+            setLastSignIn(formatDistanceToNow(lastActiveDate, { addSuffix: true }));
+          } else {
+            setLastSignIn('Never');
+          }
+          
+          // For admin API, we don't have email_confirmed_at, so we'll skip it
+          setEmailVerified(false);
+        } catch (error) {
+          console.error('Error loading user data:', error);
+        }
+      } else if (user) {
+        if (user.created_at) {
+          const createdDate = new Date(user.created_at);
+          setMemberSince(format(createdDate, 'MMMM yyyy'));
+        }
+        
+        if (user.last_sign_in_at) {
+          const lastSignInDate = new Date(user.last_sign_in_at);
+          setLastSignIn(formatDistanceToNow(lastSignInDate, { addSuffix: true }));
+        } else {
+          setLastSignIn('Never');
+        }
+        
+        setEmailVerified(!!user.email_confirmed_at);
       }
     }
-  }, [user]);
+    loadUserData();
+  }, [userId, user]);
 
   return (
     <div className="bg-white rounded-lg p-6">
@@ -39,7 +73,7 @@ export default function AccountInfo() {
           <span className="text-sm text-gray-600">{t('profile.lastSignIn') || 'Last Sign In'}</span>
           <span className="text-sm text-gray-900 font-medium">{lastSignIn || 'N/A'}</span>
         </div>
-        {user?.email_confirmed_at && (
+        {emailVerified && (
           <div className="flex justify-between items-center">
             <span className="text-sm text-gray-600">Email Verified</span>
             <span className="text-sm text-green-600 font-medium">✓ Verified</span>

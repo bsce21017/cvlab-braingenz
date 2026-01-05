@@ -6,7 +6,8 @@ import { getClaimStats, ClaimStats } from '@/lib/admin-api';
 import { Loader2 } from 'lucide-react';
 
 export default function ClaimsOverview() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const isRTL = language === 'ar';
   const [stats, setStats] = useState<ClaimStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -30,8 +31,8 @@ export default function ClaimsOverview() {
 
   if (loading) {
     return (
-      <div className="space-y-6">
-        <h3 className="text-sm font-semibold text-gray-900">
+      <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
+        <h3 className={`text-sm font-semibold text-gray-900 ${isRTL ? 'text-right' : ''}`}>
           {t('claims.overview')}
         </h3>
         <div className="flex items-center justify-center py-4">
@@ -43,11 +44,11 @@ export default function ClaimsOverview() {
 
   if (error) {
     return (
-      <div className="space-y-6">
-        <h3 className="text-sm font-semibold text-gray-900">
+      <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
+        <h3 className={`text-sm font-semibold text-gray-900 ${isRTL ? 'text-right' : ''}`}>
           {t('claims.overview')}
         </h3>
-        <p className="text-sm text-red-600">{error}</p>
+        <p className={`text-sm text-red-600 ${isRTL ? 'text-right' : ''}`}>{error}</p>
       </div>
     );
   }
@@ -71,15 +72,15 @@ export default function ClaimsOverview() {
   ] : [];
 
   return (
-    <div className="space-y-6">
-      <h3 className="text-sm font-semibold text-gray-900">
+    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
+      <h3 className={`text-sm font-semibold text-gray-900 ${isRTL ? 'text-right' : ''}`}>
         {t('claims.overview')}
       </h3>
 
       <div className="space-y-4">
         {statItems.map((stat, index) => (
-          <div key={index} className="flex items-center justify-between">
-            <p className="text-sm text-gray-600">{stat.label}</p>
+          <div key={index} className={`flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
+            <p className={`text-sm text-gray-600 ${isRTL ? 'text-right' : ''}`}>{stat.label}</p>
             <p className={`text-lg font-bold ${stat.color}`}>{stat.value}</p>
           </div>
         ))}

@@ -1,10 +1,12 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Search, Eye, Trash2, ChevronLeft, ChevronRight, Loader2, RefreshCw, Edit, SquareArrowOutUpRight, Ban, CheckCircle } from 'lucide-react';
 import { getUsers, deleteUser, updateUserStatus, AdminUser, UserStatus, UserRole } from '@/lib/admin-api';
 import { formatDistanceToNow } from 'date-fns';
+import { ar } from 'date-fns/locale';
 
 const REFRESH_INTERVAL = 120000; // 2 minutes auto-refresh
 
@@ -45,6 +47,7 @@ export default function UserManagementTable({
 }: {
   showTitle?: boolean;
 }) {
+  const router = useRouter();
   const { t, language } = useLanguage();
   const isArabic = language === 'ar';
 
@@ -127,14 +130,14 @@ export default function UserManagementTable({
   }, [searchQuery]);
 
   const handleDelete = async (userId: string) => {
-    if (!confirm('Are you sure you want to delete this user? This action cannot be undone.')) return;
+    if (!confirm(t('admin.confirmDeleteUser'))) return;
 
     try {
       setDeleting(userId);
       await deleteUser(userId);
       fetchUsers();
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to delete user');
+      alert(err instanceof Error ? err.message : t('admin.failedToDeleteUser'));
     } finally {
       setDeleting(null);
     }
@@ -143,25 +146,32 @@ export default function UserManagementTable({
   const handleToggleStatus = async (userId: string, currentStatus: UserStatus) => {
     const newStatus: UserStatus = currentStatus === 'active' ? 'inactive' : 'active';
     
-    if (!confirm(`Are you sure you want to ${newStatus === 'active' ? 'activate' : 'deactivate'} this user?`)) return;
+    const confirmMessage = newStatus === 'active' 
+      ? t('admin.confirmActivateUser')
+      : t('admin.confirmDeactivateUser');
+    
+    if (!confirm(confirmMessage)) return;
 
     try {
       setUpdatingStatus(userId);
       await updateUserStatus(userId, newStatus);
       fetchUsers();
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to update user status');
+      alert(err instanceof Error ? err.message : t('admin.failedToUpdateStatus'));
     } finally {
       setUpdatingStatus(null);
     }
   };
 
   const formatLastActive = (lastActive: string | null): string => {
-    if (!lastActive) return 'Never';
+    if (!lastActive) return isArabic ? 'أبداً' : 'Never';
     try {
-      return formatDistanceToNow(new Date(lastActive), { addSuffix: true });
+      return formatDistanceToNow(new Date(lastActive), { 
+        addSuffix: true,
+        locale: isArabic ? ar : undefined
+      });
     } catch {
-      return 'Unknown';
+      return isArabic ? 'غير معروف' : 'Unknown';
     }
   };
 
@@ -203,37 +213,38 @@ export default function UserManagementTable({
 
   if (error) {
     return (
-      <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">
-        <p className="font-medium">Failed to load users</p>
+      <div className={`bg-red-50 border border-red-200 rounded-lg p-4 text-red-700 ${isArabic ? 'text-right' : ''}`} dir={isArabic ? 'rtl' : 'ltr'}>
+        <p className="font-medium">{t('admin.failedToLoadUsers')}</p>
         <p className="text-sm">{error}</p>
         <button
           onClick={() => fetchUsers()}
           className="mt-2 text-sm underline hover:no-underline"
         >
-          Try again
+          {t('admin.tryAgain')}
         </button>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200">
+    <div className="bg-white rounded-lg border border-gray-200" dir={isArabic ? 'rtl' : 'ltr'}>
       <div className="p-6 border-b border-gray-200">
         {showTitle && (
-          <h3 className="text-lg font-bold text-gray-900 mb-4">
+          <h3 className={`text-lg font-bold text-gray-900 mb-4 ${isArabic ? 'text-right' : ''}`}>
             {t('admin.userManagement')}
           </h3>
         )}
 
-        <div className="flex flex-col md:flex-row gap-4">
+        <div className={`flex flex-col md:flex-row gap-4 ${isArabic ? 'flex-row-reverse' : ''}`}>
           <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <Search className={`absolute ${isArabic ? 'right-3' : 'left-3'} top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400`} />
             <input
               type="text"
-              placeholder="Search users..."
+              placeholder={t('admin.searchUsers')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+              className={`w-full ${isArabic ? 'pr-10 pl-4' : 'pl-10 pr-4'} py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm`}
+              dir={isArabic ? 'rtl' : 'ltr'}
             />
           </div>
 
@@ -242,11 +253,12 @@ export default function UserManagementTable({
             onChange={(e) => {
               setSelectedStatus(e.target.value as StatusFilter);
             }}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white"
+            className={`px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white ${isArabic ? 'font-bold' : ''}`}
+            dir={isArabic ? 'rtl' : 'ltr'}
           >
-            <option value="all">All Status</option>
-            <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
+            <option value="all">{t('admin.allStatus')}</option>
+            <option value="active">{t('admin.active')}</option>
+            <option value="inactive">{t('admin.inactive')}</option>
           </select>
 
           <select
@@ -254,11 +266,12 @@ export default function UserManagementTable({
             onChange={(e) => {
               setSelectedRole(e.target.value as RoleFilter);
             }}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white"
+            className={`px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white ${isArabic ? 'font-bold' : ''}`}
+            dir={isArabic ? 'rtl' : 'ltr'}
           >
-            <option value="all">All Roles</option>
-            <option value="user">User</option>
-            <option value="admin">Admin</option>
+            <option value="all">{t('admin.allRoles')}</option>
+            <option value="user">{t('admin.roleUser')}</option>
+            <option value="admin">{t('admin.roleAdmin')}</option>
           </select>
 
           <select
@@ -266,51 +279,52 @@ export default function UserManagementTable({
             onChange={(e) => {
               setSelectedSort(e.target.value as SortFilter);
             }}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white"
+            className={`px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white ${isArabic ? 'font-bold' : ''}`}
+            dir={isArabic ? 'rtl' : 'ltr'}
           >
-            <option value="newest">Sort by Date</option>
-            <option value="oldest">Oldest First</option>
+            <option value="newest">{t('admin.sortByDate')}</option>
+            <option value="oldest">{t('admin.oldestFirst')}</option>
           </select>
 
           <button
             onClick={() => fetchUsers(true)}
             disabled={refreshing}
-            className="flex items-center gap-2 px-4 py-2 text-sm text-gray-600 hover:text-gray-900 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
-            title="Refresh data"
+            className={`flex items-center gap-2 px-4 py-2 text-sm text-gray-600 hover:text-gray-900 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 ${isArabic ? 'flex-row-reverse' : ''}`}
+            title={t('admin.refresh')}
           >
             <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-            {refreshing ? 'Refreshing...' : 'Refresh'}
+            {refreshing ? t('admin.refreshing') : t('admin.refresh')}
           </button>
         </div>
 
         {lastUpdated && (
-          <div className="flex items-center gap-2 mt-3 text-sm text-gray-500">
+          <div className={`flex items-center gap-2 mt-3 text-sm text-gray-500 ${isArabic ? 'flex-row-reverse' : ''}`}>
             <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-            <span>Auto-refreshing every 2 minutes • Last updated: {lastUpdated.toLocaleTimeString()}</span>
+            <span>{t('admin.autoRefreshing')} • {t('admin.lastUpdated')}: {lastUpdated.toLocaleTimeString()}</span>
           </div>
         )}
       </div>
 
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto" dir={isArabic ? 'rtl' : 'ltr'}>
         <table className="w-full">
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-semibold text-gray-900 uppercase tracking-wider">
+              <th className={`px-6 py-3 ${isArabic ? 'text-right' : 'text-left'} text-xs font-semibold text-gray-900 uppercase tracking-wider`}>
                 {t('admin.user')}
               </th>
-              <th className="px-6 py-3 text-left text-xs font-semibold text-gray-900 uppercase tracking-wider">
+              <th className={`px-6 py-3 ${isArabic ? 'text-right' : 'text-left'} text-xs font-semibold text-gray-900 uppercase tracking-wider`}>
                 {t('admin.role')}
               </th>
-              <th className="px-6 py-3 text-left text-xs font-semibold text-gray-900 uppercase tracking-wider">
+              <th className={`px-6 py-3 ${isArabic ? 'text-right' : 'text-left'} text-xs font-semibold text-gray-900 uppercase tracking-wider`}>
                 {t('admin.status')}
               </th>
-              <th className="px-6 py-3 text-left text-xs font-semibold text-gray-900 uppercase tracking-wider">
+              <th className={`px-6 py-3 ${isArabic ? 'text-right' : 'text-left'} text-xs font-semibold text-gray-900 uppercase tracking-wider`}>
                 {t('admin.lastActive')}
               </th>
-              <th className="px-6 py-3 text-left text-xs font-semibold text-gray-900 uppercase tracking-wider">
-                Resumes
+              <th className={`px-6 py-3 ${isArabic ? 'text-right' : 'text-left'} text-xs font-semibold text-gray-900 uppercase tracking-wider`}>
+                {t('admin.resumes')}
               </th>
-              <th className="px-6 py-3 text-left text-xs font-semibold text-gray-900 uppercase tracking-wider">
+              <th className={`px-6 py-3 ${isArabic ? 'text-right' : 'text-left'} text-xs font-semibold text-gray-900 uppercase tracking-wider`}>
                 {t('admin.actions')}
               </th>
             </tr>
@@ -320,20 +334,20 @@ export default function UserManagementTable({
               <tr>
                 <td colSpan={6} className="px-6 py-8 text-center">
                   <Loader2 className="w-6 h-6 animate-spin mx-auto text-gray-400" />
-                  <p className="mt-2 text-sm text-gray-500">Loading users...</p>
+                  <p className="mt-2 text-sm text-gray-500">{t('admin.loadingUsers')}</p>
                 </td>
               </tr>
             ) : users.length === 0 ? (
               <tr>
                 <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
-                  No users found
+                  {t('admin.noUsersFound')}
                 </td>
               </tr>
             ) : (
               users.map((user) => (
                 <tr key={user.id} className="border-b border-gray-200 hover:bg-gray-50">
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
+                  <td className={`px-6 py-4 ${isArabic ? 'text-right' : 'text-left'}`}>
+                    <div className={`flex items-center gap-3 ${isArabic ? 'flex-row-reverse' : ''}`}>
                       <div
                         className={`w-10 h-10 rounded-full bg-gradient-to-br ${getAvatarColor(user.id)} flex items-center justify-center flex-shrink-0`}
                       >
@@ -341,11 +355,11 @@ export default function UserManagementTable({
                           {getInitials(user.full_name, user.email)}
                         </span>
                       </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">
+                      <div className={`${isArabic ? 'text-right flex-1' : 'flex-1'}`}>
+                        <p className={`text-sm font-medium text-gray-900 ${isArabic ? 'text-right' : ''}`}>
                           {user.full_name || 'Unnamed User'}
                         </p>
-                        <p className="text-xs text-gray-500">{user.email}</p>
+                        <p className={`text-xs text-gray-500 ${isArabic ? 'text-right' : ''}`}>{user.email}</p>
                       </div>
                     </div>
                   </td>
@@ -353,7 +367,7 @@ export default function UserManagementTable({
                     <span
                       className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${getRoleColor(user.role)}`}
                     >
-                      {user.role === 'admin' ? t('admin.roleManager') : t('admin.roleUser')}
+                      {user.role === 'admin' ? t('admin.roleAdmin') : t('admin.roleUser')}
                     </span>
                   </td>
                   <td className="px-6 py-4">
@@ -372,10 +386,11 @@ export default function UserManagementTable({
                     </span>
                   </td>
                   <td className="px-6 py-4">
-                    <div className="flex items-center gap-2">
+                    <div className={`flex items-center gap-2 ${isArabic ? 'flex-row-reverse' : ''}`}>
                       <button
                         className="p-2 text-gray-500 hover:bg-blue-100 hover:text-blue-600 rounded transition-colors"
                         title="View user details"
+                        onClick={() => router.push(`/profile?userId=${user.id}`)}
                       >
                         <Eye className="w-4 h-4" />
                       </button>
@@ -418,11 +433,11 @@ export default function UserManagementTable({
         </table>
       </div>
 
-      <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
+      <div className={`px-6 py-4 border-t border-gray-200 flex items-center justify-between ${isArabic ? 'flex-row-reverse' : ''}`}>
         <p className="text-sm text-gray-600">
           {t('admin.showing')} {startItem} - {endItem} {t('admin.of')} {total.toLocaleString()} {t('admin.userCount')}
         </p>
-        <div className="flex items-center gap-2">
+        <div className={`flex items-center gap-2 ${isArabic ? 'flex-row-reverse' : ''}`}>
           <button
             className="p-2 text-gray-500 hover:bg-gray-100 rounded transition-colors disabled:opacity-50"
             onClick={() => setCurrentPage(p => Math.max(1, p - 1))}

@@ -102,42 +102,44 @@ export default function LLMConfiguration() {
   }
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-6">
+    <div className="rounded-lg border border-gray-200 bg-white p-6" dir={isArabic ? 'rtl' : 'ltr'}>
       <div className={`mb-6 flex items-center gap-3 ${isArabic ? 'flex-row-reverse' : ''}`}>
         <div className="flex h-8 w-8 items-center justify-center rounded bg-gray-100">
           <Brain className="h-5 w-5 text-gray-600" />
         </div>
-        <h2 className="text-lg font-semibold text-gray-900">
-          LLM Configuration
+        <h2 className={`text-lg font-semibold text-gray-900 ${isArabic ? 'text-right' : ''}`}>
+          {t('pm.llm.title')}
         </h2>
       </div>
 
       <div className={`mb-6 grid gap-4 sm:grid-cols-2 ${isArabic ? 'text-right' : ''}`}>
         <div>
-          <label className="mb-2 block text-sm font-medium text-gray-700">
-            LLM Provider
+          <label className={`mb-2 block text-sm font-medium text-gray-700 ${isArabic ? 'text-right' : ''}`}>
+            {t('pm.llm.provider')}
           </label>
           <select
             value={provider}
             onChange={(e) => setProvider(e.target.value as LLMProvider)}
-            className="w-full rounded border border-gray-300 bg-white px-4 py-2 text-sm text-gray-900 focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500"
+            className={`w-full rounded border border-gray-300 bg-white px-4 py-2 text-sm text-gray-900 focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500 ${isArabic ? 'text-right' : ''}`}
+            dir={isArabic ? 'rtl' : 'ltr'}
           >
             {providers.map((p) => (
               <option key={p} value={p}>
-                {p.charAt(0).toUpperCase() + p.slice(1)}
+                {p === 'anthropic' ? 'Anthropic' : 'OpenAI'}
               </option>
             ))}
           </select>
         </div>
 
         <div>
-          <label className="mb-2 block text-sm font-medium text-gray-700">
-            Model
+          <label className={`mb-2 block text-sm font-medium text-gray-700 ${isArabic ? 'text-right' : ''}`}>
+            {t('pm.llm.model')}
           </label>
           <select
             value={model}
             onChange={(e) => setModel(e.target.value)}
-            className="w-full rounded border border-gray-300 bg-white px-4 py-2 text-sm text-gray-900 focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500"
+            className={`w-full rounded border border-gray-300 bg-white px-4 py-2 text-sm text-gray-900 focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500 ${isArabic ? 'text-right' : ''}`}
+            dir={isArabic ? 'rtl' : 'ltr'}
           >
             {availableModels.map((m) => (
               <option key={m} value={m}>
@@ -148,7 +150,7 @@ export default function LLMConfiguration() {
         </div>
       </div>
 
-      <div className="flex items-center gap-4">
+      <div className={`flex items-center gap-4 ${isArabic ? 'flex-row-reverse' : ''}`}>
         <button
           onClick={handleSave}
           disabled={saving}
@@ -159,16 +161,18 @@ export default function LLMConfiguration() {
           ) : (
             <span className="text-base">💾</span>
           )}
-          Save Model Configuration
+          {t('pm.llm.saveButton')}
         </button>
 
         {success && (
-          <span className="text-sm text-green-600">Configuration saved successfully!</span>
+          <span className={`text-sm text-green-600 ${isArabic ? 'text-right' : ''}`}>
+            Configuration saved successfully!
+          </span>
         )}
       </div>
 
       {config && (
-        <p className="mt-4 text-xs text-gray-500">
+        <p className={`mt-4 text-xs text-gray-500 ${isArabic ? 'text-right' : ''}`}>
           Max tokens: {config.max_tokens.toLocaleString()}
         </p>
       )}

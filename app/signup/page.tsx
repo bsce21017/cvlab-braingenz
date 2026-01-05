@@ -500,11 +500,15 @@ function SignUpContent() {
               {t('continueWithGoogleSignUp')}
             </Button>
 
-            <div className="text-center text-sm text-gray-700">
-              {t('haveAccount')}{' '}
-              <Link href="/signin" className="font-medium text-gray-900 hover:underline">
-                {t('signIn')}
-              </Link>
+            <div className="text-center space-y-2">
+              <p className="text-sm text-gray-700">
+                {t('haveAccount')}
+              </p>
+              <div>
+                <Link href="/signin" className="text-sm font-bold text-gray-900 hover:underline">
+                  {t('signIn')}
+                </Link>
+              </div>
             </div>
           </form>
 

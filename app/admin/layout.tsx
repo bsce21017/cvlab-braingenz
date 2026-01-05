@@ -3,12 +3,15 @@
 import React from 'react';
 import AdminSidebar from '@/components/admin/AdminSidebar';
 import { AdminAuthProvider, useAdminAuth } from '@/contexts/AdminAuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
 function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   const { isAdmin, isLoading, error, user } = useAdminAuth();
+  const { language } = useLanguage();
+  const isRTL = language === 'ar';
   const router = useRouter();
 
   useEffect(() => {
@@ -95,7 +98,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="flex h-screen bg-gray-100">
+    <div className="flex h-screen bg-gray-100" dir={isRTL ? 'rtl' : 'ltr'}>
       <AdminSidebar />
       <div className="flex-1 overflow-auto">{children}</div>
     </div>

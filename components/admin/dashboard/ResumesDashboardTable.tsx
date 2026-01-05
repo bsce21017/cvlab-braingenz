@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Search, Eye, FileText, ChevronLeft, ChevronRight, Loader2, RefreshCw } from 'lucide-react';
 import { format } from 'date-fns';
+import { ar } from 'date-fns/locale';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { getResumes, AdminResumeListItem, ResumeStatus } from '@/lib/admin-api';
 
@@ -115,10 +116,18 @@ export default function ResumesDashboardTable() {
 
   const formatDateTime = (dateString: string) => {
     const d = new Date(dateString);
-    return {
-      date: format(d, 'MMM d, yyyy'),
-      time: format(d, 'HH:mm a'),
-    };
+    if (isRTL) {
+      // Arabic format: "6 ديسمبر 2024" and "14:32 م"
+      return {
+        date: format(d, 'd MMMM yyyy', { locale: ar }),
+        time: format(d, 'HH:mm', { locale: ar }) + (d.getHours() >= 12 ? ' م' : ' ص'),
+      };
+    } else {
+      return {
+        date: format(d, 'MMM d, yyyy'),
+        time: format(d, 'HH:mm a'),
+      };
+    }
   };
 
   const startItem = (currentPage - 1) * pageSize + 1;
@@ -291,21 +300,21 @@ export default function ResumesDashboardTable() {
                   </div>
 
                   <div>
-                    <div className="mb-0.5 text-xs text-gray-500">
+                    <div className={`mb-0.5 text-xs text-gray-500 ${isRTL ? 'text-right' : ''}`}>
                       {t('admin.dashboard.columns.user')}
                     </div>
-                    <div className="text-sm font-medium text-gray-900">
+                    <div className={`text-sm font-medium text-gray-900 ${isRTL ? 'text-right' : ''}`}>
                       {resume.user_name || 'Unknown'}
                     </div>
-                    <div className="text-xs text-gray-500">{resume.user_email || '-'}</div>
+                    <div className={`text-xs text-gray-500 ${isRTL ? 'text-right' : ''}`}>{resume.user_email || '-'}</div>
                   </div>
 
                   <div>
-                    <div className="mb-0.5 text-xs text-gray-500">
-                      {t('admin.dashboard.columns.dateTime')}
+                    <div className={`mb-0.5 text-xs text-gray-500 ${isRTL ? 'text-right' : ''}`}>
+                      {isRTL ? 'التاريخ والوقت' : t('admin.dashboard.columns.dateTime')}
                     </div>
-                    <div className="text-sm font-medium text-gray-900">{date}</div>
-                    <div className="text-xs text-gray-500">{time}</div>
+                    <div className={`text-sm font-medium text-gray-900 ${isRTL ? 'text-right' : ''}`}>{date}</div>
+                    <div className={`text-xs text-gray-500 ${isRTL ? 'text-right' : ''}`}>{time}</div>
                   </div>
 
                   <div

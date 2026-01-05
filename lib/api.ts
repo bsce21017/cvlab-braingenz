@@ -306,3 +306,22 @@ export async function pollStatus(
 
   throw new Error('Polling timeout');
 }
+
+// User Activity
+export interface ResumeActivityItem {
+  id: number;
+  filename: string;
+  status: string;
+  created_at: string;
+  updated_at: string | null;
+  is_optimized: boolean;
+}
+
+export interface ActivityHistoryResponse {
+  activities: ResumeActivityItem[];
+  total: number;
+}
+
+export async function getUserActivity(limit: number = 10): Promise<ActivityHistoryResponse> {
+  return fetchAPI<ActivityHistoryResponse>(`/activity?limit=${limit}`);
+}

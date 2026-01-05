@@ -98,8 +98,8 @@ function SignInContent() {
             console.log('[SignIn] useEffect admin check:', { userRole, email: currentUser.email, isAdmin, isHandlingLogin, loginInProgress: loginInProgressRef.current });
             
             if (isAdmin) {
-              console.log('[SignIn] useEffect redirecting admin to /admin/overview');
-              window.location.href = '/admin/overview';
+              console.log('[SignIn] useEffect redirecting admin to /admin/dashboard');
+              window.location.href = '/admin/dashboard';
             } else {
               console.log('[SignIn] useEffect redirecting non-admin to /');
               window.location.href = '/';
@@ -219,11 +219,11 @@ function SignInContent() {
             console.log('[SignIn] Admin check result:', { userRole, email: currentUser.email, isAdmin });
             
             if (isAdmin) {
-              console.log('[SignIn] Redirecting admin to /admin/overview');
+              console.log('[SignIn] Redirecting admin to /admin/dashboard');
               setIsHandlingLogin(false);
               loginInProgressRef.current = false;
               // Use window.location for immediate redirect to bypass any routing issues
-              window.location.href = '/admin/overview';
+              window.location.href = '/admin/dashboard';
               return;
             }
           }

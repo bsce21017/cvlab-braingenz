@@ -7,7 +7,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import func, distinct, desc, asc
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import math
 
 from app.db.database import get_db
@@ -22,6 +22,7 @@ from app.schemas.admin import (
     UserRole
 )
 from app.services.supabase_service import SupabaseService
+from app.config import settings
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -162,38 +163,18 @@ async def list_users(
                 except:
                     pass  # Keep as string if parsing fails
 
-            # Determine user status: check banned_until first, then check activity time
-            # If user hasn't been active for 5 minutes, mark as inactive
+            # Determine user status for overview page:
+            # - All users show "Active" by default
+            # - Only show "Inactive" if admin manually deactivated (banned_until is set)
+            # - Status is NOT based on activity time (admin manages it manually)
             banned_until = supabase_user.get('banned_until')
             
-            # Check if user is banned (highest priority)
+            # Check if admin manually deactivated the user
             if banned_until:
                 user_status = UserStatus.INACTIVE
             else:
-                # Check if user has been active in the last 5 minutes
-                is_active = False
-                if last_active:
-                    # Parse last_active if it's a string, or use it directly if it's already a datetime
-                    last_active_dt = None
-                    if isinstance(last_active, datetime):
-                        last_active_dt = last_active
-                    elif isinstance(last_active, str):
-                        try:
-                            last_active_dt = datetime.fromisoformat(last_active.replace('Z', '+00:00') if 'Z' in last_active else last_active)
-                        except:
-                            # If parsing fails, assume inactive
-                            pass
-                    
-                    # Calculate time difference if we have a valid datetime
-                    if last_active_dt:
-                        # Get current time in same timezone or UTC
-                        now = datetime.now(last_active_dt.tzinfo) if last_active_dt.tzinfo else datetime.utcnow()
-                        # Calculate time difference
-                        time_diff = now - last_active_dt
-                        # If active within last 5 minutes, mark as active
-                        is_active = time_diff <= timedelta(minutes=5)
-                
-                user_status = UserStatus.ACTIVE if is_active else UserStatus.INACTIVE
+                # Default to ACTIVE for all users (admin can deactivate manually)
+                user_status = UserStatus.ACTIVE
 
             # Map Supabase role to our UserRole enum
             supabase_role_raw = supabase_user.get('role', 'user')

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Search, Eye, Trash2, ChevronLeft, ChevronRight, Loader2, RefreshCw, Edit, SquareArrowOutUpRight, Ban, CheckCircle } from 'lucide-react';
 import { getUsers, deleteUser, updateUserStatus, AdminUser, UserStatus, UserRole } from '@/lib/admin-api';
@@ -45,6 +46,7 @@ export default function UserManagementTable({
 }: {
   showTitle?: boolean;
 }) {
+  const router = useRouter();
   const { t, language } = useLanguage();
   const isArabic = language === 'ar';
 
@@ -376,6 +378,7 @@ export default function UserManagementTable({
                       <button
                         className="p-2 text-gray-500 hover:bg-blue-100 hover:text-blue-600 rounded transition-colors"
                         title="View user details"
+                        onClick={() => router.push(`/profile?userId=${user.id}`)}
                       >
                         <Eye className="w-4 h-4" />
                       </button>

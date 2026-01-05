@@ -141,12 +141,12 @@ export default function DashboardHeader() {
       {/* Page title + subtitle row */}
       <div className={`mt-4 ${isArabic ? 'text-right' : ''}`}>
         <h2 className="text-2xl font-bold text-gray-900">
-          {pathname.startsWith('/admin/dashboard') 
+          {pathname.startsWith('/admin/resumes') 
             ? t('admin.dashboard.resumesTitle')
             : t('admin.dashboardOverview')}
         </h2>
         <p className="text-gray-600 text-sm">
-          {pathname.startsWith('/admin/dashboard')
+          {pathname.startsWith('/admin/resumes')
             ? t('admin.dashboard.resumesSubtitle')
             : t('admin.monitorPerformance')}
         </p>
