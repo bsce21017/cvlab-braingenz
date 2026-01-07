@@ -93,9 +93,21 @@ export default function ActivityHistory({ userId }: ActivityHistoryProps) {
       {activities.length === 0 ? (
         <div className="text-center py-8">
           <FileText className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-          <p className="text-sm text-gray-500">{t('profile.noActivity') || 'No recent activity'}</p>
+          <p className="text-sm text-gray-500">
+            {(() => {
+              const translation = t('profile.noActivity');
+              // Explicit check: if translation is the key itself (meaning it wasn't found), use fallback
+              return translation && translation !== 'profile.noActivity' ? translation : 'No Activity';
+            })()}
+          </p>
           <p className="text-xs text-gray-400 mt-1">
-            {t('profile.uploadResumeToSeeActivity') || 'Upload a resume to see your activity history'}
+            {(() => {
+              const translation = t('profile.uploadResumeToSeeActivity');
+              // Explicit check: if translation is the key itself (meaning it wasn't found), use fallback
+              return translation && translation !== 'profile.uploadResumeToSeeActivity' 
+                ? translation 
+                : 'Upload a resume to see your activity history';
+            })()}
           </p>
         </div>
       ) : (

@@ -3,7 +3,7 @@
 import React from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { Sparkles, LogOut, ChevronRight } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import UserNotificationDropdown from '@/components/user/UserNotificationDropdown';
@@ -25,24 +25,27 @@ export default function ResumePreviewHeader() {
   };
 
   return (
-    <header className="bg-white border-b border-gray-200">
+    <header className="bg-white border-b border-gray-200" dir={isRTL ? 'rtl' : 'ltr'}>
       <div className="px-6 py-4">
-        <div className={`flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
+        <div className="flex items-center justify-between">
           {/* Left side - Logo and brand */}
-          <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
-            <div className="w-10 h-10 bg-black rounded-lg flex items-center justify-center">
-              <Sparkles className="w-5 h-5 text-white" fill="white" />
-            </div>
-            <span className="text-xl font-semibold text-gray-900">ResumeAI</span>
+          <div className="flex items-center" dir="ltr">
+            <Image
+              src="/assets/Main_logo.svg"
+              alt="CVLab Logo"
+              width={200}
+              height={200}
+              className="h-20 w-auto"
+            />
           </div>
 
           {/* Right side - Notifications, Profile, Logout */}
-          <div className={`flex items-center gap-6 ${isRTL ? 'flex-row-reverse' : ''}`}>
+          <div className="flex items-center gap-6" dir="ltr">
             {/* Notification dropdown */}
             <UserNotificationDropdown />
 
             {/* Profile section */}
-            <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
+            <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden">
                 {userAvatar ? (
                   <Image
@@ -58,7 +61,7 @@ export default function ResumePreviewHeader() {
                   </div>
                 )}
               </div>
-              <div className={isRTL ? 'text-right' : ''}>
+              <div>
                 <p className="text-sm font-medium text-gray-900">{userName}</p>
                 <p className="text-xs text-gray-500">{userEmail}</p>
               </div>
@@ -67,9 +70,7 @@ export default function ResumePreviewHeader() {
             {/* Logout link */}
             <button
               onClick={handleLogout}
-              className={`flex items-center gap-2 text-sm text-gray-700 hover:text-gray-900 transition-colors ${
-                isRTL ? 'flex-row-reverse' : ''
-              }`}
+              className="flex items-center gap-2 text-sm text-gray-700 hover:text-gray-900 transition-colors"
             >
               <span>{t('signOut') || 'Logout'}</span>
               <ChevronRight className={`w-4 h-4 ${isRTL ? 'rotate-180' : ''}`} />

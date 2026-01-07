@@ -76,14 +76,14 @@ function VerifyEmailContent() {
     <div className="min-h-screen flex flex-col bg-[#f7f9fb]">
       {/* Header */}
       <header className="p-6">
-        <Link href="/" className="flex items-center gap-3 w-fit">
+        <Link href="/" className="flex items-center w-fit">
           <Image
-            src="/assets/ai marker footer logo.svg"
-            alt="ResumeAI"
-            width={32}
-            height={32}
+            src="/assets/Main_logo.svg"
+            alt="CVLab Logo"
+            width={200}
+            height={200}
+            className="h-20 w-auto"
           />
-          <span className="text-lg text-gray-900 font-normal">ResumeAI</span>
         </Link>
       </header>
 

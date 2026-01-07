@@ -2,8 +2,9 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { Search, Eye, Trash2, ChevronLeft, ChevronRight, Loader2, RefreshCw, Edit, SquareArrowOutUpRight, Ban, CheckCircle } from 'lucide-react';
+import { Search, ChevronLeft, ChevronRight, Loader2, RefreshCw } from 'lucide-react';
 import { getUsers, deleteUser, updateUserStatus, AdminUser, UserStatus, UserRole } from '@/lib/admin-api';
 import { formatDistanceToNow } from 'date-fns';
 import { ar } from 'date-fns/locale';
@@ -386,42 +387,54 @@ export default function UserManagementTable({
                     </span>
                   </td>
                   <td className="px-6 py-4">
-                    <div className={`flex items-center gap-2 ${isArabic ? 'flex-row-reverse' : ''}`}>
+                    <div className={`flex items-center gap-3 ${isArabic ? 'flex-row-reverse' : ''}`}>
                       <button
-                        className="p-2 text-gray-500 hover:bg-blue-100 hover:text-blue-600 rounded transition-colors"
+                        className="p-2 hover:bg-blue-50 rounded transition-colors"
                         title="View user details"
                         onClick={() => router.push(`/profile?userId=${user.id}`)}
                       >
-                        <Eye className="w-4 h-4" />
+                        <Image
+                          src="/assets/eye_button.png"
+                          alt="View"
+                          width={24}
+                          height={24}
+                          className="w-6 h-6 object-contain"
+                        />
                       </button>
                       <button
-                        className={`p-2 rounded transition-colors disabled:opacity-50 ${
-                          user.status === 'active'
-                            ? 'text-gray-500 hover:bg-yellow-100 hover:text-yellow-600'
-                            : 'text-gray-500 hover:bg-green-100 hover:text-green-600'
-                        }`}
+                        className="p-2 hover:bg-yellow-50 rounded transition-colors disabled:opacity-50"
                         onClick={() => handleToggleStatus(user.id, user.status)}
                         disabled={updatingStatus === user.id}
                         title={user.status === 'active' ? 'Deactivate user' : 'Activate user'}
                       >
                         {updatingStatus === user.id ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : user.status === 'active' ? (
-                          <Ban className="w-4 h-4" />
+                          <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
                         ) : (
-                          <CheckCircle className="w-4 h-4" />
+                          <Image
+                            src="/assets/activate_button.png"
+                            alt={user.status === 'active' ? 'Deactivate' : 'Activate'}
+                            width={24}
+                            height={24}
+                            className="w-6 h-6 object-contain"
+                          />
                         )}
                       </button>
                       <button
-                        className="p-2 text-gray-500 hover:bg-red-100 hover:text-red-600 rounded transition-colors disabled:opacity-50"
+                        className="p-2 hover:bg-red-50 rounded transition-colors disabled:opacity-50"
                         onClick={() => handleDelete(user.id)}
                         disabled={deleting === user.id}
                         title="Delete user"
                       >
                         {deleting === user.id ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
                         ) : (
-                          <Trash2 className="w-4 h-4" />
+                          <Image
+                            src="/assets/delete_button.png"
+                            alt="Delete"
+                            width={24}
+                            height={24}
+                            className="w-6 h-6 object-contain"
+                          />
                         )}
                       </button>
                     </div>

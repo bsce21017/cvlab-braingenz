@@ -297,14 +297,14 @@ function SignInContent() {
       {/* Right form panel */}
       <div className="flex items-center justify-center bg-[#f7f9fb] px-6 py-12">
         <div className="w-full max-w-xl space-y-8">
-          <div className="flex items-center justify-center gap-3">
+          <div className="flex items-center justify-center">
             <Image
-              src="/assets/ai marker footer logo.svg"
-              alt="ResumeAI"
-              width={36}
-              height={36}
+              src="/assets/Main_logo.svg"
+              alt="CVLab Logo"
+              width={200}
+              height={200}
+              className="h-20 w-auto"
             />
-            <span className="text-xl text-gray-900 font-normal">ResumeAI</span>
           </div>
 
           <div className="text-center space-y-2">

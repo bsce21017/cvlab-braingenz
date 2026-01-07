@@ -149,7 +149,7 @@ const translations = {
     'notifications.markAllRead': 'Mark all as read',
     'notifications.loading': 'Loading notifications...',
     'notifications.noNotifications': 'No notifications',
-    copyright: '© 2024 CVLab. All rights reserved.',
+    copyright: '© 2026 CVLab. All rights reserved.',
     // About Us Page
     aboutUsTitle: 'About Us',
     aboutUsSubtitle: 'CVLab سيفي لاب',
@@ -231,6 +231,8 @@ const translations = {
     'profile.downloadedOptimized': 'Downloaded optimized version in PDF format',
     'profile.daysAgo': 'days ago',
     'profile.twoDaysAgoActivity': '2 days ago',
+    'profile.noActivity': 'No Activity',
+    'profile.uploadResumeToSeeActivity': 'Upload a resume to see activity history',
     // Contact Page
     'contact.title': 'Contact Us',
     'contact.subtitle': "We're here to help. Reach out anytime.",
@@ -725,7 +727,7 @@ const translations = {
     'notifications.markAllRead': 'تحديد الكل كمقروء',
     'notifications.loading': 'جاري تحميل الإشعارات...',
     'notifications.noNotifications': 'لا توجد إشعارات',
-    copyright: '© 2025 Resume AI جميع الحقوق محفوظة',
+    copyright: '© 2026 CVLab. جميع الحقوق محفوظة',
     // About Us Page
     aboutUsTitle: 'من نحن',
     aboutUsSubtitle: 'CVLab سيفي لاب',
@@ -744,7 +746,7 @@ const translations = {
     aboutUsMissionTitle: 'رسالتنا',
     aboutUsMissionText: 'نؤمن بأن الجميع يستحق سيرة ذاتية تفتح له الأبواب. هدفنا هو سد الفجوة بين إمكانياتك وطريقة تقديمها، لنساعدك على التميز أمام أصحاب العمل.',
     // Processing Page
-    processingTitle: 'جاري العمل على تحسين سيرتك الذاتية ....',
+    processingTitle: 'جاري العمل على تحسين سيرتك الذاتية ...',
     processingDescription: 'جاري العمل على تحليل سيرتك الذاتية لايجاد مناطق التحسين الممكنة فيها ..',
     processingStatusLabel: 'جار التحسين بالذكاء الاصطناعي',
     processingLabel: 'معالجة',
@@ -807,6 +809,8 @@ const translations = {
     'profile.downloadedOptimized': 'تم تحميل النسخة المحسنة بصيغة PDF',
     'profile.daysAgo': 'منذ أيام',
     'profile.twoDaysAgoActivity': 'منذ يومين',
+    'profile.noActivity': 'لا يوجد نشاط',
+    'profile.uploadResumeToSeeActivity': 'قم برفع سيرة ذاتية لمشاهدة سجل النشاطات',
     // Contact Page
     'contact.title': 'اتصل بنا',
     'contact.subtitle': 'نحن هنا لمساعدتك. تواصل معنا في أي وقت',

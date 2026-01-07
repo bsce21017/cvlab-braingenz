@@ -114,7 +114,36 @@ export async function downloadResumeAsPDF(element: HTMLElement, filename: string
       }
     });
 
-    // Wait for DOM reflow after removing min-height
+    // Remove any overflow/clipping CSS that might hide content
+    const overflowElements = element.querySelectorAll('*');
+    const originalOverflows: { element: HTMLElement; originalOverflow: string; originalTextOverflow: string; originalWhiteSpace: string }[] = [];
+    
+    overflowElements.forEach((el) => {
+      const htmlEl = el as HTMLElement;
+      const style = window.getComputedStyle(htmlEl);
+      if (style.overflow === 'hidden' || style.textOverflow === 'ellipsis' || style.whiteSpace === 'nowrap') {
+        originalOverflows.push({
+          element: htmlEl,
+          originalOverflow: htmlEl.style.overflow || '',
+          originalTextOverflow: htmlEl.style.textOverflow || '',
+          originalWhiteSpace: htmlEl.style.whiteSpace || '',
+        });
+        // Temporarily remove overflow restrictions for PDF capture
+        htmlEl.style.overflow = 'visible';
+        htmlEl.style.textOverflow = 'clip';
+        htmlEl.style.whiteSpace = 'normal';
+      }
+    });
+
+    // Ensure element itself doesn't clip content
+    const originalElementOverflow = element.style.overflow;
+    const originalElementOverflowX = element.style.overflowX;
+    const originalElementOverflowY = element.style.overflowY;
+    element.style.overflow = 'visible';
+    element.style.overflowX = 'visible';
+    element.style.overflowY = 'visible';
+
+    // Wait for DOM reflow after removing min-height and overflow
     await new Promise(resolve => {
       // Force reflow by reading offsetHeight
       void element.offsetHeight;
@@ -129,53 +158,121 @@ export async function downloadResumeAsPDF(element: HTMLElement, filename: string
     const html2pdf = (await import('html2pdf.js')).default;
     console.log('[downloadResume] html2pdf imported successfully');
     
-    // Calculate optimal scale to fit on one page (after reflow)
-    const elementHeight = element.scrollHeight;
-    const elementWidth = element.scrollWidth;
-    // Fix: margins are 5mm each, so total is 10mm (not 20mm)
-    const a4Height = 297 - 10; // A4 height in mm minus margins (5mm top + 5mm bottom)
-    const a4Width = 210 - 10; // A4 width in mm minus margins (5mm left + 5mm right)
+    // Get accurate dimensions - use the maximum of scroll/offset/client dimensions
+    // This ensures we capture all content even if there's overflow
+    const elementHeight = Math.max(
+      element.scrollHeight,
+      element.offsetHeight,
+      element.clientHeight
+    );
+    const elementWidth = Math.max(
+      element.scrollWidth,
+      element.offsetWidth,
+      element.clientWidth
+    );
+    
+    console.log('[downloadResume] Element dimensions:', {
+      scrollHeight: element.scrollHeight,
+      scrollWidth: element.scrollWidth,
+      offsetHeight: element.offsetHeight,
+      offsetWidth: element.offsetWidth,
+      clientHeight: element.clientHeight,
+      clientWidth: element.clientWidth,
+      finalHeight: elementHeight,
+      finalWidth: elementWidth,
+    });
+    
+    // A4 dimensions in mm
+    const a4Height = 297; // Full A4 height
+    const a4Width = 210; // Full A4 width
     const pxToMm = 0.264583; // 1px = 0.264583mm at 96dpi
     const elementHeightMm = elementHeight * pxToMm;
     const elementWidthMm = elementWidth * pxToMm;
     
-    // Calculate scale to fit height (primary constraint)
-    const heightScale = a4Height / elementHeightMm;
-    const widthScale = a4Width / elementWidthMm;
-    const optimalScale = Math.min(heightScale, widthScale, 1); // Don't scale up, only down
+    // Calculate scale - but be less aggressive, allow multi-page if needed
+    // Use margins of 10mm (5mm each side)
+    const availableHeight = a4Height - 10; // Top + bottom margins
+    const availableWidth = a4Width - 10; // Left + right margins
     
-    // More aggressive scaling for tall content
-    let finalScale = optimalScale;
-    if (optimalScale < 0.8) {
-      // If content is still too tall, scale down more aggressively
-      finalScale = optimalScale * 0.92;
-    } else if (optimalScale < 0.9) {
-      finalScale = optimalScale * 0.95;
-    }
+    const heightScale = availableHeight / elementHeightMm;
+    const widthScale = availableWidth / elementWidthMm;
+    
+    // Use the smaller scale, but don't go below 0.7 to maintain readability
+    // If content is too large, allow it to span multiple pages
+    const optimalScale = Math.min(heightScale, widthScale, 1);
+    const finalScale = Math.max(optimalScale, 0.7); // Minimum 0.7 scale for readability
+    
+    console.log('[downloadResume] Scale calculation:', {
+      elementHeightMm,
+      elementWidthMm,
+      availableHeight,
+      availableWidth,
+      heightScale,
+      widthScale,
+      optimalScale,
+      finalScale,
+    });
+    
+    // Use higher scale for html2canvas to ensure quality
+    // html2canvas scale is independent of PDF page size
+    const canvasScale = 2; // High quality rendering
     
     const opt = {
-      margin: [5, 5, 5, 5] as [number, number, number, number], // Reduced margins for more space
+      margin: [5, 5, 5, 5] as [number, number, number, number], // 5mm margins
       filename: filename,
       image: { type: 'jpeg' as const, quality: 0.98 },
       html2canvas: { 
-        // More aggressive scaling: if finalScale < 1, use it directly multiplied by 2
-        // This ensures content fits on one page
-        scale: finalScale < 1 ? Math.max(1.2, 2 * finalScale) : 2, // Minimum scale of 1.2 for quality
+        scale: canvasScale, // High quality canvas rendering
         useCORS: true,
         logging: false,
         letterRendering: true,
-        windowWidth: element.scrollWidth,
-        windowHeight: element.scrollHeight,
+        // Use actual element dimensions, not scroll dimensions
+        // This ensures all content is captured
+        width: elementWidth,
+        height: elementHeight,
+        windowWidth: elementWidth,
+        windowHeight: elementHeight,
+        // Additional options to ensure full content capture
+        allowTaint: true,
+        backgroundColor: '#ffffff',
+        removeContainer: false,
+        // Ensure text is fully rendered - remove all overflow restrictions in cloned doc
+        onclone: (clonedDoc: any) => {
+          // Find all elements in cloned document and remove overflow restrictions
+          // html2pdf passes a Document-like object, use any to avoid type conflicts
+          if (clonedDoc && typeof clonedDoc.querySelectorAll === 'function') {
+            const allElements = clonedDoc.querySelectorAll('*');
+            allElements.forEach((el: any) => {
+              // Check if element is an HTMLElement
+              if (el instanceof HTMLElement) {
+                // Force remove all overflow restrictions
+                el.style.overflow = 'visible';
+                el.style.overflowX = 'visible';
+                el.style.overflowY = 'visible';
+                // Remove text overflow clipping
+                if (el.style.textOverflow === 'ellipsis') {
+                  el.style.textOverflow = 'clip';
+                }
+                // Remove white-space nowrap that might cause clipping
+                if (el.style.whiteSpace === 'nowrap') {
+                  el.style.whiteSpace = 'normal';
+                }
+              }
+            });
+          }
+        },
       },
       jsPDF: { 
         unit: 'mm', 
         format: 'a4', 
         orientation: 'portrait' as const,
         compress: true,
+        // Allow content to span multiple pages if needed
+        putOnlyUsedFonts: true,
+        floatPrecision: 16,
       },
       pagebreak: { 
-        mode: ['avoid-all', 'css', 'legacy'],
-        // Removed 'h1', 'h2', 'h3' from avoid to prevent forced page breaks
+        mode: ['css', 'legacy'], // Changed from 'avoid-all' to allow natural page breaks
         avoid: ['.avoid-break'],
       },
     };
@@ -215,6 +312,18 @@ export async function downloadResumeAsPDF(element: HTMLElement, filename: string
     originalPadding.forEach(({ element: el, originalClass }) => {
       el.className = originalClass;
     });
+
+    // Restore original overflow styles
+    originalOverflows.forEach(({ element: el, originalOverflow, originalTextOverflow, originalWhiteSpace }) => {
+      el.style.overflow = originalOverflow;
+      el.style.textOverflow = originalTextOverflow;
+      el.style.whiteSpace = originalWhiteSpace;
+    });
+
+    // Restore original element overflow
+    element.style.overflow = originalElementOverflow;
+    element.style.overflowX = originalElementOverflowX;
+    element.style.overflowY = originalElementOverflowY;
   } catch (error) {
     console.error('[downloadResume] Error generating PDF:', error);
     console.error('[downloadResume] Error stack:', error instanceof Error ? error.stack : 'No stack trace');

@@ -184,13 +184,13 @@ function ProcessingContent() {
   }, [router, mode, getBaseProgress]);
 
   return (
-    <div className="h-screen bg-[#F5F5F7] overflow-hidden flex flex-col">
+    <div className="min-h-screen bg-[#F5F5F7] flex flex-col">
       <ResumePreviewHeader />
       <div className="flex justify-end px-6 py-2">
         <LanguageSwitcher />
       </div>
 
-      <div className="flex-1 flex items-center justify-center px-6">
+      <div className="flex-1 flex items-center justify-center px-6 pb-8">
         <div className="w-full max-w-3xl">
           <div className="flex flex-col items-center space-y-6">
             <div className="flex items-center gap-2">

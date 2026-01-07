@@ -144,7 +144,7 @@ const translations = {
     termsSection12Text: 'These Terms shall be governed by and construed in accordance with the applicable laws of the jurisdiction in which CVLab operates.',
     termsSection13Title: '13. Contact Us',
     termsSection13Text: 'If you have any questions about these Terms, please contact us through our website.',
-    copyright: '© 2024 CVLab. All rights reserved.',
+    copyright: '© 2026 CVLab. All rights reserved.',
     // About Us Page
     aboutUsTitle: 'About Us',
     aboutUsSubtitle: 'CVLab سيفي لاب',
@@ -682,7 +682,7 @@ const translations = {
     termsSection12Text: 'تخضع هذه الشروط وتُفسر وفقاً للقوانين المعمول بها في المملكة العربي السعودية التي يعمل فيها سيفي لاب.',
     termsSection13Title: '١٣. تواصل معنا',
     termsSection13Text: 'إذا كانت لديك أي أسئلة حول هذه الشروط، يرجى التواصل معنا عبر موقعنا الإلكتروني.',
-    copyright: '© 2025 Resume AI جميع الحقوق محفوظة',
+    copyright: '© 2026 CVLab. جميع الحقوق محفوظة',
     // About Us Page
     aboutUsTitle: 'من نحن',
     aboutUsSubtitle: 'CVLab سيفي لاب',
@@ -1088,6 +1088,22 @@ const translations = {
   },
 };
 
+// Explicit reference to prevent Next.js from tree-shaking these keys
+// This ensures profile.noActivity and profile.uploadResumeToSeeActivity
+// are included in the compiled bundle
+// We export and use this to prevent optimization
+export const _preventTreeShaking = {
+  key1: translations.en['profile.noActivity'],
+  key2: translations.en['profile.uploadResumeToSeeActivity'],
+  key3: translations.ar['profile.noActivity'],
+  key4: translations.ar['profile.uploadResumeToSeeActivity'],
+};
+
+// Force reference in a way that can't be optimized
+if (typeof window !== 'undefined') {
+  (window as any).__cvlab_translations = _preventTreeShaking;
+}
+
 const LanguageContext = createContext<LanguageContextType | undefined>(
   undefined
 );
@@ -1103,7 +1119,40 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({
   }, [language]);
 
   const t = (key: string): string => {
-    return translations[language][key as keyof typeof translations.en] || key;
+    const translationObj = translations[language];
+    if (!translationObj) {
+      return '';
+    }
+    
+    // CRITICAL: Use multiple methods to prevent Next.js optimization
+    // Method 1: Store hasOwnProperty in a variable to prevent inlining
+    const hasOwnProp = Object.prototype.hasOwnProperty;
+    const hasKey = hasOwnProp.call(translationObj, key);
+    
+    // Method 2: Use strict boolean comparison that can't be optimized
+    if (hasKey !== true) {
+      // Force reference to preventTreeShaking to ensure keys are in bundle
+      if (_preventTreeShaking.key1 || _preventTreeShaking.key2) {
+        // This code path ensures the keys are referenced
+      }
+      return '';
+    }
+    
+    // Method 3: Access value with explicit type checking
+    const value = (translationObj as Record<string, string>)[key];
+    
+    // Method 4: Multiple explicit type guards
+    if (value === undefined || value === null) {
+      return '';
+    }
+    
+    // Method 5: Type check that prevents optimization
+    const isString = typeof value === 'string';
+    if (!isString) {
+      return '';
+    }
+    
+    return value;
   };
 
   return (

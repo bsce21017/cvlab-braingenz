@@ -14,15 +14,14 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-8">
           <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <Image 
-                src="/assets/ai marker footer logo.svg"
-                alt="ResumeAI Logo"
-                width={24}
-                height={24}
-                className="w-6 h-6"
+            <div className="flex items-center">
+              <Image
+                src="/assets/Main_logo.svg"
+                alt="CVLab Logo"
+                width={200}
+                height={200}
+                className="h-16 w-auto invert"
               />
-              <span className="font-normal text-base">{t('resumeAI')}</span>
             </div>
             <p className="text-gray-400 text-sm">{t('perfectingResumes')}</p>
           </div>

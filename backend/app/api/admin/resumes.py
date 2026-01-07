@@ -522,20 +522,34 @@ def generate_pdf_from_text(text: str) -> BytesIO:
         
         # Check if line is a heading (starts with ** or is all caps)
         if line.startswith('**') and line.endswith('**'):
-            # Heading found
+            # Markdown bold heading found
             if current_section:
                 story.append(Paragraph(' '.join(current_section), normal_style))
                 story.append(Spacer(1, 6))
                 current_section = []
             heading_text = line.strip('*').strip()
             story.append(Paragraph(heading_text, heading_style))
-        elif line.isupper() and len(line) > 3 and ' ' not in line:
-            # All caps heading (like "PROFESSIONAL SUMMARY")
-            if current_section:
-                story.append(Paragraph(' '.join(current_section), normal_style))
-                story.append(Spacer(1, 6))
-                current_section = []
-            story.append(Paragraph(line, heading_style))
+        elif line.isupper() and len(line) > 3:
+            # All caps heading (like "PROFESSIONAL SUMMARY" or "PROFESSIONAL EXPERIENCE")
+            # Check if it's likely a section header (not just random all caps text)
+            # Section headers are typically 2-5 words, all caps, and match common patterns
+            words = line.split()
+            is_likely_header = (
+                len(words) >= 1 and len(words) <= 5 and
+                all(len(word) > 2 for word in words) and
+                not any(char.isdigit() for char in line) and  # Not a date or number
+                not '@' in line and  # Not an email
+                not any(char in line for char in ['|', ':', '•', '-'])  # Not a formatted line
+            )
+            if is_likely_header:
+                if current_section:
+                    story.append(Paragraph(' '.join(current_section), normal_style))
+                    story.append(Spacer(1, 6))
+                    current_section = []
+                story.append(Paragraph(line, heading_style))
+            else:
+                # Regular all caps text, add to current section
+                current_section.append(line)
         elif line.startswith('* ') or line.startswith('- '):
             # Bullet point
             if current_section:
@@ -543,6 +557,24 @@ def generate_pdf_from_text(text: str) -> BytesIO:
                 current_section = []
             bullet_text = line[2:].strip()
             story.append(Paragraph(f"• {bullet_text}", normal_style))
+        elif '|' in line and len(line.split('|')) >= 2:
+            # Formatted line with pipes (e.g., "Title | Company | Location" or "Degree | Institution | Period")
+            # This is typically experience or education entry
+            if current_section:
+                story.append(Paragraph(' '.join(current_section), normal_style))
+                story.append(Spacer(1, 3))
+                current_section = []
+            # Format as bold for the first part, normal for the rest
+            parts = [p.strip() for p in line.split('|')]
+            if len(parts) >= 2:
+                # First part (title/degree) in bold, rest normal
+                formatted_line = f"<b>{parts[0]}</b>"
+                if len(parts) > 1:
+                    formatted_line += f" | {' | '.join(parts[1:])}"
+                story.append(Paragraph(formatted_line, normal_style))
+            else:
+                story.append(Paragraph(line, normal_style))
+            story.append(Spacer(1, 3))
         else:
             # Regular text
             current_section.append(line)
@@ -605,22 +637,27 @@ async def download_optimized_resume(
     try:
         text_content = None
         
-        # Try to get structured data first (better formatting)
-        if opt.optimized_json and isinstance(opt.optimized_json, dict):
+        # Prefer optimized_text as it contains the complete, full-formatted resume
+        # optimized_json might be incomplete or missing sections
+        if opt.optimized_text:
+            text_content = opt.optimized_text
+            logger.info(f"Using optimized_text for PDF generation (length: {len(text_content)} chars)")
+        
+        # Fallback to structured data if optimized_text is not available
+        if not text_content and opt.optimized_json and isinstance(opt.optimized_json, dict):
             structured_data = opt.optimized_json.get("structured_data")
             if structured_data:
                 # Convert structured data to text format
                 text_content = format_structured_data_as_text(structured_data)
-        
-        # Fallback to optimized_text
-        if not text_content and opt.optimized_text:
-            text_content = opt.optimized_text
+                logger.info(f"Using optimized_json structured_data for PDF generation")
         
         if not text_content:
             raise HTTPException(status_code=404, detail="Optimized resume content not found")
         
+        # Log content length for debugging
+        logger.info(f"Generating PDF on-demand for resume {resume_id} (content length: {len(text_content)} chars, lines: {text_content.count(chr(10)) + 1})")
+        
         # Generate PDF from text
-        logger.info(f"Generating PDF on-demand from optimized_text for resume {resume_id}")
         pdf_buffer = generate_pdf_from_text(text_content)
         
         return StreamingResponse(
@@ -715,8 +752,144 @@ def format_structured_data_as_text(structured_data: Dict[str, Any]) -> str:
         lines.append("**TECHNICAL SKILLS**")
         if isinstance(structured_data["skills"], list):
             lines.append(", ".join(structured_data["skills"]))
+        elif isinstance(structured_data["skills"], dict):
+            # Handle skills as dictionary (e.g., {"Frontend": ["React", "Vue"], "Backend": ["Node", "Python"]})
+            skill_lines = []
+            for category, skill_list in structured_data["skills"].items():
+                if isinstance(skill_list, list):
+                    skill_lines.append(f"{category}: {', '.join(skill_list)}")
+                else:
+                    skill_lines.append(f"{category}: {skill_list}")
+            lines.append(" | ".join(skill_lines))
         else:
             lines.append(str(structured_data["skills"]))
         lines.append("")
+    
+    # Certifications
+    if structured_data.get("certifications"):
+        lines.append("**CERTIFICATIONS**")
+        for cert in structured_data["certifications"]:
+            if isinstance(cert, dict):
+                cert_name = cert.get("name", cert.get("certification", ""))
+                issuer = cert.get("issuer", cert.get("organization", ""))
+                date = cert.get("date", cert.get("issued_date", ""))
+                if cert_name:
+                    cert_line = cert_name
+                    if issuer:
+                        cert_line += f" | {issuer}"
+                    if date:
+                        cert_line += f" | {date}"
+                    lines.append(cert_line)
+            elif isinstance(cert, str):
+                lines.append(cert)
+        lines.append("")
+    
+    # Projects
+    if structured_data.get("projects"):
+        lines.append("**PROJECTS**")
+        for project in structured_data["projects"]:
+            if isinstance(project, dict):
+                project_name = project.get("name", project.get("title", ""))
+                description = project.get("description", "")
+                technologies = project.get("technologies", project.get("tech_stack", []))
+                if project_name:
+                    lines.append(project_name)
+                if description:
+                    lines.append(description)
+                if technologies:
+                    if isinstance(technologies, list):
+                        lines.append(f"Technologies: {', '.join(technologies)}")
+                    else:
+                        lines.append(f"Technologies: {technologies}")
+            elif isinstance(project, str):
+                lines.append(project)
+            lines.append("")
+    
+    # Awards
+    if structured_data.get("awards"):
+        lines.append("**AWARDS**")
+        for award in structured_data["awards"]:
+            if isinstance(award, dict):
+                award_name = award.get("name", award.get("title", ""))
+                issuer = award.get("issuer", award.get("organization", ""))
+                date = award.get("date", "")
+                if award_name:
+                    award_line = award_name
+                    if issuer:
+                        award_line += f" | {issuer}"
+                    if date:
+                        award_line += f" | {date}"
+                    lines.append(award_line)
+            elif isinstance(award, str):
+                lines.append(award)
+        lines.append("")
+    
+    # Languages
+    if structured_data.get("languages"):
+        lines.append("**LANGUAGES**")
+        if isinstance(structured_data["languages"], list):
+            lang_list = []
+            for lang in structured_data["languages"]:
+                if isinstance(lang, dict):
+                    lang_name = lang.get("language", lang.get("name", ""))
+                    proficiency = lang.get("proficiency", lang.get("level", ""))
+                    if lang_name:
+                        lang_entry = lang_name
+                        if proficiency:
+                            lang_entry += f" ({proficiency})"
+                        lang_list.append(lang_entry)
+                elif isinstance(lang, str):
+                    lang_list.append(lang)
+            lines.append(", ".join(lang_list))
+        else:
+            lines.append(str(structured_data["languages"]))
+        lines.append("")
+    
+    # Publications
+    if structured_data.get("publications"):
+        lines.append("**PUBLICATIONS**")
+        for pub in structured_data["publications"]:
+            if isinstance(pub, dict):
+                title = pub.get("title", "")
+                authors = pub.get("authors", "")
+                journal = pub.get("journal", pub.get("publication", ""))
+                date = pub.get("date", pub.get("year", ""))
+                if title:
+                    lines.append(title)
+                if authors:
+                    lines.append(f"Authors: {authors}")
+                if journal:
+                    lines.append(f"Published in: {journal}")
+                if date:
+                    lines.append(f"Date: {date}")
+            elif isinstance(pub, str):
+                lines.append(pub)
+            lines.append("")
+    
+    # Additional sections (handle any other keys that might exist)
+    known_keys = {"name", "email", "phone", "location", "linkedin", "summary", 
+                  "experience", "education", "skills", "certifications", 
+                  "projects", "awards", "languages", "publications"}
+    
+    for key, value in structured_data.items():
+        if key not in known_keys and value:
+            # Convert key to readable format (e.g., "volunteer_work" -> "VOLUNTEER WORK")
+            section_title = key.replace("_", " ").upper()
+            lines.append(f"**{section_title}**")
+            if isinstance(value, list):
+                for item in value:
+                    if isinstance(item, dict):
+                        # Try to format as key-value pairs
+                        item_str = " | ".join([f"{k}: {v}" for k, v in item.items() if v])
+                        lines.append(item_str)
+                    else:
+                        lines.append(str(item))
+            elif isinstance(value, dict):
+                # Format as key-value pairs
+                for k, v in value.items():
+                    lines.append(f"{k}: {v}")
+            else:
+                lines.append(str(value))
+            lines.append("")
     
     return "\n".join(lines)
