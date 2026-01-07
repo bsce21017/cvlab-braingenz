@@ -41,17 +41,56 @@ async function fetchAPI<T>(
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const response = await fetch(url, {
-    ...options,
-    headers,
+  // Log request details
+  console.log('[FRONTEND API] Making request:', {
+    url,
+    method: options.method || 'GET',
+    headers: { ...headers, Authorization: token ? 'Bearer ***' : 'none' },
+    origin: typeof window !== 'undefined' ? window.location.origin : 'server',
+    timestamp: new Date().toISOString(),
   });
 
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.detail || `API Error: ${response.status}`);
-  }
+  try {
+    const response = await fetch(url, {
+      ...options,
+      headers,
+    });
 
-  return response.json();
+    console.log('[FRONTEND API] Response received:', {
+      url,
+      status: response.status,
+      statusText: response.statusText,
+      ok: response.ok,
+      headers: Object.fromEntries(response.headers.entries()),
+      timestamp: new Date().toISOString(),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error('[FRONTEND API] Error response:', {
+        url,
+        status: response.status,
+        errorData,
+      });
+      throw new Error(errorData.detail || `API Error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log('[FRONTEND API] Success:', {
+      url,
+      dataKeys: Object.keys(data),
+      timestamp: new Date().toISOString(),
+    });
+    return data;
+  } catch (error) {
+    console.error('[FRONTEND API] Fetch failed:', {
+      url,
+      error: error instanceof Error ? error.message : String(error),
+      errorType: error instanceof TypeError ? 'Network/CORS Error' : 'Other Error',
+      timestamp: new Date().toISOString(),
+    });
+    throw error;
+  }
 }
 
 // Types
@@ -153,6 +192,9 @@ export interface StructuredResumeData {
     period?: string;
     details: string[];
   }>;
+  sectionOrder?: ('summary' | 'experience' | 'skills' | 'education' | 'projects' | 'certifications' | 'languages')[]; // Optional: section ordering from backend/LLM
+  sectionLabels?: Partial<Record<'summary' | 'experience' | 'skills' | 'education' | 'projects' | 'certifications' | 'languages', string>>; // Optional: custom section labels from backend/LLM
+  primaryColor?: string; // Optional: primary/accent color (hex format, e.g., "#1D61CB") - used for name, section headings, borders, periods
 }
 
 export interface PreviewResponse {
