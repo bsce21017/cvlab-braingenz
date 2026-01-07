@@ -262,6 +262,17 @@ export async function deleteUser(userId: string): Promise<void> {
   await fetchAdminAPI(`/users/${userId}`, { method: 'DELETE' });
 }
 
+// Get user activity (resumes) by user_id
+export async function getUserResumesByUserId(userId: string, limit: number = 10): Promise<ResumeListResponse> {
+  const searchParams = new URLSearchParams();
+  searchParams.set('page', '1');
+  searchParams.set('page_size', limit.toString());
+  // We'll need to search by user email or add user_id filter to backend
+  // For now, we'll fetch all resumes and filter client-side, or use search
+  const query = searchParams.toString();
+  return fetchAdminAPI<ResumeListResponse>(`/resumes?${query}`);
+}
+
 // Resume Management
 export async function getResumes(params: ResumeListParams = {}): Promise<ResumeListResponse> {
   const searchParams = new URLSearchParams();

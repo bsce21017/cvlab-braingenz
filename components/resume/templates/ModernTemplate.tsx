@@ -1,18 +1,183 @@
 'use client';
 
 import React from 'react';
-import { ResumeData } from '@/lib/resumeDataTypes';
+import { Inter } from 'next/font/google';
+import { ResumeData, getSectionOrder, getSectionLabel, getPrimaryColor, SectionKey } from '@/lib/resumeDataTypes';
+
+const inter = Inter({ 
+  subsets: ['latin'],
+  display: 'swap',
+});
 
 interface ModernTemplateProps {
   data: ResumeData;
 }
 
 export function ModernTemplate({ data }: ModernTemplateProps) {
+  const sectionOrder = getSectionOrder(data);
+  const primaryColor = getPrimaryColor(data, 'modern');
+  
+  const renderSection = (sectionKey: SectionKey) => {
+    switch (sectionKey) {
+      case 'summary':
+        if (!data.summary || data.summary.trim().length === 0) return null;
+        return (
+          <div>
+            <h2 className="text-base font-bold text-gray-900 uppercase tracking-wide mb-2 border-b border-gray-400 pb-1">
+              {getSectionLabel(data, 'summary', 'modern')}
+            </h2>
+            <p className="text-sm text-gray-700 leading-relaxed text-justify">{data.summary}</p>
+          </div>
+        );
+      
+      case 'experience':
+        if (!data.experience || data.experience.length === 0) return null;
+        return (
+          <div>
+            <h2 className="text-base font-bold text-gray-900 uppercase tracking-wide mb-2 border-b border-gray-400 pb-1">
+              {getSectionLabel(data, 'experience', 'modern')}
+            </h2>
+            <div className="space-y-4">
+              {data.experience.map((exp, idx) => (
+                <div key={idx}>
+                  <div className="flex justify-between items-start">
+                    <h3 className="font-bold text-sm">{exp.title}, {exp.company}</h3>
+                    <span className="font-bold text-sm flex-shrink-0 ml-4">{exp.period}</span>
+                  </div>
+                  {exp.bullets && exp.bullets.length > 0 && (
+                    <ul className="mt-1 ml-3 space-y-0.5">
+                      {exp.bullets.map((bullet, bIdx) => (
+                        <li key={bIdx} className="text-sm text-gray-700 flex gap-2">
+                          <span className="text-gray-700">•</span>
+                          <span>{bullet}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      
+      case 'skills':
+        if (!data.skills || data.skills.length === 0) return null;
+        return (
+          <div>
+            <h2 className="text-base font-bold text-gray-900 uppercase tracking-wide mb-2 border-b border-gray-400 pb-1">
+              {getSectionLabel(data, 'skills', 'modern')}
+            </h2>
+            <div className="grid grid-cols-3 gap-x-4 gap-y-1">
+              {data.skills.map((skill, idx) => (
+                <span key={idx} className="text-sm text-gray-700">{skill}</span>
+              ))}
+            </div>
+          </div>
+        );
+      
+      case 'education':
+        if (!data.education || data.education.length === 0) return null;
+        return (
+          <div>
+            <h2 className="text-base font-bold text-gray-900 uppercase tracking-wide mb-2 border-b border-gray-400 pb-1">
+              {getSectionLabel(data, 'education', 'modern')}
+            </h2>
+            <div className="space-y-3">
+              {data.education.map((edu, idx) => (
+                <div key={idx}>
+                  <div className="flex justify-between items-start">
+                    <h3 className="font-bold text-sm">{edu.degree}</h3>
+                    <span className="font-bold text-sm flex-shrink-0 ml-4">{edu.period}</span>
+                  </div>
+                  <p className="text-sm text-gray-700">{edu.institution}</p>
+                  {edu.details && edu.details.length > 0 && (
+                    <ul className="mt-1 ml-3">
+                      {edu.details.map((detail, dIdx) => (
+                        <li key={dIdx} className="text-sm text-gray-700 flex gap-2">
+                          <span className="text-gray-700">•</span>
+                          <span>{detail}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      
+      case 'projects':
+        if (!data.projects || data.projects.length === 0) return null;
+        return (
+          <div>
+            <h2 className="text-base font-bold text-gray-900 uppercase tracking-wide mb-2 border-b border-gray-400 pb-1">
+              {getSectionLabel(data, 'projects', 'modern')}
+            </h2>
+            <div className="space-y-3">
+              {data.projects.map((project, idx) => (
+                <div key={idx}>
+                  <div className="flex justify-between items-start">
+                    <h3 className="font-bold text-sm">{project.name}</h3>
+                    {project.period && <span className="font-bold text-sm flex-shrink-0 ml-4">{project.period}</span>}
+                  </div>
+                  {project.organization && (
+                    <p className="text-sm text-gray-700">{project.organization}</p>
+                  )}
+                  {project.details && project.details.length > 0 && (
+                    <ul className="mt-1 ml-3">
+                      {project.details.map((detail, dIdx) => (
+                        <li key={dIdx} className="text-sm text-gray-700 flex gap-2">
+                          <span className="text-gray-700">•</span>
+                          <span>{detail}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      
+      case 'certifications':
+        if (!data.certifications || data.certifications.length === 0) return null;
+        return (
+          <div>
+            <h2 className="text-base font-bold text-gray-900 uppercase tracking-wide mb-2 border-b border-gray-400 pb-1">
+              {getSectionLabel(data, 'certifications', 'modern')}
+            </h2>
+            <ul className="ml-3 space-y-0.5">
+              {data.certifications.map((cert, idx) => (
+                <li key={idx} className="text-sm text-gray-700 flex gap-2">
+                  <span className="text-gray-700">•</span>
+                  <span>{cert}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        );
+      
+      case 'languages':
+        if (!data.languages || data.languages.length === 0) return null;
+        return (
+          <div>
+            <h2 className="text-base font-bold text-gray-900 uppercase tracking-wide mb-2 border-b border-gray-400 pb-1">
+              {getSectionLabel(data, 'languages', 'modern')}
+            </h2>
+            <p className="text-sm text-gray-700">{data.languages.join(', ')}</p>
+          </div>
+        );
+      
+      default:
+        return null;
+    }
+  };
+
   return (
-    <div className="bg-white p-8 min-h-[1000px] font-sans">
-      {/* Header - Clean minimal */}
+    <div className={`bg-white p-8 min-h-[1000px] text-gray-800 ${inter.className}`}>
+      {/* Header */}
       <div className="text-center mb-2">
-        <h1 className="text-3xl font-bold text-gray-900 tracking-wide uppercase">
+        <h1 className="text-3xl font-bold tracking-wide uppercase" style={{ color: primaryColor }}>
           {data.name || 'Your Name'}
         </h1>
         <div className="mt-2 text-sm text-gray-600 flex items-center justify-center gap-2">
@@ -24,152 +189,15 @@ export function ModernTemplate({ data }: ModernTemplateProps) {
         </div>
       </div>
 
-      <hr className="border-gray-900 border-t-2 my-4" />
+      <div className="h-1 my-4" style={{ backgroundColor: primaryColor }} />
 
       <div className="space-y-5">
-        {/* Summary */}
-        {data.summary && (
-          <div>
-            <h2 className="text-sm font-bold text-gray-900 uppercase tracking-wide mb-2 border-b border-gray-300 pb-1">
-              Summary
-            </h2>
-            <p className="text-sm text-gray-700 leading-relaxed text-justify">{data.summary}</p>
-          </div>
-        )}
-
-        {/* Professional Experience */}
-        {data.experience && data.experience.length > 0 && (
-          <div>
-            <h2 className="text-sm font-bold text-gray-900 uppercase tracking-wide mb-3 border-b border-gray-300 pb-1">
-              Professional Experience
-            </h2>
-            <div className="space-y-4">
-              {data.experience.map((exp, idx) => (
-                <div key={idx}>
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h3 className="font-semibold text-gray-900">{exp.title}</h3>
-                      <p className="text-sm text-gray-600">{exp.company}</p>
-                    </div>
-                    <span className="text-sm text-gray-500">{exp.period}</span>
-                  </div>
-                  {exp.bullets && exp.bullets.length > 0 && (
-                    <ul className="mt-2 space-y-1">
-                      {exp.bullets.map((bullet, bIdx) => (
-                        <li key={bIdx} className="text-sm text-gray-700 flex gap-2">
-                          <span className="text-gray-400">•</span>
-                          <span>{bullet}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Projects */}
-        {data.projects && data.projects.length > 0 && (
-          <div>
-            <h2 className="text-sm font-bold text-gray-900 uppercase tracking-wide mb-3 border-b border-gray-300 pb-1">
-              Projects
-            </h2>
-            <div className="space-y-3">
-              {data.projects.map((project, idx) => (
-                <div key={idx}>
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h3 className="font-semibold text-gray-900">{project.name}</h3>
-                      {project.organization && (
-                        <p className="text-sm text-gray-600">{project.organization}</p>
-                      )}
-                    </div>
-                    {project.period && <span className="text-sm text-gray-500">{project.period}</span>}
-                  </div>
-                  {project.details && project.details.length > 0 && (
-                    <ul className="mt-1">
-                      {project.details.map((detail, dIdx) => (
-                        <li key={dIdx} className="text-sm text-gray-700 flex gap-2">
-                          <span className="text-gray-400">•</span>
-                          <span>{detail}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Skills - Three Column Grid */}
-        {data.skills && data.skills.length > 0 && (
-          <div>
-            <h2 className="text-sm font-bold text-gray-900 uppercase tracking-wide mb-3 border-b border-gray-300 pb-1">
-              Skills
-            </h2>
-            <div className="grid grid-cols-3 gap-x-4 gap-y-1">
-              {data.skills.map((skill, idx) => (
-                <span key={idx} className="text-sm text-gray-700">{skill}</span>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Education */}
-        {data.education && data.education.length > 0 && (
-          <div>
-            <h2 className="text-sm font-bold text-gray-900 uppercase tracking-wide mb-3 border-b border-gray-300 pb-1">
-              Education
-            </h2>
-            <div className="space-y-3">
-              {data.education.map((edu, idx) => (
-                <div key={idx}>
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h3 className="font-semibold text-gray-900">{edu.degree}</h3>
-                      <p className="text-sm text-gray-600">{edu.institution}</p>
-                    </div>
-                    <span className="text-sm text-gray-500">{edu.period}</span>
-                  </div>
-                  {edu.details && edu.details.length > 0 && (
-                    <ul className="mt-1">
-                      {edu.details.map((detail, dIdx) => (
-                        <li key={dIdx} className="text-sm text-gray-700 flex gap-2">
-                          <span className="text-gray-400">•</span>
-                          <span>{detail}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Additional Information */}
-        {((data.languages && data.languages.length > 0) ||
-          (data.certifications && data.certifications.length > 0)) && (
-          <div>
-            <h2 className="text-sm font-bold text-gray-900 uppercase tracking-wide mb-3 border-b border-gray-300 pb-1">
-              Additional Information
-            </h2>
-            <div className="space-y-1">
-              {data.languages && data.languages.length > 0 && (
-                <p className="text-sm text-gray-700">
-                  <span className="font-semibold">Languages:</span> {data.languages.join(', ')}
-                </p>
-              )}
-              {data.certifications && data.certifications.length > 0 && (
-                <p className="text-sm text-gray-700">
-                  <span className="font-semibold">Certifications:</span> {data.certifications.join(', ')}
-                </p>
-              )}
-            </div>
-          </div>
-        )}
+        {/* All sections rendered in order */}
+        {sectionOrder.map((sectionKey) => (
+          <React.Fragment key={sectionKey}>
+            {renderSection(sectionKey)}
+          </React.Fragment>
+        ))}
       </div>
     </div>
   );

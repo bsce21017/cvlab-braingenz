@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useEffect, useState, useCallback } from 'react';
+import Image from 'next/image';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { Users, Activity, FileText, Server, RefreshCw } from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
 import { getDashboardStats, DashboardStats } from '@/lib/admin-api';
 
 interface Stat {
@@ -63,22 +64,54 @@ export default function StatsCards() {
         {
           label: t('admin.serverUptime'),
           value: stats.server_uptime,
-          icon: <Server className="w-6 h-6 text-gray-400" />,
+          icon: (
+            <Image
+              src="/assets/dashboard-icons/server-uptime.png"
+              alt="Server Uptime"
+              width={24}
+              height={24}
+              className="w-6 h-6 object-contain"
+            />
+          ),
         },
         {
           label: t('admin.resumesProcessed'),
           value: formatNumber(stats.resumes_processed),
-          icon: <FileText className="w-6 h-6 text-gray-400" />,
+          icon: (
+            <Image
+              src="/assets/dashboard-icons/resumes-proceed.png"
+              alt="Resumes Processed"
+              width={24}
+              height={24}
+              className="w-6 h-6 object-contain"
+            />
+          ),
         },
         {
           label: t('admin.totalSessions'),
           value: formatNumber(stats.total_sessions),
-          icon: <Activity className="w-6 h-6 text-gray-400" />,
+          icon: (
+            <Image
+              src="/assets/dashboard-icons/total-sessions.png"
+              alt="Total Sessions"
+              width={24}
+              height={24}
+              className="w-6 h-6 object-contain"
+            />
+          ),
         },
         {
           label: t('admin.totalUsers'),
           value: formatNumber(stats.total_users),
-          icon: <Users className="w-6 h-6 text-gray-400" />,
+          icon: (
+            <Image
+              src="/assets/dashboard-icons/total-users.png"
+              alt="Total Users"
+              width={24}
+              height={24}
+              className="w-6 h-6 object-contain"
+            />
+          ),
         },
       ]
     : [];

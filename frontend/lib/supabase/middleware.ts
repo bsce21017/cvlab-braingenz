@@ -147,8 +147,8 @@ export async function updateSession(request: NextRequest) {
     
     const url = request.nextUrl.clone()
     if (isAdmin) {
-      url.pathname = '/admin/overview'
-      console.log('[Middleware] Redirecting admin user to /admin/overview')
+      url.pathname = '/admin/dashboard'
+      console.log('[Middleware] Redirecting admin user to /admin/dashboard')
     } else {
       url.pathname = '/'
       console.log('[Middleware] Redirecting non-admin user to /')

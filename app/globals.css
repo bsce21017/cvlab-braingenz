@@ -2,6 +2,61 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Almarai Arabic Font */
+@font-face {
+  font-family: 'Almarai';
+  src: url('/fonts/Almarai/Almarai-Light.ttf') format('truetype');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Almarai';
+  src: url('/fonts/Almarai/Almarai-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Almarai';
+  src: url('/fonts/Almarai/Almarai-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Almarai';
+  src: url('/fonts/Almarai/Almarai-ExtraBold.ttf') format('truetype');
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Apply Almarai font for Arabic language */
+[lang="ar"],
+[dir="rtl"],
+.font-arabic {
+  font-family: 'Almarai', sans-serif !important;
+}
+
+/* RTL support for stat cards - swap icon and text positions */
+.stat-card-content {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+[dir="rtl"] .stat-card-content {
+  flex-direction: row-reverse !important;
+}
+
+[dir="rtl"] .stat-card-text {
+  text-align: right !important;
+}
+
 :root {
   --foreground-rgb: 0, 0, 0;
   --background-start-rgb: 214, 219, 220;

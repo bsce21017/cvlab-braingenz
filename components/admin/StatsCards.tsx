@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useEffect, useState, useCallback } from 'react';
+import Image from 'next/image';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { Users, Activity, FileText, Server, RefreshCw } from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
 import { getDashboardStats, DashboardStats } from '@/lib/admin-api';
 
 interface Stat {
@@ -14,12 +15,18 @@ interface Stat {
 const REFRESH_INTERVAL = 30000; // 30 seconds auto-refresh
 
 export default function StatsCards() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [isRTL, setIsRTL] = useState(false);
+
+  // Check RTL on client side
+  useEffect(() => {
+    setIsRTL(document.documentElement.dir === 'rtl');
+  }, [language]);
 
   const fetchStats = useCallback(async (isRefresh = false) => {
     try {
@@ -61,24 +68,56 @@ export default function StatsCards() {
   const statItems: Stat[] = stats
     ? [
         {
-          label: t('admin.serverUptime'),
-          value: stats.server_uptime,
-          icon: <Server className="w-6 h-6 text-gray-400" />,
-        },
-        {
-          label: t('admin.resumesProcessed'),
-          value: formatNumber(stats.resumes_processed),
-          icon: <FileText className="w-6 h-6 text-gray-400" />,
+          label: t('admin.totalUsers'),
+          value: formatNumber(stats.total_users),
+          icon: (
+            <Image
+              src="/assets/dashboard-icons/total-users.png"
+              alt="Total Users"
+              width={32}
+              height={32}
+              className="w-8 h-8 object-contain"
+            />
+          ),
         },
         {
           label: t('admin.totalSessions'),
           value: formatNumber(stats.total_sessions),
-          icon: <Activity className="w-6 h-6 text-gray-400" />,
+          icon: (
+            <Image
+              src="/assets/dashboard-icons/total-sessions.png"
+              alt="Total Sessions"
+              width={32}
+              height={32}
+              className="w-8 h-8 object-contain"
+            />
+          ),
         },
         {
-          label: t('admin.totalUsers'),
-          value: formatNumber(stats.total_users),
-          icon: <Users className="w-6 h-6 text-gray-400" />,
+          label: t('admin.resumesProcessed'),
+          value: formatNumber(stats.resumes_processed),
+          icon: (
+            <Image
+              src="/assets/dashboard-icons/resumes-proceed.png"
+              alt="Resumes Processed"
+              width={32}
+              height={32}
+              className="w-8 h-8 object-contain"
+            />
+          ),
+        },
+        {
+          label: t('admin.serverUptime'),
+          value: stats.server_uptime,
+          icon: (
+            <Image
+              src="/assets/dashboard-icons/server-uptime.png"
+              alt="Server Uptime"
+              width={32}
+              height={32}
+              className="w-8 h-8 object-contain"
+            />
+          ),
         },
       ]
     : [];
@@ -145,13 +184,19 @@ export default function StatsCards() {
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {statItems.map((stat, index) => (
-          <div key={index} className="bg-white rounded-lg p-6 border border-gray-200 transition-all hover:shadow-md">
-            <div className="flex items-start justify-between">
-              <div className="space-y-2 flex-1">
-                <p className="text-gray-600 text-sm font-medium">{stat.label}</p>
-                <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+          <div key={index} className="bg-white rounded-xl p-6 border border-gray-200 transition-all hover:shadow-md">
+            <div
+              className="flex items-center gap-4"
+              style={{ flexDirection: isRTL ? 'row-reverse' : 'row' }}
+            >
+              <div className="p-3 bg-gray-100 rounded-xl flex-shrink-0">{stat.icon}</div>
+              <div
+                className="flex-1 min-w-0"
+                style={{ textAlign: isRTL ? 'right' : 'left' }}
+              >
+                <p className="text-gray-500 text-xs font-medium whitespace-nowrap overflow-hidden text-ellipsis">{stat.label}</p>
+                <p className="text-3xl font-bold text-gray-900">{stat.value}</p>
               </div>
-              <div className="p-3 bg-gray-100 rounded-lg">{stat.icon}</div>
             </div>
           </div>
         ))}

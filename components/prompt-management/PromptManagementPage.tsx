@@ -8,6 +8,7 @@ import LLMConfiguration from './LLMConfiguration';
 import PromptCard from './PromptCard';
 import { getPrompts, updatePrompt, Prompt, PromptStatus } from '@/lib/admin-api';
 import { formatDistanceToNow } from 'date-fns';
+import { ar } from 'date-fns/locale';
 
 // Map backend prompt IDs to icons and display names
 // These match exactly with the prompt files in backend/prompts/

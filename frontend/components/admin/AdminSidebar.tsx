@@ -24,11 +24,6 @@ export default function AdminSidebar() {
       icon: BarChart3,
     },
     {
-      label: t('admin.overview'),
-      href: '/admin/overview',
-      icon: LayoutDashboard,
-    },
-    {
       label: t('admin.prompts'),
       href: '/admin/prompts',
       icon: MessageSquare,

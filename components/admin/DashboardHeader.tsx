@@ -59,46 +59,21 @@ export default function DashboardHeader() {
   };
 
   return (
-    <header className="bg-white border-b border-gray-200 px-8 py-4">
+    <header className="bg-white border-b border-gray-200 px-8 py-4" dir={isArabic ? 'rtl' : 'ltr'}>
       {/* Top AdminHub brand + breadcrumb row (same as prompts page) */}
-      <div
-        className={`flex items-center justify-between ${
-          isArabic ? 'flex-row-reverse' : ''
-        }`}
-      >
-        <div
-          className={`flex items-center gap-3 ${
-            isArabic ? 'flex-row-reverse' : ''
-          }`}
-        >
-          <div className="flex h-8 w-8 items-center justify-center rounded bg-black overflow-hidden">
-            <Image
-              src="/assets/admin_logo.png"
-              alt="AdminHub logo"
-              width={24}
-              height={24}
-              className="h-6 w-6 object-contain"
-            />
-          </div>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3" dir="ltr">
           <span className="text-sm font-semibold text-gray-900">
             {t('pm.brand')}
           </span>
-          <div
-            className={`flex items-center gap-2 text-xs text-gray-600 ${
-              isArabic ? 'flex-row-reverse' : ''
-            }`}
-          >
+          <div className="flex items-center gap-2 text-xs text-gray-600">
             <span>{t('pm.nav.admin')}</span>
             <span>&gt;</span>
             <span>{sectionLabel}</span>
           </div>
         </div>
 
-        <div
-          className={`flex items-center gap-6 ${
-            isArabic ? 'flex-row-reverse' : ''
-          }`}
-        >
+        <div className="flex items-center gap-6" dir="ltr">
           <NotificationDropdown />
 
           <LanguageSwitcher />
@@ -106,17 +81,17 @@ export default function DashboardHeader() {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button className="flex items-center gap-3 pl-4 border-l border-gray-200 hover:opacity-80 transition-opacity cursor-pointer">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center">
-              <span className="text-white font-semibold text-sm">{userInitials}</span>
-            </div>
-            <div className={isArabic ? 'text-right' : ''}>
-              <p className="text-sm font-medium text-gray-900">{userName}</p>
-              <p className="text-xs text-gray-500">{userEmail}</p>
-            </div>
-            <ChevronDown className="w-4 h-4 text-gray-500" />
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center">
+                  <span className="text-white font-semibold text-sm">{userInitials}</span>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-900">{userName}</p>
+                  <p className="text-xs text-gray-500">{userEmail}</p>
+                </div>
+                <ChevronDown className="w-4 h-4 text-gray-500" />
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align={isArabic ? 'start' : 'end'} className="w-56">
+            <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuItem disabled className="opacity-100">
                 <User className="mr-2 h-4 w-4" />
                 <div className="flex flex-col">
@@ -141,12 +116,16 @@ export default function DashboardHeader() {
       {/* Page title + subtitle row */}
       <div className={`mt-4 ${isArabic ? 'text-right' : ''}`}>
         <h2 className="text-2xl font-bold text-gray-900">
-          {pathname.startsWith('/admin/dashboard') 
+          {pathname.startsWith('/admin/claims')
+            ? t('claims.title')
+            : pathname.startsWith('/admin/resumes') 
             ? t('admin.dashboard.resumesTitle')
             : t('admin.dashboardOverview')}
         </h2>
         <p className="text-gray-600 text-sm">
-          {pathname.startsWith('/admin/dashboard')
+          {pathname.startsWith('/admin/claims')
+            ? `${t('claims.subtitleLine1')} ${t('claims.subtitleLine2')}`
+            : pathname.startsWith('/admin/resumes')
             ? t('admin.dashboard.resumesSubtitle')
             : t('admin.monitorPerformance')}
         </p>

@@ -76,6 +76,19 @@ function cleanMarkdown(text: string): string {
 }
 
 /**
+ * Check if text contains a date period
+ */
+function hasPeriodInText(text: string): boolean {
+  const periodPatterns = [
+    /\d{4}\s*[-–]\s*(?:\d{4}|Present|Current|Now)/i,
+    /(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{4}\s*[-–]\s*(?:(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+)?\d{4}/i,
+    /(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{4}\s*[-–]\s*(?:Present|Current|Now)/i,
+    /\d{1,2}\/\d{4}\s*[-–]\s*(?:\d{1,2}\/\d{4}|Present|Current|Now)/i,
+  ];
+  return periodPatterns.some(pattern => pattern.test(text));
+}
+
+/**
  * Parse markdown text into structured resume
  */
 export function parseResumeText(text: string): ParsedResume {
@@ -148,13 +161,72 @@ export function parseResumeText(text: string): ParsedResume {
         sections[currentSection] = [];
       }
     } else if (trimmedLine) {
+      // Check for markdown bold section headers (**ALL CAPS**)
+      const markdownBoldMatch = trimmedLine.match(/^\*\*([^*]+)\*\*$/);
+      if (markdownBoldMatch) {
+        const innerText = markdownBoldMatch[1].trim();
+        // Check if it's ALL CAPS and matches section keywords
+        if (innerText === innerText.toUpperCase() && 
+            innerText.length > 3 && 
+            innerText.length < 50 &&
+            !innerText.match(/[\w.-]+@[\w.-]+\.\w+/) && // not email
+            !innerText.match(/\(?\+?[0-9]{1,3}\)?[-.\s]?[0-9]{2,4}[-.\s]?[0-9]{3,4}[-.\s]?[0-9]{3,4}/) && // not phone
+            !innerText.match(/^[A-Z\s]+\|[A-Z\s]+\|[A-Z\s]+$/) && // not "TITLE | COMPANY | LOCATION" format
+            !hasPeriodInText(innerText)) { // not a date period
+          const sectionType = identifySection(innerText.toLowerCase());
+          if (sectionType !== 'other') {
+            console.log(`[PARSER] Line ${i+1}: Section detected: ${sectionType} (${innerText})`);
+            currentSection = sectionType;
+            if (!sections[currentSection]) {
+              sections[currentSection] = [];
+            }
+            console.log(`[PARSER] Section '${currentSection}' initialized. Current sections:`, Object.keys(sections));
+            // Don't add the section header itself to the content
+            continue;
+          }
+        }
+        // If it's markdown bold but not a section header, check if it's a name
+        // This handles **ABDULLAH ALSHEHRI** format names
+        if (!foundName && innerText.length >= 2 && innerText.length <= 50) {
+          const wordCount = innerText.split(/\s+/).filter(w => w.trim().length > 0).length;
+          const hasEmail = extractEmail(innerText);
+          const hasPhone = extractPhone(innerText);
+          const isSectionHeader = identifySection(innerText.toLowerCase()) !== 'other';
+          const isKnownSection = innerText.match(/^(PROFESSIONAL|WORK|EDUCATION|SKILLS|CERTIFICATIONS|SUMMARY|EXPERIENCE|CONTACT|ABOUT)/i);
+          
+          // Check if it looks like a name (2-4 words, no email/phone, not a section)
+          // More lenient check - just verify it's words, not strict regex
+          const words = innerText.split(/\s+/).filter(w => w.trim().length > 0);
+          const allWordsAreValid = words.length > 0 && words.every(w => {
+            const cleaned = w.trim();
+            return cleaned.length > 0 && /^[A-Za-z\-']+$/.test(cleaned);
+          });
+          
+          // More lenient condition - if it's 2-4 words, all caps or proper case, and not a section, it's likely a name
+          if (wordCount >= 2 && wordCount <= 4 && 
+              !hasEmail && !hasPhone && !isSectionHeader && !isKnownSection &&
+              allWordsAreValid) {
+            result.contact.name = cleanMarkdown(innerText);
+            foundName = true;
+            currentSection = 'contactInfo';
+            console.log(`[PARSER] Name extracted from markdown bold: ${result.contact.name}`);
+            // Don't add this line to sections, it's the name
+            continue;
+          }
+        }
+        // If it's markdown bold but not a section header or name, 
+        // treat it as regular content and continue below
+      }
+      
       // Check for plain text section headers (ALL CAPS, no special chars, matches section keywords)
       const isPlainTextSection = trimmedLine === trimmedLine.toUpperCase() && 
                                  trimmedLine.length > 3 && 
                                  trimmedLine.length < 50 &&
                                  !trimmedLine.match(/^[-•*]/) &&
                                  !trimmedLine.match(/[\w.-]+@[\w.-]+\.\w+/) && // not email
-                                 !trimmedLine.match(/\(?\+?[0-9]{1,3}\)?[-.\s]?[0-9]{2,4}[-.\s]?[0-9]{3,4}[-.\s]?[0-9]{3,4}/); // not phone
+                                 !trimmedLine.match(/\(?\+?[0-9]{1,3}\)?[-.\s]?[0-9]{2,4}[-.\s]?[0-9]{3,4}[-.\s]?[0-9]{3,4}/) && // not phone
+                                 !trimmedLine.match(/^[A-Z\s]+\|[A-Z\s]+\|[A-Z\s]+$/) && // not "TITLE | COMPANY | LOCATION" format
+                                 !hasPeriodInText(trimmedLine); // not a date period
       
       if (isPlainTextSection) {
         const sectionType = identifySection(trimmedLine.toLowerCase());
@@ -168,10 +240,28 @@ export function parseResumeText(text: string): ParsedResume {
         }
       }
       
+      
       // If we haven't found the name yet and this looks like a name (first few non-empty lines)
-      // Expanded to check more lines and be more lenient
-      if (!foundName && nameExtractionAttempts < maxNameExtractionAttempts && 
-          !trimmedLine.match(/^[#*\-•]/) && trimmedLine.length > 2 && trimmedLine.length < 100) {
+      // IMPORTANT: Only run name detection on first few lines to avoid interfering with content collection
+      // Stop name detection after we've seen section headers to prevent skipping content
+      const hasSeenSectionHeader = Object.keys(sections).some(section => 
+        section !== 'header' && section !== 'contactInfo' && sections[section] !== undefined
+      );
+      
+      // CRITICAL FIX: Limit name detection to first 5 lines only to prevent interference
+      const shouldRunNameDetection = !foundName && 
+                                     !hasSeenSectionHeader && 
+                                     i < 5 && // Only check first 5 lines
+                                     nameExtractionAttempts < maxNameExtractionAttempts && 
+                                     !trimmedLine.match(/^[#*\-•]/) && 
+                                     trimmedLine.length > 2 && 
+                                     trimmedLine.length < 100;
+      
+      if (i < 20) { // Debug first 20 lines
+        console.log(`[PARSER] Line ${i+1}: "${trimmedLine.substring(0, 50)}..." | currentSection: ${currentSection} | hasSeenSectionHeader: ${hasSeenSectionHeader} | foundName: ${foundName} | shouldRunNameDetection: ${shouldRunNameDetection}`);
+      }
+      
+      if (shouldRunNameDetection) {
         nameExtractionAttempts++;
         
         // Check if it's likely a name (not a section header, not all caps section title, not email/phone)
@@ -209,8 +299,17 @@ export function parseResumeText(text: string): ParsedResume {
         sections[currentSection] = [];
       }
       sections[currentSection].push(trimmedLine);
+      if (i < 20) { // Debug first 20 lines
+        console.log(`[PARSER] Line ${i+1}: Added to section '${currentSection}'. Section now has ${sections[currentSection].length} items`);
+      }
     }
   }
+  
+  // Debug: Log final sections state
+  console.log('[PARSER] Final sections state:', Object.keys(sections).reduce((acc, key) => {
+    acc[key] = sections[key].length;
+    return acc;
+  }, {} as Record<string, number>));
   
   // If we still haven't found a name, try extracting from the entire text
   if (!foundName || !result.contact.name || result.contact.name.trim() === '') {
@@ -299,21 +398,29 @@ export function parseResumeText(text: string): ParsedResume {
       return null;
     };
 
-    for (const line of expLines) {
+    for (let i = 0; i < expLines.length; i++) {
+      const line = expLines[i];
       const cleanLine = line.trim();
       if (!cleanLine) continue;
 
       // Check for job title (markdown bold: **Title** or plain text with | separator)
       const titleMatch = cleanLine.match(/^\*\*([^*|]+)\*\*/);
       const hasPipeSeparator = cleanLine.includes('|');
-      const periodMatch = hasPeriod(cleanLine);
+      const periodMatch = hasPeriodInText(cleanLine) ? cleanLine.match(/\d{4}\s*[-–]\s*(?:\d{4}|Present|Current|Now)|(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{4}\s*[-–]\s*(?:(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+)?\d{4}|(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{4}\s*[-–]\s*(?:Present|Current|Now)|\d{1,2}\/\d{4}\s*[-–]\s*(?:\d{1,2}\/\d{4}|Present|Current|Now)/i)?.[0] : null;
+      
+      // Check if this line looks like a job entry header (Title | Company | Location format)
+      const looksLikeJobHeader = titleMatch || 
+                                (hasPipeSeparator && !cleanLine.match(/^[-•*]/) && cleanLine.length > 10);
+      
+      // Check if next line is a period (common format: Title | Company on one line, Period on next)
+      const nextLine = i + 1 < expLines.length ? expLines[i + 1].trim() : '';
+      const nextLineIsPeriod = nextLine && hasPeriod(nextLine) && !nextLine.match(/^[-•*]/) && nextLine.length < 50;
       
       // More flexible: if line has pipe separator OR period OR markdown title, it might be a job entry
-      const looksLikeJobEntry = titleMatch || 
-                                (hasPipeSeparator && !cleanLine.match(/^[-•*]/)) ||
+      const looksLikeJobEntry = looksLikeJobHeader || 
                                 (periodMatch && !cleanLine.match(/^[-•*]/) && cleanLine.length < 50);
       
-      if (looksLikeJobEntry) {
+      if (looksLikeJobEntry || looksLikeJobHeader) {
         // Save previous experience
         if (currentExp && (currentExp.title || currentExp.company || currentExp.bullets.length > 0)) {
           result.experience.push(currentExp);
@@ -341,6 +448,17 @@ export function parseResumeText(text: string): ParsedResume {
               currentExp.company = cleanMarkdown(companyPart);
             }
           }
+        } else if (looksLikeJobHeader && nextLineIsPeriod) {
+          // Handle format: "Title | Company | Location" on one line, "Period" on next line
+          const parts = cleanLine.split('|').map(p => p.trim());
+          currentExp = {
+            title: cleanMarkdown(parts[0] || ''),
+            company: parts.length > 1 ? cleanMarkdown(parts[1]) : '',
+            period: hasPeriod(nextLine) || '',
+            bullets: [],
+          };
+          // Skip the next line since we've already processed it as the period
+          i++;
         } else {
           // Plain text format: could be "Title | Company | Period" or "Period" or "Title | Company"
           const parts = cleanLine.split('|').map(p => p.trim());

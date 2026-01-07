@@ -184,7 +184,7 @@ export async function GET(request: NextRequest) {
       const isAdmin = userRole && adminRoles.includes(userRole);
       
       if (isAdmin) {
-        const redirectUrl = fixRedirectUrl(new URL('/admin/overview', requestUrl.origin), siteUrl);
+        const redirectUrl = fixRedirectUrl(new URL('/admin/dashboard', requestUrl.origin), siteUrl);
         return NextResponse.redirect(redirectUrl);
       }
     }

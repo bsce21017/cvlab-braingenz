@@ -7,8 +7,13 @@ import { createClient } from '@/lib/supabase/client';
 import { Camera, Eye, EyeOff, Loader2, Save } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
+import { getUser } from '@/lib/admin-api';
 
-export default function ProfileForm() {
+interface ProfileFormProps {
+  userId?: string;
+}
+
+export default function ProfileForm({ userId }: ProfileFormProps) {
   const { t } = useLanguage();
   const { user, supabase } = useAuth();
   const [loading, setLoading] = useState(true);
@@ -16,17 +21,19 @@ export default function ProfileForm() {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [viewingUser, setViewingUser] = useState<any>(null);
+  const isViewingOtherUser = !!userId && userId !== user?.id;
   
-  const fullName = user?.user_metadata?.full_name || '';
+  const fullName = viewingUser?.full_name || user?.user_metadata?.full_name || '';
   const nameParts = fullName.split(' ');
-  const firstName = nameParts[0] || user?.email?.split('@')[0] || '';
+  const firstName = nameParts[0] || viewingUser?.email?.split('@')[0] || user?.email?.split('@')[0] || '';
   const lastName = nameParts.slice(1).join(' ') || '';
   const userInitial = firstName.charAt(0).toUpperCase();
   
   const [formData, setFormData] = useState({
     firstName: firstName,
     lastName: lastName,
-    email: user?.email || '',
+    email: viewingUser?.email || user?.email || '',
   });
   
   const [passwordData, setPasswordData] = useState({
@@ -36,15 +43,35 @@ export default function ProfileForm() {
   });
 
   useEffect(() => {
-    if (user) {
-      setFormData({
-        firstName: firstName,
-        lastName: lastName,
-        email: user.email || '',
-      });
-      setLoading(false);
+    async function loadUserData() {
+      if (userId && isViewingOtherUser) {
+        try {
+          setLoading(true);
+          const userData = await getUser(userId);
+          setViewingUser(userData);
+          const nameParts = (userData.full_name || '').split(' ');
+          setFormData({
+            firstName: nameParts[0] || '',
+            lastName: nameParts.slice(1).join(' ') || '',
+            email: userData.email || '',
+          });
+        } catch (error) {
+          console.error('Error loading user data:', error);
+          toast.error('Failed to load user profile');
+        } finally {
+          setLoading(false);
+        }
+      } else if (user) {
+        setFormData({
+          firstName: firstName,
+          lastName: lastName,
+          email: user.email || '',
+        });
+        setLoading(false);
+      }
     }
-  }, [user, firstName, lastName]);
+    loadUserData();
+  }, [userId, user, firstName, lastName, isViewingOtherUser]);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -55,7 +82,7 @@ export default function ProfileForm() {
   };
 
   const handleSaveProfile = async () => {
-    if (!user) return;
+    if (!user || isViewingOtherUser) return;
     
     try {
       setSaving(true);
@@ -144,7 +171,8 @@ export default function ProfileForm() {
             type="text"
             value={formData.firstName}
             onChange={(e) => handleInputChange('firstName', e.target.value)}
-            className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
+            disabled={isViewingOtherUser}
+            className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed"
           />
         </div>
         <div>
@@ -153,7 +181,8 @@ export default function ProfileForm() {
             type="text"
             value={formData.lastName}
             onChange={(e) => handleInputChange('lastName', e.target.value)}
-            className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
+            disabled={isViewingOtherUser}
+            className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed"
           />
         </div>
       </div>
@@ -166,7 +195,7 @@ export default function ProfileForm() {
           disabled
           className="w-full px-4 py-2 border border-gray-200 rounded-lg bg-gray-50 text-gray-500 cursor-not-allowed"
         />
-        <p className="mt-1 text-xs text-gray-500">Email cannot be changed</p>
+        {!isViewingOtherUser && <p className="mt-1 text-xs text-gray-500">Email cannot be changed</p>}
       </div>
 
       <div>
@@ -177,12 +206,14 @@ export default function ProfileForm() {
             <div className="relative">
               <input
                 type={showCurrentPassword ? 'text' : 'password'}
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
+                disabled={isViewingOtherUser}
+                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed"
               />
               <button
                 type="button"
                 onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                disabled={isViewingOtherUser}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {showCurrentPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
               </button>
@@ -193,12 +224,14 @@ export default function ProfileForm() {
             <div className="relative">
               <input
                 type={showNewPassword ? 'text' : 'password'}
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
+                disabled={isViewingOtherUser}
+                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed"
               />
               <button
                 type="button"
                 onClick={() => setShowNewPassword(!showNewPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                disabled={isViewingOtherUser}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {showNewPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
               </button>
@@ -209,12 +242,14 @@ export default function ProfileForm() {
             <div className="relative">
               <input
                 type={showConfirmPassword ? 'text' : 'password'}
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
+                disabled={isViewingOtherUser}
+                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed"
               />
               <button
                 type="button"
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                disabled={isViewingOtherUser}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
               </button>
@@ -226,8 +261,8 @@ export default function ProfileForm() {
       <div className="flex gap-4">
         <Button
           onClick={handleSaveProfile}
-          disabled={saving}
-          className="px-8 py-3 bg-black text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors"
+          disabled={saving || isViewingOtherUser}
+          className="px-8 py-3 bg-black text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {saving ? (
             <>
@@ -243,63 +278,13 @@ export default function ProfileForm() {
         </Button>
       </div>
 
-      <div>
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('profile.changePassword')}</h3>
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm text-gray-600 mb-2">{t('profile.newPassword')}</label>
-            <div className="relative">
-              <input
-                type={showNewPassword ? 'text' : 'password'}
-                value={passwordData.newPassword}
-                onChange={(e) => handlePasswordChange('newPassword', e.target.value)}
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
-              />
-              <button
-                type="button"
-                onClick={() => setShowNewPassword(!showNewPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-              >
-                {showNewPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-              </button>
-            </div>
-          </div>
-          <div>
-            <label className="block text-sm text-gray-600 mb-2">{t('profile.confirmPassword')}</label>
-            <div className="relative">
-              <input
-                type={showConfirmPassword ? 'text' : 'password'}
-                value={passwordData.confirmPassword}
-                onChange={(e) => handlePasswordChange('confirmPassword', e.target.value)}
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
-              />
-              <button
-                type="button"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-              >
-                {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-              </button>
-            </div>
-          </div>
+      {isViewingOtherUser && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <p className="text-sm text-blue-800">
+            <strong>Viewing:</strong> {viewingUser?.full_name || viewingUser?.email || 'User'}
+          </p>
         </div>
-        <div className="mt-4">
-          <Button
-            onClick={handleChangePassword}
-            disabled={saving || !passwordData.newPassword || !passwordData.confirmPassword}
-            className="px-6 py-2 bg-black text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors"
-          >
-            {saving ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Updating...
-              </>
-            ) : (
-              'Update Password'
-            )}
-          </Button>
-        </div>
-      </div>
+      )}
     </div>
   );
 }

@@ -14,11 +14,13 @@ import {
 import { Button } from '@/components/ui/button';
 import { getNotifications, markNotificationRead, markAllNotificationsRead, AdminNotification } from '@/lib/admin-api';
 import { formatDistanceToNow } from 'date-fns';
+import { ar } from 'date-fns/locale';
 
 const POLL_INTERVAL = 30000; // 30 seconds
 
 export default function NotificationDropdown() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const isArabic = language === 'ar';
   const router = useRouter();
   const [notifications, setNotifications] = useState<AdminNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -156,7 +158,10 @@ export default function NotificationDropdown() {
                     {notification.message}
                   </p>
                   <p className="text-xs text-gray-400 mt-1">
-                    {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
+                    {formatDistanceToNow(new Date(notification.created_at), { 
+                      addSuffix: true,
+                      locale: isArabic ? ar : undefined
+                    })}
                   </p>
                 </div>
               </DropdownMenuItem>

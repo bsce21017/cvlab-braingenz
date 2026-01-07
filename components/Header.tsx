@@ -8,7 +8,7 @@ import { toast } from 'sonner';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { Sparkles, LogOut, User, Loader2 } from 'lucide-react';
+import { LogOut, User, Loader2 } from 'lucide-react';
 import UserNotificationDropdown from '@/components/user/UserNotificationDropdown';
 import {
   Dialog,
@@ -95,25 +95,14 @@ export default function Header() {
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           <div className="flex items-center justify-between h-20">
             <Link href="/" className="flex items-center flex-shrink-0">
-              {pathname === '/contact-us' || pathname === '/profile' ? (
-                <div className="flex items-center gap-3">
-                  <div className="bg-black rounded-xl p-2">
-                    <Sparkles className="w-5 h-5 text-white" />
-                  </div>
-                  <span className="text-xl font-semibold text-gray-900">
-                    ResumeAI
-                  </span>
-                </div>
-              ) : (
-                <Image
-                  src="/assets/CVLab Logo.png"
-                  alt="CVLab Logo"
-                  width={120}
-                  height={40}
-                  className="h-10 w-auto"
-                  priority
-                />
-              )}
+              <Image
+                src="/assets/Main_logo.svg"
+                alt="CVLab Logo"
+                width={200}
+                height={200}
+                className="h-20 w-auto"
+                priority
+              />
             </Link>
 
             <nav className="hidden md:flex items-center gap-12">

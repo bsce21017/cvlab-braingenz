@@ -49,11 +49,21 @@ def download_file_from_s3(s3_key: str, local_path: str) -> bool:
         bool: True if successful, False otherwise
     """
     try:
-        s3_client = get_s3_client()
-        s3_client.download_file(S3_BUCKET, s3_key, local_path)
+        # Use get_object instead of download_file to avoid HeadObject permission issues
+        # Get file content first
+        content = get_file_content_from_s3(s3_key)
+        if content is None:
+            logger.error(f"Failed to get file content from S3: {s3_key}")
+            return False
+        
+        # Write content to local file
+        os.makedirs(os.path.dirname(local_path), exist_ok=True)
+        with open(local_path, 'wb') as f:
+            f.write(content)
+        
         logger.info(f"Downloaded {s3_key} to {local_path}")
         return True
-    except ClientError as e:
+    except Exception as e:
         logger.error(f"Failed to download from S3: {e}")
         return False
 

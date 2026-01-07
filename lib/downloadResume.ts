@@ -5,6 +5,39 @@
 import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, Table, TableRow, TableCell, WidthType, BorderStyle, ShadingType } from 'docx';
 import { ResumeData } from './resumeDataTypes';
 
+// Font configuration - using Inter to match templates, with Calibri as fallback
+// Note: Inter may not be available on all systems, Word will use fallback fonts
+const FONT_FAMILY = 'Inter';
+
+// Helper function to create TextRun with consistent font
+function createTextRun(
+  text: string,
+  options: {
+    bold?: boolean;
+    size?: number;
+    color?: string;
+    font?: string;
+  } = {}
+): TextRun {
+  return new TextRun({
+    text,
+    bold: options.bold,
+    size: options.size,
+    color: options.color,
+    font: options.font || FONT_FAMILY,
+  });
+}
+
+// Border configuration for tables without borders
+const NO_BORDERS = {
+  top: { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' },
+  bottom: { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' },
+  left: { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' },
+  right: { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' },
+  insideHorizontal: { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' },
+  insideVertical: { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' },
+};
+
 /**
  * Download resume as PDF from HTML element
  */
@@ -114,7 +147,36 @@ export async function downloadResumeAsPDF(element: HTMLElement, filename: string
       }
     });
 
-    // Wait for DOM reflow after removing min-height
+    // Remove any overflow/clipping CSS that might hide content
+    const overflowElements = element.querySelectorAll('*');
+    const originalOverflows: { element: HTMLElement; originalOverflow: string; originalTextOverflow: string; originalWhiteSpace: string }[] = [];
+    
+    overflowElements.forEach((el) => {
+      const htmlEl = el as HTMLElement;
+      const style = window.getComputedStyle(htmlEl);
+      if (style.overflow === 'hidden' || style.textOverflow === 'ellipsis' || style.whiteSpace === 'nowrap') {
+        originalOverflows.push({
+          element: htmlEl,
+          originalOverflow: htmlEl.style.overflow || '',
+          originalTextOverflow: htmlEl.style.textOverflow || '',
+          originalWhiteSpace: htmlEl.style.whiteSpace || '',
+        });
+        // Temporarily remove overflow restrictions for PDF capture
+        htmlEl.style.overflow = 'visible';
+        htmlEl.style.textOverflow = 'clip';
+        htmlEl.style.whiteSpace = 'normal';
+      }
+    });
+
+    // Ensure element itself doesn't clip content
+    const originalElementOverflow = element.style.overflow;
+    const originalElementOverflowX = element.style.overflowX;
+    const originalElementOverflowY = element.style.overflowY;
+    element.style.overflow = 'visible';
+    element.style.overflowX = 'visible';
+    element.style.overflowY = 'visible';
+
+    // Wait for DOM reflow after removing min-height and overflow
     await new Promise(resolve => {
       // Force reflow by reading offsetHeight
       void element.offsetHeight;
@@ -129,53 +191,121 @@ export async function downloadResumeAsPDF(element: HTMLElement, filename: string
     const html2pdf = (await import('html2pdf.js')).default;
     console.log('[downloadResume] html2pdf imported successfully');
     
-    // Calculate optimal scale to fit on one page (after reflow)
-    const elementHeight = element.scrollHeight;
-    const elementWidth = element.scrollWidth;
-    // Fix: margins are 5mm each, so total is 10mm (not 20mm)
-    const a4Height = 297 - 10; // A4 height in mm minus margins (5mm top + 5mm bottom)
-    const a4Width = 210 - 10; // A4 width in mm minus margins (5mm left + 5mm right)
+    // Get accurate dimensions - use the maximum of scroll/offset/client dimensions
+    // This ensures we capture all content even if there's overflow
+    const elementHeight = Math.max(
+      element.scrollHeight,
+      element.offsetHeight,
+      element.clientHeight
+    );
+    const elementWidth = Math.max(
+      element.scrollWidth,
+      element.offsetWidth,
+      element.clientWidth
+    );
+    
+    console.log('[downloadResume] Element dimensions:', {
+      scrollHeight: element.scrollHeight,
+      scrollWidth: element.scrollWidth,
+      offsetHeight: element.offsetHeight,
+      offsetWidth: element.offsetWidth,
+      clientHeight: element.clientHeight,
+      clientWidth: element.clientWidth,
+      finalHeight: elementHeight,
+      finalWidth: elementWidth,
+    });
+    
+    // A4 dimensions in mm
+    const a4Height = 297; // Full A4 height
+    const a4Width = 210; // Full A4 width
     const pxToMm = 0.264583; // 1px = 0.264583mm at 96dpi
     const elementHeightMm = elementHeight * pxToMm;
     const elementWidthMm = elementWidth * pxToMm;
     
-    // Calculate scale to fit height (primary constraint)
-    const heightScale = a4Height / elementHeightMm;
-    const widthScale = a4Width / elementWidthMm;
-    const optimalScale = Math.min(heightScale, widthScale, 1); // Don't scale up, only down
+    // Calculate scale - but be less aggressive, allow multi-page if needed
+    // Use margins of 10mm (5mm each side)
+    const availableHeight = a4Height - 10; // Top + bottom margins
+    const availableWidth = a4Width - 10; // Left + right margins
     
-    // More aggressive scaling for tall content
-    let finalScale = optimalScale;
-    if (optimalScale < 0.8) {
-      // If content is still too tall, scale down more aggressively
-      finalScale = optimalScale * 0.92;
-    } else if (optimalScale < 0.9) {
-      finalScale = optimalScale * 0.95;
-    }
+    const heightScale = availableHeight / elementHeightMm;
+    const widthScale = availableWidth / elementWidthMm;
+    
+    // Use the smaller scale, but don't go below 0.7 to maintain readability
+    // If content is too large, allow it to span multiple pages
+    const optimalScale = Math.min(heightScale, widthScale, 1);
+    const finalScale = Math.max(optimalScale, 0.7); // Minimum 0.7 scale for readability
+    
+    console.log('[downloadResume] Scale calculation:', {
+      elementHeightMm,
+      elementWidthMm,
+      availableHeight,
+      availableWidth,
+      heightScale,
+      widthScale,
+      optimalScale,
+      finalScale,
+    });
+    
+    // Use higher scale for html2canvas to ensure quality
+    // html2canvas scale is independent of PDF page size
+    const canvasScale = 2; // High quality rendering
     
     const opt = {
-      margin: [5, 5, 5, 5] as [number, number, number, number], // Reduced margins for more space
+      margin: [5, 5, 5, 5] as [number, number, number, number], // 5mm margins
       filename: filename,
       image: { type: 'jpeg' as const, quality: 0.98 },
       html2canvas: { 
-        // More aggressive scaling: if finalScale < 1, use it directly multiplied by 2
-        // This ensures content fits on one page
-        scale: finalScale < 1 ? Math.max(1.2, 2 * finalScale) : 2, // Minimum scale of 1.2 for quality
+        scale: canvasScale, // High quality canvas rendering
         useCORS: true,
         logging: false,
         letterRendering: true,
-        windowWidth: element.scrollWidth,
-        windowHeight: element.scrollHeight,
+        // Use actual element dimensions, not scroll dimensions
+        // This ensures all content is captured
+        width: elementWidth,
+        height: elementHeight,
+        windowWidth: elementWidth,
+        windowHeight: elementHeight,
+        // Additional options to ensure full content capture
+        allowTaint: true,
+        backgroundColor: '#ffffff',
+        removeContainer: false,
+        // Ensure text is fully rendered - remove all overflow restrictions in cloned doc
+        onclone: (clonedDoc: any) => {
+          // Find all elements in cloned document and remove overflow restrictions
+          // html2pdf passes a Document-like object, use any to avoid type conflicts
+          if (clonedDoc && typeof clonedDoc.querySelectorAll === 'function') {
+            const allElements = clonedDoc.querySelectorAll('*');
+            allElements.forEach((el: any) => {
+              // Check if element is an HTMLElement
+              if (el instanceof HTMLElement) {
+                // Force remove all overflow restrictions
+                el.style.overflow = 'visible';
+                el.style.overflowX = 'visible';
+                el.style.overflowY = 'visible';
+                // Remove text overflow clipping
+                if (el.style.textOverflow === 'ellipsis') {
+                  el.style.textOverflow = 'clip';
+                }
+                // Remove white-space nowrap that might cause clipping
+                if (el.style.whiteSpace === 'nowrap') {
+                  el.style.whiteSpace = 'normal';
+                }
+              }
+            });
+          }
+        },
       },
       jsPDF: { 
         unit: 'mm', 
         format: 'a4', 
         orientation: 'portrait' as const,
         compress: true,
+        // Allow content to span multiple pages if needed
+        putOnlyUsedFonts: true,
+        floatPrecision: 16,
       },
       pagebreak: { 
-        mode: ['avoid-all', 'css', 'legacy'],
-        // Removed 'h1', 'h2', 'h3' from avoid to prevent forced page breaks
+        mode: ['css', 'legacy'], // Changed from 'avoid-all' to allow natural page breaks
         avoid: ['.avoid-break'],
       },
     };
@@ -215,6 +345,18 @@ export async function downloadResumeAsPDF(element: HTMLElement, filename: string
     originalPadding.forEach(({ element: el, originalClass }) => {
       el.className = originalClass;
     });
+
+    // Restore original overflow styles
+    originalOverflows.forEach(({ element: el, originalOverflow, originalTextOverflow, originalWhiteSpace }) => {
+      el.style.overflow = originalOverflow;
+      el.style.textOverflow = originalTextOverflow;
+      el.style.whiteSpace = originalWhiteSpace;
+    });
+
+    // Restore original element overflow
+    element.style.overflow = originalElementOverflow;
+    element.style.overflowX = originalElementOverflowX;
+    element.style.overflowY = originalElementOverflowY;
   } catch (error) {
     console.error('[downloadResume] Error generating PDF:', error);
     console.error('[downloadResume] Error stack:', error instanceof Error ? error.stack : 'No stack trace');
@@ -234,6 +376,7 @@ export async function downloadResumeAsWord(data: ResumeData, template: string, f
 
     // Template-specific color constants
     const BLUE = '#2563eb';
+    const TECHNICAL_BLUE = '#1D61CB'; // Technical template uses darker blue
     const GOLD = '#b45309';
     const BLACK = '#000000';
     const GRAY_600 = '#4b5563';
@@ -252,13 +395,22 @@ export async function downloadResumeAsWord(data: ResumeData, template: string, f
         generateExecutiveTemplate(data, children, GOLD, GRAY_600, GRAY_700);
         break;
       case 'technical':
-        generateTechnicalTemplate(data, children, BLUE, GRAY_600, GRAY_700);
+        generateTechnicalTemplate(data, children, TECHNICAL_BLUE, GRAY_600, GRAY_700);
         break;
       default:
         generateClassicTemplate(data, children, BLUE, GRAY_600, GRAY_700);
     }
 
     const doc = new Document({
+      styles: {
+        default: {
+          document: {
+            run: {
+              font: FONT_FAMILY,
+            },
+          },
+        },
+      },
       sections: [
         {
           properties: {},
@@ -299,8 +451,7 @@ function generateClassicTemplate(
   children.push(
     new Paragraph({
       children: [
-        new TextRun({
-          text: (data.name || 'Your Name').toUpperCase(),
+        createTextRun((data.name || 'Your Name').toUpperCase(), {
           bold: true,
           size: 36,
           color: headingColor,
@@ -321,8 +472,7 @@ function generateClassicTemplate(
     children.push(
       new Paragraph({
         children: [
-          new TextRun({
-            text: contactInfo.join(' | '),
+          createTextRun(contactInfo.join(' | '), {
             size: 20,
             color: textColor,
           }),
@@ -354,8 +504,7 @@ function generateClassicTemplate(
       children: [
         new Paragraph({
           children: [
-            new TextRun({
-              text: heading.toUpperCase(),
+            createTextRun(heading.toUpperCase(), {
               bold: true,
               size: 22,
               color: headingColor,
@@ -372,6 +521,7 @@ function generateClassicTemplate(
 
     return new Table({
       width: { size: 100, type: WidthType.PERCENTAGE },
+      borders: NO_BORDERS,
       rows: [
         new TableRow({
           children: [headingCell, contentCell],
@@ -385,8 +535,7 @@ function generateClassicTemplate(
     const summaryContent = [
       new Paragraph({
         children: [
-          new TextRun({
-            text: data.summary,
+          createTextRun(data.summary, {
             size: 22,
             color: textColor,
           }),
@@ -406,8 +555,7 @@ function generateClassicTemplate(
       expContent.push(
         new Paragraph({
           children: [
-            new TextRun({
-              text: exp.title || '',
+            createTextRun(exp.title || '', {
               bold: true,
               size: 24,
               color: '#000000',
@@ -420,8 +568,7 @@ function generateClassicTemplate(
         expContent.push(
           new Paragraph({
             children: [
-              new TextRun({
-                text: exp.company,
+              createTextRun(exp.company, {
                 size: 20,
                 color: textColor,
               }),
@@ -435,8 +582,7 @@ function generateClassicTemplate(
         expContent.push(
           new Paragraph({
             children: [
-              new TextRun({
-                text: exp.period,
+              createTextRun(exp.period, {
                 size: 20,
                 color: secondaryTextColor,
               }),
@@ -451,8 +597,7 @@ function generateClassicTemplate(
           expContent.push(
             new Paragraph({
               children: [
-                new TextRun({
-                  text: `• ${bullet}`,
+                createTextRun(`• ${bullet}`, {
                   size: 20,
                   color: textColor,
                 }),
@@ -476,8 +621,7 @@ function generateClassicTemplate(
       eduContent.push(
         new Paragraph({
           children: [
-            new TextRun({
-              text: edu.degree || '',
+            createTextRun(edu.degree || '', {
               bold: true,
               size: 24,
               color: '#000000',
@@ -490,8 +634,7 @@ function generateClassicTemplate(
         eduContent.push(
           new Paragraph({
             children: [
-              new TextRun({
-                text: edu.institution,
+              createTextRun(edu.institution, {
                 size: 20,
                 color: textColor,
               }),
@@ -504,8 +647,7 @@ function generateClassicTemplate(
         eduContent.push(
           new Paragraph({
             children: [
-              new TextRun({
-                text: edu.period,
+              createTextRun(edu.period, {
                 size: 20,
                 color: secondaryTextColor,
               }),
@@ -519,8 +661,7 @@ function generateClassicTemplate(
           eduContent.push(
             new Paragraph({
               children: [
-                new TextRun({
-                  text: `• ${detail}`,
+                createTextRun(`• ${detail}`, {
                   size: 20,
                   color: textColor,
                 }),
@@ -546,6 +687,7 @@ function generateClassicTemplate(
 
     const skillsTable = new Table({
       width: { size: 100, type: WidthType.PERCENTAGE },
+      borders: NO_BORDERS,
       rows: [
         new TableRow({
           children: [
@@ -555,11 +697,10 @@ function generateClassicTemplate(
                 (skill) =>
                   new Paragraph({
                     children: [
-                      new TextRun({
-                        text: `• ${skill}`,
-                        size: 20,
-                        color: textColor,
-                      }),
+                createTextRun(`• ${skill}`, {
+                  size: 20,
+                  color: textColor,
+                }),
                     ],
                     spacing: { after: 100 },
                   })
@@ -571,11 +712,10 @@ function generateClassicTemplate(
                 (skill) =>
                   new Paragraph({
                     children: [
-                      new TextRun({
-                        text: `• ${skill}`,
-                        size: 20,
-                        color: textColor,
-                      }),
+                createTextRun(`• ${skill}`, {
+                  size: 20,
+                  color: textColor,
+                }),
                     ],
                     spacing: { after: 100 },
                   })
@@ -595,8 +735,7 @@ function generateClassicTemplate(
       (cert) =>
         new Paragraph({
           children: [
-            new TextRun({
-              text: `• ${cert}`,
+            createTextRun(`• ${cert}`, {
               size: 20,
               color: textColor,
             }),
@@ -613,11 +752,10 @@ function generateClassicTemplate(
     const langContent = [
       new Paragraph({
         children: [
-          new TextRun({
-            text: data.languages.join(', '),
-            size: 20,
-            color: textColor,
-          }),
+              createTextRun(data.languages.join(', '), {
+                size: 20,
+                color: textColor,
+              }),
         ],
       }),
     ];
@@ -639,8 +777,7 @@ function generateModernTemplate(
   children.push(
     new Paragraph({
       children: [
-        new TextRun({
-          text: (data.name || 'Your Name').toUpperCase(),
+        createTextRun((data.name || 'Your Name').toUpperCase(), {
           bold: true,
           size: 36,
           color: headingColor,
@@ -661,8 +798,7 @@ function generateModernTemplate(
     children.push(
       new Paragraph({
         children: [
-          new TextRun({
-            text: contactInfo.join(' | '),
+          createTextRun(contactInfo.join(' | '), {
             size: 20,
             color: textColor,
           }),
@@ -692,8 +828,7 @@ function generateModernTemplate(
     children.push(
       new Paragraph({
         children: [
-          new TextRun({
-            text: heading.toUpperCase(),
+          createTextRun(heading.toUpperCase(), {
             bold: true,
             size: 22,
             color: headingColor,
@@ -719,8 +854,7 @@ function generateModernTemplate(
     createSection('Summary', [
       new Paragraph({
         children: [
-          new TextRun({
-            text: data.summary,
+          createTextRun(data.summary, {
             size: 22,
             color: textColor,
           }),
@@ -737,8 +871,7 @@ function generateModernTemplate(
       expContent.push(
         new Paragraph({
           children: [
-            new TextRun({
-              text: exp.title || '',
+            createTextRun(exp.title || '', {
               bold: true,
               size: 24,
               color: '#000000',
@@ -751,8 +884,7 @@ function generateModernTemplate(
         expContent.push(
           new Paragraph({
             children: [
-              new TextRun({
-                text: exp.company,
+              createTextRun(exp.company, {
                 size: 20,
                 color: textColor,
               }),
@@ -765,8 +897,7 @@ function generateModernTemplate(
         expContent.push(
           new Paragraph({
             children: [
-              new TextRun({
-                text: exp.period,
+              createTextRun(exp.period, {
                 size: 20,
                 color: secondaryTextColor,
               }),
@@ -780,8 +911,7 @@ function generateModernTemplate(
           expContent.push(
             new Paragraph({
               children: [
-                new TextRun({
-                  text: `• ${bullet}`,
+                createTextRun(`• ${bullet}`, {
                   size: 20,
                   color: textColor,
                 }),
@@ -806,6 +936,7 @@ function generateModernTemplate(
 
     const skillsTable = new Table({
       width: { size: 100, type: WidthType.PERCENTAGE },
+      borders: NO_BORDERS,
       rows: [
         new TableRow({
           children: [
@@ -815,8 +946,7 @@ function generateModernTemplate(
                 (skill) =>
                   new Paragraph({
                     children: [
-                      new TextRun({
-                        text: skill,
+                      createTextRun(skill, {
                         size: 20,
                         color: textColor,
                       }),
@@ -831,8 +961,7 @@ function generateModernTemplate(
                 (skill) =>
                   new Paragraph({
                     children: [
-                      new TextRun({
-                        text: skill,
+                      createTextRun(skill, {
                         size: 20,
                         color: textColor,
                       }),
@@ -847,8 +976,7 @@ function generateModernTemplate(
                 (skill) =>
                   new Paragraph({
                     children: [
-                      new TextRun({
-                        text: skill,
+                      createTextRun(skill, {
                         size: 20,
                         color: textColor,
                       }),
@@ -871,8 +999,7 @@ function generateModernTemplate(
       eduContent.push(
         new Paragraph({
           children: [
-            new TextRun({
-              text: edu.degree || '',
+            createTextRun(edu.degree || '', {
               bold: true,
               size: 24,
               color: '#000000',
@@ -885,8 +1012,7 @@ function generateModernTemplate(
         eduContent.push(
           new Paragraph({
             children: [
-              new TextRun({
-                text: edu.institution,
+              createTextRun(edu.institution, {
                 size: 20,
                 color: textColor,
               }),
@@ -899,8 +1025,7 @@ function generateModernTemplate(
         eduContent.push(
           new Paragraph({
             children: [
-              new TextRun({
-                text: edu.period,
+              createTextRun(edu.period, {
                 size: 20,
                 color: secondaryTextColor,
               }),
@@ -914,8 +1039,7 @@ function generateModernTemplate(
           eduContent.push(
             new Paragraph({
               children: [
-                new TextRun({
-                  text: `• ${detail}`,
+                createTextRun(`• ${detail}`, {
                   size: 20,
                   color: textColor,
                 }),
@@ -944,11 +1068,10 @@ function generateModernTemplate(
               size: 20,
               color: textColor,
             }),
-            new TextRun({
-              text: data.languages.join(', '),
-              size: 20,
-              color: textColor,
-            }),
+              createTextRun(data.languages.join(', '), {
+                size: 20,
+                color: textColor,
+              }),
           ],
           spacing: { after: 100 },
         })
@@ -992,8 +1115,7 @@ function generateExecutiveTemplate(
   children.push(
     new Paragraph({
       children: [
-        new TextRun({
-          text: data.name || 'Your Name',
+        createTextRun(data.name || 'Your Name', {
           bold: true,
           size: 48,
           color: '#000000',
@@ -1008,8 +1130,7 @@ function generateExecutiveTemplate(
     children.push(
       new Paragraph({
         children: [
-          new TextRun({
-            text: data.title.toUpperCase(),
+          createTextRun(data.title.toUpperCase(), {
             bold: true,
             size: 28,
             color: headingColor,
@@ -1030,8 +1151,7 @@ function generateExecutiveTemplate(
     children.push(
       new Paragraph({
         children: [
-          new TextRun({
-            text: contactInfo.join(' | '),
+          createTextRun(contactInfo.join(' | '), {
             size: 20,
             color: textColor,
           }),
@@ -1059,8 +1179,7 @@ function generateExecutiveTemplate(
     children.push(
       new Paragraph({
         children: [
-          new TextRun({
-            text: heading.toUpperCase(),
+          createTextRun(heading.toUpperCase(), {
             bold: true,
             size: 22,
             color: headingColor,
@@ -1078,8 +1197,7 @@ function generateExecutiveTemplate(
     createSection('Summary', [
       new Paragraph({
         children: [
-          new TextRun({
-            text: data.summary,
+          createTextRun(data.summary, {
             size: 22,
             color: textColor,
           }),
@@ -1096,8 +1214,7 @@ function generateExecutiveTemplate(
       expContent.push(
         new Paragraph({
           children: [
-            new TextRun({
-              text: exp.title || '',
+            createTextRun(exp.title || '', {
               bold: true,
               size: 24,
               color: '#000000',
@@ -1110,8 +1227,7 @@ function generateExecutiveTemplate(
         expContent.push(
           new Paragraph({
             children: [
-              new TextRun({
-                text: exp.company,
+              createTextRun(exp.company, {
                 size: 20,
                 color: textColor,
               }),
@@ -1124,8 +1240,7 @@ function generateExecutiveTemplate(
         expContent.push(
           new Paragraph({
             children: [
-              new TextRun({
-                text: exp.period,
+              createTextRun(exp.period, {
                 size: 20,
                 color: secondaryTextColor,
               }),
@@ -1139,8 +1254,7 @@ function generateExecutiveTemplate(
           expContent.push(
             new Paragraph({
               children: [
-                new TextRun({
-                  text: `• ${bullet}`,
+                createTextRun(`• ${bullet}`, {
                   size: 20,
                   color: textColor,
                 }),
@@ -1163,8 +1277,7 @@ function generateExecutiveTemplate(
       eduContent.push(
         new Paragraph({
           children: [
-            new TextRun({
-              text: edu.degree || '',
+            createTextRun(edu.degree || '', {
               bold: true,
               size: 24,
               color: '#000000',
@@ -1177,8 +1290,7 @@ function generateExecutiveTemplate(
         eduContent.push(
           new Paragraph({
             children: [
-              new TextRun({
-                text: edu.institution,
+              createTextRun(edu.institution, {
                 size: 20,
                 color: textColor,
               }),
@@ -1191,8 +1303,7 @@ function generateExecutiveTemplate(
         eduContent.push(
           new Paragraph({
             children: [
-              new TextRun({
-                text: edu.period,
+              createTextRun(edu.period, {
                 size: 20,
                 color: secondaryTextColor,
               }),
@@ -1206,8 +1317,7 @@ function generateExecutiveTemplate(
           eduContent.push(
             new Paragraph({
               children: [
-                new TextRun({
-                  text: `• ${detail}`,
+                createTextRun(`• ${detail}`, {
                   size: 20,
                   color: textColor,
                 }),
@@ -1241,11 +1351,10 @@ function generateExecutiveTemplate(
               size: 20,
               color: textColor,
             }),
-            new TextRun({
-              text: data.languages.join(', '),
-              size: 20,
-              color: textColor,
-            }),
+              createTextRun(data.languages.join(', '), {
+                size: 20,
+                color: textColor,
+              }),
           ],
           spacing: { after: 100 },
           indent: { left: 200 },
@@ -1292,14 +1401,17 @@ function generateTechnicalTemplate(
   textColor: string,
   secondaryTextColor: string
 ) {
-  // Header - Blue Name (Centered, Uppercase)
+  // Color constants matching the template
+  const GRAY_600 = '#4b5563';
+  const GRAY_700 = '#374151';
+
+  // Header - Blue Name (Centered, Uppercase) - matches text-3xl
   children.push(
     new Paragraph({
       children: [
-        new TextRun({
-          text: (data.name || 'Your Name').toUpperCase(),
+        createTextRun((data.name || 'Your Name').toUpperCase(), {
           bold: true,
-          size: 40,
+          size: 36, // text-3xl equivalent
           color: headingColor,
         }),
       ],
@@ -1308,20 +1420,21 @@ function generateTechnicalTemplate(
     })
   );
 
-  // Contact Information
+  // Contact Information - smaller text (text-sm)
   const contactInfo: string[] = [];
   if (data.email) contactInfo.push(data.email);
+  if (data.email && data.phone) contactInfo.push('|');
   if (data.phone) contactInfo.push(data.phone);
+  if ((data.email || data.phone) && data.location) contactInfo.push('|');
   if (data.location) contactInfo.push(data.location);
 
   if (contactInfo.length > 0) {
     children.push(
       new Paragraph({
         children: [
-          new TextRun({
-            text: contactInfo.join(' | '),
-            size: 20,
-            color: textColor,
+          createTextRun(contactInfo.join(' '), {
+            size: 18, // text-sm equivalent
+            color: GRAY_600,
           }),
         ],
         alignment: AlignmentType.CENTER,
@@ -1330,35 +1443,26 @@ function generateTechnicalTemplate(
     );
   }
 
-  // Horizontal rule
-  children.push(
-    new Paragraph({
-      spacing: { after: 300 },
-      border: {
-        bottom: {
-          color: '#d1d5db',
-          size: 1,
-          style: BorderStyle.SINGLE,
-        },
-      },
-    })
-  );
-
   const createSection = (heading: string, content: (Paragraph | Table)[]) => {
+    // Section heading with top AND bottom borders (border-t border-b)
     children.push(
       new Paragraph({
         children: [
-          new TextRun({
-            text: heading.toUpperCase(),
+          createTextRun(heading.toUpperCase(), {
             bold: true,
-            size: 22,
+            size: 22, // text-base equivalent
             color: headingColor,
           }),
         ],
-        spacing: { after: 200 },
+        spacing: { before: 200, after: 200 },
         border: {
+          top: {
+            color: headingColor,
+            size: 1,
+            style: BorderStyle.SINGLE,
+          },
           bottom: {
-            color: '#e5e7eb',
+            color: headingColor,
             size: 1,
             style: BorderStyle.SINGLE,
           },
@@ -1374,10 +1478,9 @@ function generateTechnicalTemplate(
     createSection('Summary', [
       new Paragraph({
         children: [
-          new TextRun({
-            text: data.summary,
-            size: 22,
-            color: textColor,
+          createTextRun(data.summary, {
+            size: 20, // text-sm equivalent
+            color: GRAY_700,
           }),
         ],
         spacing: { after: 0 },
@@ -1385,7 +1488,7 @@ function generateTechnicalTemplate(
     ]);
   }
 
-  // Technical Skills (BEFORE Experience - 3 columns)
+  // Technical Skills (BEFORE Experience - 3 columns grid)
   if (data.skills && data.skills.length > 0) {
     const skillsPerColumn = Math.ceil(data.skills.length / 3);
     const col1 = data.skills.slice(0, skillsPerColumn);
@@ -1394,6 +1497,7 @@ function generateTechnicalTemplate(
 
     const skillsTable = new Table({
       width: { size: 100, type: WidthType.PERCENTAGE },
+      borders: NO_BORDERS,
       rows: [
         new TableRow({
           children: [
@@ -1403,13 +1507,12 @@ function generateTechnicalTemplate(
                 (skill) =>
                   new Paragraph({
                     children: [
-                      new TextRun({
-                        text: skill,
-                        size: 20,
-                        color: textColor,
+                      createTextRun(skill, {
+                        size: 20, // text-sm equivalent
+                        color: GRAY_700,
                       }),
                     ],
-                    spacing: { after: 100 },
+                    spacing: { after: 50 }, // gap-y-1 equivalent
                   })
               ),
             }),
@@ -1422,10 +1525,10 @@ function generateTechnicalTemplate(
                       new TextRun({
                         text: skill,
                         size: 20,
-                        color: textColor,
+                        color: GRAY_700,
                       }),
                     ],
-                    spacing: { after: 100 },
+                    spacing: { after: 50 },
                   })
               ),
             }),
@@ -1438,10 +1541,10 @@ function generateTechnicalTemplate(
                       new TextRun({
                         text: skill,
                         size: 20,
-                        color: textColor,
+                        color: GRAY_700,
                       }),
                     ],
-                    spacing: { after: 100 },
+                    spacing: { after: 50 },
                   })
               ),
             }),
@@ -1454,61 +1557,69 @@ function generateTechnicalTemplate(
 
   // Professional Experience
   if (data.experience && data.experience.length > 0) {
-    const expContent: Paragraph[] = [];
+    const expContent: (Paragraph | Table)[] = [];
     data.experience.forEach((exp) => {
+      // Title and company on same line, period on right (flex justify-between) - using table
+      const titleCompany = exp.title ? `${exp.title}${exp.company ? `, ${exp.company}` : ''}` : exp.company || '';
       expContent.push(
-        new Paragraph({
-          children: [
-            new TextRun({
-              text: exp.title || '',
-              bold: true,
-              size: 24,
-              color: '#000000',
+        new Table({
+          width: { size: 100, type: WidthType.PERCENTAGE },
+          borders: NO_BORDERS,
+          rows: [
+            new TableRow({
+              children: [
+                new TableCell({
+                  width: { size: 70, type: WidthType.PERCENTAGE },
+                  children: [
+                    new Paragraph({
+                      children: [
+                        new TextRun({
+                          text: titleCompany,
+                          bold: true,
+                          size: 20, // text-sm equivalent
+                          color: '#000000',
+                        }),
+                      ],
+                    }),
+                  ],
+                }),
+                ...(exp.period ? [
+                  new TableCell({
+                    width: { size: 30, type: WidthType.PERCENTAGE },
+                    children: [
+                      new Paragraph({
+                        children: [
+                          createTextRun(exp.period, {
+                            bold: true,
+                            size: 20,
+                            color: headingColor,
+                          }),
+                        ],
+                        alignment: AlignmentType.RIGHT,
+                      }),
+                    ],
+                  }),
+                ] : []),
+              ],
             }),
           ],
-          spacing: { after: 100 },
         })
       );
-      if (exp.company) {
-        expContent.push(
-          new Paragraph({
-            children: [
-              new TextRun({
-                text: exp.company,
-                size: 20,
-                color: textColor,
-              }),
-            ],
-            spacing: { after: 100 },
-          })
-        );
-      }
-      if (exp.period) {
-        expContent.push(
-          new Paragraph({
-            children: [
-              new TextRun({
-                text: exp.period,
-                size: 20,
-                color: secondaryTextColor,
-              }),
-            ],
-            spacing: { after: 200 },
-          })
-        );
-      }
       if (exp.bullets && exp.bullets.length > 0) {
         exp.bullets.forEach((bullet) => {
           expContent.push(
             new Paragraph({
               children: [
-                new TextRun({
-                  text: `• ${bullet}`,
+                createTextRun('• ', {
                   size: 20,
-                  color: textColor,
+                  color: GRAY_600,
+                }),
+                createTextRun(bullet, {
+                  size: 20,
+                  color: GRAY_700,
                 }),
               ],
-              spacing: { after: 100 },
+              spacing: { after: 50 },
               indent: { left: 200 },
             })
           );
@@ -1521,46 +1632,63 @@ function generateTechnicalTemplate(
 
   // Education
   if (data.education && data.education.length > 0) {
-    const eduContent: Paragraph[] = [];
+    const eduContent: (Paragraph | Table)[] = [];
     data.education.forEach((edu) => {
+      // Degree and period on same line (flex justify-between) - using table
       eduContent.push(
-        new Paragraph({
-          children: [
-            new TextRun({
-              text: edu.degree || '',
-              bold: true,
-              size: 24,
-              color: '#000000',
+        new Table({
+          width: { size: 100, type: WidthType.PERCENTAGE },
+          borders: NO_BORDERS,
+          rows: [
+            new TableRow({
+              children: [
+                new TableCell({
+                  width: { size: 70, type: WidthType.PERCENTAGE },
+                  children: [
+                    new Paragraph({
+                      children: [
+                        new TextRun({
+                          text: edu.degree || '',
+                          bold: true,
+                          size: 20, // text-sm equivalent
+                          color: '#000000',
+                        }),
+                      ],
+                    }),
+                  ],
+                }),
+                ...(edu.period ? [
+                  new TableCell({
+                    width: { size: 30, type: WidthType.PERCENTAGE },
+                    children: [
+                      new Paragraph({
+                        children: [
+                            createTextRun(edu.period, {
+                              bold: true,
+                              size: 20,
+                              color: headingColor,
+                            }),
+                        ],
+                        alignment: AlignmentType.RIGHT,
+                      }),
+                    ],
+                  }),
+                ] : []),
+              ],
             }),
           ],
-          spacing: { after: 100 },
         })
       );
       if (edu.institution) {
         eduContent.push(
           new Paragraph({
             children: [
-              new TextRun({
-                text: edu.institution,
-                size: 20,
-                color: textColor,
-              }),
+                createTextRun(edu.institution, {
+                  size: 20,
+                  color: GRAY_700,
+                }),
             ],
             spacing: { after: 100 },
-          })
-        );
-      }
-      if (edu.period) {
-        eduContent.push(
-          new Paragraph({
-            children: [
-              new TextRun({
-                text: edu.period,
-                size: 20,
-                color: secondaryTextColor,
-              }),
-            ],
-            spacing: { after: 200 },
           })
         );
       }
@@ -1570,10 +1698,14 @@ function generateTechnicalTemplate(
             new Paragraph({
               children: [
                 new TextRun({
-                  text: `• ${detail}`,
+                  text: '• ',
                   size: 20,
-                  color: textColor,
+                  color: GRAY_600,
                 }),
+                          createTextRun(detail, {
+                            size: 20,
+                            color: GRAY_700,
+                          }),
               ],
               spacing: { after: 100 },
               indent: { left: 200 },
@@ -1593,24 +1725,21 @@ function generateTechnicalTemplate(
       additionalContent.push(
         new Paragraph({
           children: [
-            new TextRun({
-              text: '• ',
-              size: 20,
-              color: textColor,
-            }),
-            new TextRun({
-              text: 'Languages: ',
-              bold: true,
-              size: 20,
-              color: textColor,
-            }),
-            new TextRun({
-              text: data.languages.join(', '),
-              size: 20,
-              color: textColor,
-            }),
+              createTextRun('• ', {
+                size: 20,
+                color: GRAY_600,
+              }),
+              createTextRun('Languages: ', {
+                bold: true,
+                size: 20,
+                color: GRAY_700,
+              }),
+              createTextRun(data.languages.join(', ') + '.', {
+                size: 20,
+                color: GRAY_700,
+              }),
           ],
-          spacing: { after: 100 },
+          spacing: { after: 50 },
           indent: { left: 200 },
         })
       );
@@ -1622,21 +1751,19 @@ function generateTechnicalTemplate(
             new TextRun({
               text: '• ',
               size: 20,
-              color: textColor,
+              color: GRAY_600,
             }),
-            new TextRun({
-              text: 'Certifications: ',
+            createTextRun('Certifications: ', {
               bold: true,
               size: 20,
-              color: textColor,
+              color: GRAY_700,
             }),
-            new TextRun({
-              text: data.certifications.join(', '),
+            createTextRun(data.certifications.join(', ') + '.', {
               size: 20,
-              color: textColor,
+              color: GRAY_700,
             }),
           ],
-          spacing: { after: 100 },
+          spacing: { after: 50 },
           indent: { left: 200 },
         })
       );

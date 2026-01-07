@@ -896,8 +896,73 @@ If it doesn't make them look good, it doesn't belong.
 
 NOW CRAFT THE CV.
 
-Output only the CV itself.
+CRITICAL: YOU MUST OUTPUT STRUCTURED JSON, NOT PLAIN TEXT
+
+Your output must be a valid JSON object with this exact structure:
+
+{
+  "optimized_cv": "Full markdown-formatted CV text (for backward compatibility)",
+  "structured_data": {
+    "contact": {
+      "name": "Full Name",
+      "title": "Job Title (optional)",
+      "email": "email@example.com (optional)",
+      "phone": "+1234567890 (optional)",
+      "location": "City, Country (optional)",
+      "linkedin": "linkedin.com/in/... (optional)",
+      "website": "https://... (optional)"
+    },
+    "summary": "Professional summary paragraph (2-6 lines)",
+    "experience": [
+      {
+        "title": "Job Title",
+        "company": "Company Name",
+        "period": "Jan 2020 - Present",
+        "location": "City, Country (optional)",
+        "bullets": [
+          "Achievement bullet point 1",
+          "Achievement bullet point 2"
+        ]
+      }
+    ],
+    "education": [
+      {
+        "degree": "Degree Name",
+        "institution": "University Name",
+        "period": "2020 - 2024",
+        "location": "City, Country (optional)",
+        "gpa": "3.8/4.0 (optional)",
+        "details": ["Honors", "Relevant coursework"]
+      }
+    ],
+    "skills": {
+      "Technical": ["Skill 1", "Skill 2"],
+      "Languages": ["English", "Arabic"],
+      "Tools": ["Excel", "SAP"]
+    },
+    "certifications": ["Certification 1", "Certification 2"],
+    "languages": ["English - Fluent", "Arabic - Native"],
+    "projects": [
+      {
+        "name": "Project Name",
+        "description": "Project description",
+        "period": "2023 (optional)",
+        "details": ["Detail 1", "Detail 2"]
+      }
+    ]
+  }
+}
+
+IMPORTANT RULES:
+1. ALL fields in structured_data are REQUIRED (use empty strings/arrays if no data)
+2. experience, education, certifications, languages, projects are arrays (can be empty)
+3. skills is an object with category keys (can have any category names)
+4. optimized_cv should contain the full markdown CV text for backward compatibility
+5. Use consistent date formats: "Jan 2020 - Present" or "2020 - 2024"
+6. All text should be properly formatted and professional
+
+Output ONLY valid JSON with the structure above.
 No explanations. No reports. No comparisons.
-Just the CV — structured, formatted, ready for Word/PDF.
+Just the JSON object — ready for rendering.
 
 ═══════════════════════════════════════════════════════════════════════════════

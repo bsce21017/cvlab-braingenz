@@ -6,34 +6,75 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Download, FileText, Loader2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { getUserActivity, ResumeActivityItem } from '@/lib/api';
+import { getResumes, getUser, AdminResumeListItem } from '@/lib/admin-api';
 
-export default function ActivityHistory() {
+interface ActivityHistoryProps {
+  userId?: string;
+}
+
+export default function ActivityHistory({ userId }: ActivityHistoryProps) {
   const { t } = useLanguage();
   const { user } = useAuth();
   const [activities, setActivities] = useState<ResumeActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const isViewingOtherUser = !!userId && userId !== user?.id;
 
   useEffect(() => {
     async function fetchActivity() {
-      if (!user) {
-        setLoading(false);
-        return;
-      }
-      
-      try {
-        setLoading(true);
-        const data = await getUserActivity(10);
-        setActivities(data.activities);
-      } catch (error) {
-        console.error('Error fetching activity:', error);
-        // Don't show error to user, just show empty state
-      } finally {
+      if (isViewingOtherUser && userId) {
+        // Fetch resumes for the other user using search by email
+        try {
+          setLoading(true);
+          // First get user info to get their email
+          const userData = await getUser(userId);
+          const userEmail = userData.email;
+          
+          if (userEmail) {
+            // Search resumes by user email
+            const response = await getResumes({ page: 1, page_size: 10, search: userEmail });
+            // Filter resumes that match this user's email
+            const userResumes = response.resumes.filter((resume: AdminResumeListItem) => 
+              resume.user_email?.toLowerCase() === userEmail?.toLowerCase()
+            );
+            
+            // Convert AdminResumeListItem to ResumeActivityItem format
+            const convertedActivities: ResumeActivityItem[] = userResumes.map((resume: AdminResumeListItem) => ({
+              id: resume.id,
+              filename: resume.original_filename,
+              status: resume.status,
+              created_at: resume.created_at,
+              updated_at: resume.created_at,
+              is_optimized: resume.status === 'optimized',
+            }));
+            
+            setActivities(convertedActivities);
+          } else {
+            setActivities([]);
+          }
+        } catch (error) {
+          console.error('Error fetching user activity:', error);
+          setActivities([]);
+        } finally {
+          setLoading(false);
+        }
+      } else if (user) {
+        try {
+          setLoading(true);
+          const data = await getUserActivity(10);
+          setActivities(data.activities);
+        } catch (error) {
+          console.error('Error fetching activity:', error);
+          setActivities([]);
+        } finally {
+          setLoading(false);
+        }
+      } else {
         setLoading(false);
       }
     }
     
     fetchActivity();
-  }, [user]);
+  }, [userId, user, isViewingOtherUser]);
 
   if (loading) {
     return (
@@ -52,9 +93,21 @@ export default function ActivityHistory() {
       {activities.length === 0 ? (
         <div className="text-center py-8">
           <FileText className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-          <p className="text-sm text-gray-500">{t('profile.noActivity') || 'No recent activity'}</p>
+          <p className="text-sm text-gray-500">
+            {(() => {
+              const translation = t('profile.noActivity');
+              // Explicit check: if translation is the key itself (meaning it wasn't found), use fallback
+              return translation && translation !== 'profile.noActivity' ? translation : 'No Activity';
+            })()}
+          </p>
           <p className="text-xs text-gray-400 mt-1">
-            {t('profile.uploadResumeToSeeActivity') || 'Upload a resume to see your activity history'}
+            {(() => {
+              const translation = t('profile.uploadResumeToSeeActivity');
+              // Explicit check: if translation is the key itself (meaning it wasn't found), use fallback
+              return translation && translation !== 'profile.uploadResumeToSeeActivity' 
+                ? translation 
+                : 'Upload a resume to see your activity history';
+            })()}
           </p>
         </div>
       ) : (
