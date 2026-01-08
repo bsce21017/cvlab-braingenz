@@ -28,7 +28,7 @@ interface S3UploadResponse {
 }
 
 export default function HeroSection() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { user, session } = useAuth();
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -202,15 +202,17 @@ export default function HeroSection() {
   };
 
   return (
-    <section className="relative pt-1 pb-0 px-4 sm:px-6 lg:px-8 bg-gray-50">
-      <div className="max-w-4xl mx-auto text-center space-y-3">
-        <div className="space-y-1">
-          <h1 className="text-4xl md:text-5xl font-normal text-gray-900 leading-tight">
-            {t('heroTitle')}
+    <section className="relative pt-8 pb-16 px-4 sm:px-6 lg:px-8 bg-gray-50">
+      <div className="max-w-4xl mx-auto text-center space-y-6">
+        <div className="space-y-4">
+          <h1 className="text-4xl md:text-5xl text-gray-900 leading-tight">
+            <span className="font-normal">{t('heroTitleLine1')}</span><br />
+            <span className="font-bold">{t('heroTitleLine2')}</span>
           </h1>
 
-          <p className="text-sm text-gray-600 leading-relaxed max-w-2xl mx-auto">
-            {t('heroSubtitle')}
+          <p className={`text-base text-gray-600 leading-relaxed max-w-2xl mx-auto ${language === 'ar' ? 'font-bold' : ''}`}>
+            {t('heroSubtitleLine1')}<br />
+            {t('heroSubtitleLine2')}
           </p>
         </div>
 

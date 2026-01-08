@@ -394,11 +394,11 @@ export default function UserManagementTable({
                         onClick={() => router.push(`/profile?userId=${user.id}`)}
                       >
                         <Image
-                          src="/assets/eye_button.png"
+                          src="/assets/user-management-eye.svg"
                           alt="View"
-                          width={24}
-                          height={24}
-                          className="w-6 h-6 object-contain"
+                          width={20}
+                          height={20}
+                          className="w-5 h-5"
                         />
                       </button>
                       <button
@@ -408,14 +408,14 @@ export default function UserManagementTable({
                         title={user.status === 'active' ? 'Deactivate user' : 'Activate user'}
                       >
                         {updatingStatus === user.id ? (
-                          <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+                          <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
                         ) : (
                           <Image
-                            src="/assets/activate_button.png"
+                            src="/assets/user-management-edit.svg"
                             alt={user.status === 'active' ? 'Deactivate' : 'Activate'}
-                            width={24}
-                            height={24}
-                            className="w-6 h-6 object-contain"
+                            width={20}
+                            height={20}
+                            className="w-5 h-5"
                           />
                         )}
                       </button>
@@ -426,14 +426,14 @@ export default function UserManagementTable({
                         title="Delete user"
                       >
                         {deleting === user.id ? (
-                          <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+                          <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
                         ) : (
                           <Image
-                            src="/assets/delete_button.png"
+                            src="/assets/user-management-delete.svg"
                             alt="Delete"
-                            width={24}
-                            height={24}
-                            className="w-6 h-6 object-contain"
+                            width={20}
+                            height={20}
+                            className="w-5 h-5"
                           />
                         )}
                       </button>

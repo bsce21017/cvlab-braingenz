@@ -1,6 +1,7 @@
 'use client';
 
-import { Eye, Edit2, X, Loader2 } from 'lucide-react';
+import { X, Loader2 } from 'lucide-react';
+import Image from 'next/image';
 import { ReactNode, useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { PromptStatus } from '@/lib/admin-api';
@@ -110,7 +111,13 @@ export default function PromptCard({
             }}
             className="flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 transition hover:bg-gray-50"
           >
-            <Eye className="h-4 w-4" />
+            <Image
+              src="/assets/user-management-eye.svg"
+              alt="Preview"
+              width={16}
+              height={16}
+              className="h-4 w-4"
+            />
             {t('pm.buttons.preview')}
           </button>
           {!isEditing ? (
@@ -118,7 +125,13 @@ export default function PromptCard({
               onClick={handleEditClick}
               className="flex items-center gap-1.5 rounded-lg bg-black px-3 py-1.5 text-sm text-white transition hover:bg-gray-900"
             >
-              <Edit2 className="h-4 w-4" />
+              <Image
+                src="/assets/edit.svg"
+                alt="Edit"
+                width={16}
+                height={16}
+                className="h-4 w-4"
+              />
               {t('pm.buttons.edit')}
             </button>
           ) : (
@@ -182,7 +195,13 @@ export default function PromptCard({
             {saving ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
-              <span className="text-base">💾</span>
+              <Image
+                src="/assets/save.svg"
+                alt="Save"
+                width={16}
+                height={16}
+                className="h-4 w-4"
+              />
             )}
             {t('pm.buttons.saveChanges')}
           </button>

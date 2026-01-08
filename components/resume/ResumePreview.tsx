@@ -351,7 +351,7 @@ export function ResumePreview({ optimizedText, template = 'classic', onResumeDat
   return (
     <div className="flex flex-col gap-4" dir={isRTL ? 'rtl' : 'ltr'}>
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">{t('resumePreview.title')}</h2>
+        <h2 className="text-lg font-normal">{t('resumePreview.title')}</h2>
 
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">

@@ -1,6 +1,7 @@
 'use client';
 
-import { Brain, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
+import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { getLLMConfig, updateLLMConfig, LLMProvider, LLMConfig } from '@/lib/admin-api';
@@ -105,7 +106,13 @@ export default function LLMConfiguration() {
     <div className="rounded-lg border border-gray-200 bg-white p-6" dir={isArabic ? 'rtl' : 'ltr'}>
       <div className={`mb-6 flex items-center gap-3 ${isArabic ? 'flex-row-reverse' : ''}`}>
         <div className="flex h-8 w-8 items-center justify-center rounded bg-gray-100">
-          <Brain className="h-5 w-5 text-gray-600" />
+          <Image
+            src="/assets/llm_configuration.svg"
+            alt="LLM Configuration"
+            width={20}
+            height={20}
+            className="h-5 w-5"
+          />
         </div>
         <h2 className={`text-lg font-semibold text-gray-900 ${isArabic ? 'text-right' : ''}`}>
           {t('pm.llm.title')}
@@ -159,7 +166,13 @@ export default function LLMConfiguration() {
           {saving ? (
             <Loader2 className="w-4 h-4 animate-spin" />
           ) : (
-            <span className="text-base">💾</span>
+            <Image
+              src="/assets/save.svg"
+              alt="Save"
+              width={16}
+              height={16}
+              className="h-4 w-4"
+            />
           )}
           {t('pm.llm.saveButton')}
         </button>

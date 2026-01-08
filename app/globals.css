@@ -2,6 +2,55 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Manrope English Font */
+@font-face {
+  font-family: 'Manrope';
+  src: url('/fonts/Manrope/Manrope/Manrope-VariableFont_wght.ttf') format('truetype');
+  font-weight: 200 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Manrope';
+  src: url('/fonts/Manrope/Manrope/static/Manrope-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Manrope';
+  src: url('/fonts/Manrope/Manrope/static/Manrope-Medium.ttf') format('truetype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Manrope';
+  src: url('/fonts/Manrope/Manrope/static/Manrope-SemiBold.ttf') format('truetype');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Manrope';
+  src: url('/fonts/Manrope/Manrope/static/Manrope-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Manrope';
+  src: url('/fonts/Manrope/Manrope/static/Manrope-ExtraBold.ttf') format('truetype');
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+
 /* Almarai Arabic Font */
 @font-face {
   font-family: 'Almarai';
@@ -35,9 +84,20 @@
   font-display: swap;
 }
 
-/* Apply Almarai font for Arabic language */
-[lang="ar"],
-[dir="rtl"],
+/* Apply Manrope font for English (default) */
+html,
+body,
+* {
+  font-family: 'Manrope', sans-serif;
+}
+
+/* Apply Almarai font for Arabic language - override all fonts */
+html[lang="ar"],
+html[lang="ar"] body,
+html[lang="ar"] *,
+html[dir="rtl"],
+html[dir="rtl"] body,
+html[dir="rtl"] *,
 .font-arabic {
   font-family: 'Almarai', sans-serif !important;
 }

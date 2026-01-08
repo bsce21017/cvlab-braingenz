@@ -72,11 +72,11 @@ export default function StatsCards() {
           value: formatNumber(stats.total_users),
           icon: (
             <Image
-              src="/assets/dashboard-icons/total-users.png"
+              src="/assets/total_users.svg"
               alt="Total Users"
-              width={32}
-              height={32}
-              className="w-8 h-8 object-contain"
+              width={24}
+              height={24}
+              className="w-6 h-6"
             />
           ),
         },
@@ -85,11 +85,11 @@ export default function StatsCards() {
           value: formatNumber(stats.total_sessions),
           icon: (
             <Image
-              src="/assets/dashboard-icons/total-sessions.png"
+              src="/assets/total_sessions.svg"
               alt="Total Sessions"
-              width={32}
-              height={32}
-              className="w-8 h-8 object-contain"
+              width={24}
+              height={24}
+              className="w-6 h-6"
             />
           ),
         },
@@ -98,11 +98,11 @@ export default function StatsCards() {
           value: formatNumber(stats.resumes_processed),
           icon: (
             <Image
-              src="/assets/dashboard-icons/resumes-proceed.png"
+              src="/assets/resume_processed.svg"
               alt="Resumes Processed"
-              width={32}
-              height={32}
-              className="w-8 h-8 object-contain"
+              width={24}
+              height={24}
+              className="w-6 h-6"
             />
           ),
         },
@@ -111,11 +111,11 @@ export default function StatsCards() {
           value: stats.server_uptime,
           icon: (
             <Image
-              src="/assets/dashboard-icons/server-uptime.png"
+              src="/assets/server_uptime.svg"
               alt="Server Uptime"
-              width={32}
-              height={32}
-              className="w-8 h-8 object-contain"
+              width={24}
+              height={24}
+              className="w-6 h-6"
             />
           ),
         },

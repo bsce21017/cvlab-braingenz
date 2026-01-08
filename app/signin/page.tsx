@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef, Suspense } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Eye, EyeOff, Mail, Lock, Loader2 } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, Loader2, ArrowRight, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -56,6 +56,7 @@ function SignInErrorHandler({ setError, setSuccessMessage }: { setError: (error:
 
 function SignInContent() {
   const { language, setLanguage, t } = useLanguage();
+  const isRTL = language === 'ar';
   const { signIn, signInWithGoogle, user, loading: authLoading } = useAuth();
   const router = useRouter();
   const supabase = createClient();
@@ -330,11 +331,11 @@ function SignInContent() {
             )}
 
             <div className="space-y-2">
-              <label className="text-sm text-gray-700">
+              <label className={`text-sm text-gray-700 block ${isRTL ? 'text-right' : ''}`}>
                 {t('emailAddress')}
               </label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <Mail className={`absolute top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 ${isRTL ? 'right-3' : 'left-3'}`} />
                 <Input
                   type="email"
                   placeholder={t('enterEmail')}
@@ -342,18 +343,19 @@ function SignInContent() {
                   onChange={(e) =>
                     setFormData({ ...formData, email: e.target.value })
                   }
-                  className="pl-11 h-12 bg-gray-50 border-gray-200"
+                  className={`h-12 bg-gray-50 border-gray-200 ${isRTL ? 'pr-11 text-right' : 'pl-11'}`}
                   autoComplete="email"
+                  dir={isRTL ? 'rtl' : 'ltr'}
                 />
               </div>
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm text-gray-700">
+              <label className={`text-sm text-gray-700 block ${isRTL ? 'text-right' : ''}`}>
                 {t('password')}
               </label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <Lock className={`absolute top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 ${isRTL ? 'right-3' : 'left-3'}`} />
                 <Input
                   type={showPassword ? 'text' : 'password'}
                   placeholder={t('enterPassword')}
@@ -361,13 +363,14 @@ function SignInContent() {
                   onChange={(e) =>
                     setFormData({ ...formData, password: e.target.value })
                   }
-                  className="pl-11 pr-12 h-12 bg-gray-50 border-gray-200"
+                  className={`h-12 bg-gray-50 border-gray-200 ${isRTL ? 'pr-11 pl-12 text-right' : 'pl-11 pr-12'}`}
                   autoComplete="current-password"
+                  dir={isRTL ? 'rtl' : 'ltr'}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  className={`absolute top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 ${isRTL ? 'left-3' : 'right-3'}`}
                 >
                   {showPassword ? (
                     <EyeOff className="h-5 w-5" />
@@ -406,15 +409,18 @@ function SignInContent() {
             <Button
               type="submit"
               disabled={isSubmitting}
-              className="w-full h-12 bg-black hover:bg-gray-900 text-white font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full h-12 bg-black hover:bg-gray-900 text-white font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {isSubmitting ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <Loader2 className="h-4 w-4 animate-spin" />
                   {t('signingIn') || 'Signing in...'}
                 </>
               ) : (
-                t('login')
+                <>
+                  {isRTL ? <ArrowLeft className="h-5 w-5" /> : <ArrowRight className="h-5 w-5" />}
+                  {t('login')}
+                </>
               )}
             </Button>
 

@@ -3,7 +3,6 @@
 import { useLanguage } from '@/contexts/LanguageContext';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
-import LanguageSwitcher from '@/components/questions/LanguageSwitcher';
 import { Sparkles, Target, HelpCircle, FileEdit } from 'lucide-react';
 import Image from 'next/image';
 
@@ -14,9 +13,6 @@ export default function AboutUsPage() {
   return (
     <div className="flex flex-col min-h-screen bg-white" dir={isRTL ? 'rtl' : 'ltr'}>
       <Header />
-      <div className="flex justify-end px-6 pt-1">
-        <LanguageSwitcher />
-      </div>
       <main className="flex-1">
         {/* Hero Section */}
         <section className="pt-12 pb-16 px-4 sm:px-6 lg:px-8 bg-white">

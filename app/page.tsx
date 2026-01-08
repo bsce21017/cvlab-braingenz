@@ -8,8 +8,6 @@ import Header from '@/components/Header';
 import HeroSection from '@/components/HeroSection';
 import HowItWorks from '@/components/HowItWorks';
 import Footer from '@/components/Footer';
-import LanguageSwitcher from '@/components/questions/LanguageSwitcher';
-import { useLanguage } from '@/contexts/LanguageContext';
 
 // Success modal for email verification
 function EmailVerifiedModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
@@ -70,7 +68,6 @@ function VerificationHandler({ onVerified }: { onVerified: () => void }) {
 
 export default function Home() {
   const [showVerifiedModal, setShowVerifiedModal] = useState(false);
-  const { t } = useLanguage();
 
   const handleVerified = () => {
     setShowVerifiedModal(true);
@@ -89,11 +86,6 @@ export default function Home() {
         <VerificationHandler onVerified={handleVerified} />
       </Suspense>
       <Header />
-
-      {/* Language Switcher - Right aligned, below header */}
-      <div className="flex justify-end px-6 pt-1">
-        <LanguageSwitcher />
-      </div>
 
       {/* Main Content - Original vertical layout: Hero first, then How It Works */}
       <main className="flex-1">

@@ -3,7 +3,6 @@
 import { useLanguage } from '@/contexts/LanguageContext';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
-import LanguageSwitcher from '@/components/questions/LanguageSwitcher';
 import ContactInfo from '@/components/contact/ContactInfo';
 import FAQSection from '@/components/contact/FAQSection';
 import ContactForm from '@/components/contact/ContactForm';
@@ -12,11 +11,8 @@ export default function ContactUsPage() {
   const { t } = useLanguage();
 
   return (
-    <div className="flex flex-col min-h-screen bg-white">
+    <div className="flex flex-col min-h-screen bg-gray-50">
       <Header />
-      <div className="flex justify-end px-6 pt-4">
-        <LanguageSwitcher />
-      </div>
       <main className="flex-1">
         <div className="bg-gray-50 py-16">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">

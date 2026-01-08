@@ -1,7 +1,6 @@
 'use client';
 
 import Image from 'next/image';
-import { ShieldCheck } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import LanguageSwitcher from '@/components/questions/LanguageSwitcher';
 
@@ -23,9 +22,15 @@ export default function PaymentHeader() {
 
         <div className="flex items-center gap-4">
           <LanguageSwitcher />
-          
+
           <div className="flex items-center gap-2 text-[#6E6E73]">
-            <ShieldCheck className="w-4 h-4" />
+            <Image
+              src="/assets/contact-us-shield.svg"
+              alt="Shield"
+              width={16}
+              height={16}
+              className="w-4 h-4"
+            />
             <span className="text-sm font-medium">
               {t('secureCheckout')}
             </span>
@@ -35,4 +40,3 @@ export default function PaymentHeader() {
     </header>
   );
 }
-

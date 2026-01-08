@@ -1,6 +1,7 @@
 'use client';
 
-import { Target, Sparkles, Key, Type, Check } from 'lucide-react';
+import Image from 'next/image';
+import { Check } from 'lucide-react';
 import { PRICING } from '@/lib/constants';
 import { useLanguage } from '@/contexts/LanguageContext';
 
@@ -9,22 +10,22 @@ export default function OrderSummary() {
 
   const optimizations = [
     {
-      icon: Target,
+      iconSrc: '/assets/ATS Optimization.svg',
       labelKey: 'atsOptimization',
       checked: true,
     },
     {
-      icon: Sparkles,
+      iconSrc: '/assets/Grammar_Clarity.svg',
       labelKey: 'grammarClarity',
       checked: true,
     },
     {
-      icon: Key,
+      iconSrc: '/assets/Keyword Enhancement.svg',
       labelKey: 'keywordEnhancement',
       checked: true,
     },
     {
-      icon: Type,
+      iconSrc: '/assets/Professional Formatting.svg',
       labelKey: 'professionalFormatting',
       checked: true,
     },
@@ -43,7 +44,13 @@ export default function OrderSummary() {
             {optimizations.map((item, index) => (
               <div key={index} className="flex items-center gap-3">
                 <div className="flex-shrink-0">
-                  <item.icon className="w-4 h-4 text-[#1D1D1F]" />
+                  <Image
+                    src={item.iconSrc}
+                    alt={t(item.labelKey)}
+                    width={16}
+                    height={16}
+                    className="w-4 h-4"
+                  />
                 </div>
                 <span className="text-[#1D1D1F] text-sm flex-1">
                   {t(item.labelKey)}
@@ -88,4 +95,3 @@ export default function OrderSummary() {
     </div>
   );
 }
-

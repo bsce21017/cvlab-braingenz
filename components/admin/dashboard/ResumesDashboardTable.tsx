@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Search, Eye, FileText, ChevronLeft, ChevronRight, Loader2, RefreshCw } from 'lucide-react';
+import { Search, FileText, ChevronLeft, ChevronRight, Loader2, RefreshCw } from 'lucide-react';
+import Image from 'next/image';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -336,7 +337,13 @@ export default function ResumesDashboardTable() {
                         isRTL ? 'flex-row-reverse' : ''
                       }`}
                     >
-                      <Eye size={16} />
+                      <Image
+                        src="/assets/user-management-eye.svg"
+                        alt="View"
+                        width={16}
+                        height={16}
+                        className="w-4 h-4"
+                      />
                       <span>{t('admin.dashboard.view')}</span>
                     </button>
                   </div>
