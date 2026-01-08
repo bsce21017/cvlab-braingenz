@@ -5,26 +5,25 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useLanguage } from '@/contexts/LanguageContext';
-import {
-  LayoutDashboard,
-  BarChart3,
-  MessageSquare,
-  FileText,
-  Users,
-  AlertCircle,
-  Settings,
-} from 'lucide-react';
+import { MessageSquare } from 'lucide-react';
 import ClaimsOverview from '@/components/admin/claims/ClaimsOverview';
+
+type MenuItem = {
+  label: string;
+  href: string;
+  icon?: React.ComponentType<{ className?: string }>;
+  customIcon?: string;
+};
 
 export default function AdminSidebar() {
   const { t, language } = useLanguage();
   const pathname = usePathname();
 
-  const menuItems = [
+  const menuItems: MenuItem[] = [
     {
       label: t('admin.dashboard'),
       href: '/admin/dashboard',
-      icon: BarChart3,
+      customIcon: '/assets/total_sessions.svg',
     },
     {
       label: t('admin.prompts'),
@@ -34,22 +33,22 @@ export default function AdminSidebar() {
     {
       label: t('admin.resumes'),
       href: '/admin/resumes',
-      icon: FileText,
+      customIcon: '/assets/resume_processed.svg',
     },
     {
       label: t('admin.users'),
       href: '/admin/users',
-      icon: Users,
+      customIcon: '/assets/total_users.svg',
     },
     {
       label: t('admin.claims'),
       href: '/admin/claims',
-      icon: AlertCircle,
+      customIcon: '/assets/claims.svg',
     },
     {
       label: t('admin.settings'),
       href: '/admin/settings',
-      icon: Settings,
+      customIcon: '/assets/settings.svg',
     },
   ];
 
@@ -73,6 +72,29 @@ export default function AdminSidebar() {
         {menuItems.map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
+
+          const renderIcon = () => {
+            if (item.customIcon) {
+              // Apply dark filter to Claims and Settings icons to make them black
+              const needsDarkFilter = item.href === '/admin/claims' || item.href === '/admin/settings';
+              return (
+                <Image
+                  src={item.customIcon}
+                  alt={item.label}
+                  width={20}
+                  height={20}
+                  className="w-5 h-5 flex-shrink-0"
+                  style={needsDarkFilter ? { filter: 'brightness(0)' } : undefined}
+                />
+              );
+            }
+            if (Icon) {
+              // Prompts icon always black
+              return <Icon className="w-5 h-5 flex-shrink-0 text-gray-900" />;
+            }
+            return null;
+          };
+
           return (
             <Link
               key={item.href}
@@ -87,11 +109,11 @@ export default function AdminSidebar() {
               {isRTL ? (
                 <>
                   <span className={`flex-1 text-left ${isActive ? 'font-bold' : ''}`}>{item.label}</span>
-                  <Icon className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-gray-900' : 'text-gray-500'}`} />
+                  {renderIcon()}
                 </>
               ) : (
                 <>
-                  <Icon className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-gray-900' : 'text-gray-500'}`} />
+                  {renderIcon()}
                   <span className={`flex-1 ${isActive ? 'font-bold' : ''}`}>{item.label}</span>
                 </>
               )}

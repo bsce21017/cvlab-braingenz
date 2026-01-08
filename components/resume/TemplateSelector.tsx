@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Image from 'next/image';
 import { FileText, Sparkles, Crown, Code, Check, Lightbulb } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -28,7 +29,8 @@ const templateColors = {
 };
 
 export function TemplateSelector({ selectedTemplate, onTemplateChange }: TemplateSelectorProps) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const isRTL = language === 'ar';
 
   const templates: Template[] = ['classic', 'modern', 'executive', 'technical'];
 
@@ -41,10 +43,16 @@ export function TemplateSelector({ selectedTemplate, onTemplateChange }: Templat
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">{t('templateSelector.title')}</h2>
+      <div className={`flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
+        <h2 className="text-lg font-normal">{t('templateSelector.title')}</h2>
         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100">
-          <FileText className="h-4 w-4" />
+          <Image
+            src="/assets/cv_template.svg"
+            alt="CV Template"
+            width={16}
+            height={16}
+            className="h-4 w-4"
+          />
         </div>
       </div>
 

@@ -109,7 +109,7 @@ export default function Header() {
                 </div>
               ) : (
                 <Image
-                  src="/assets/CVLab Logo.png"
+                  src="/assets/latest-logo.svg"
                   alt="CVLab Logo"
                   width={120}
                   height={40}

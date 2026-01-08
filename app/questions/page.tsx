@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, ArrowRight, Sparkles, Loader2 } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Loader2 } from 'lucide-react';
+import Image from 'next/image';
 import { useLanguage } from '@/contexts/LanguageContext';
 import ResumePreviewHeader from '@/components/resume/ResumePreviewHeader';
 import FileDisplay from '@/components/questions/FileDisplay';
@@ -102,10 +103,6 @@ export default function QuestionsPage() {
     }
   };
 
-  const handleBack = () => {
-    router.back();
-  };
-
   const progress = calculateProgress();
 
   if (loading) {
@@ -125,16 +122,9 @@ export default function QuestionsPage() {
       <div className="max-w-3xl mx-auto px-6 py-8">
         <div className={`flex items-center justify-between mb-8 ${isRTL ? 'flex-row-reverse' : ''}`}>
           <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
-            <button
-              onClick={handleBack}
-              className="w-10 h-10 bg-gray-900 rounded-full flex items-center justify-center hover:bg-gray-800 transition-colors"
-            >
-              {isRTL ? (
-                <ArrowRight className="w-5 h-5 text-white" />
-              ) : (
-                <ArrowLeft className="w-5 h-5 text-white" />
-              )}
-            </button>
+            <div className="w-10 h-10 bg-gray-900 rounded-full flex items-center justify-center">
+              <span className="text-white font-semibold text-sm">{questions.length}</span>
+            </div>
             <h1 className="text-lg font-medium text-gray-900">{t('questions')}</h1>
           </div>
           <LanguageSwitcher />
@@ -150,7 +140,7 @@ export default function QuestionsPage() {
 
         <div className="bg-white rounded-2xl shadow-sm p-8 mb-6">
           <div className={isRTL ? 'text-right' : 'text-center'}>
-            <h2 className="text-2xl font-semibold text-gray-900 mb-3">
+            <h2 className="text-2xl font-normal text-gray-900 mb-3">
               {t('resumeOptimizationTitle')}
             </h2>
             <p className="text-gray-600 text-sm mb-8 max-w-2xl mx-auto">
@@ -183,7 +173,6 @@ export default function QuestionsPage() {
                 key={question.id}
                 number={index + 1}
                 title={question.question}
-                subtitle={question.category}
                 placeholder={question.example || 'Type your answer here...'}
                 value={answers[question.id] || ''}
                 onChange={(value) => handleAnswerChange(question.id, value)}
@@ -202,7 +191,13 @@ export default function QuestionsPage() {
             {submitting ? (
               <Loader2 className="w-5 h-5 animate-spin" />
             ) : (
-              <Sparkles className="w-5 h-5" />
+              <Image
+                src="/assets/analyze_optimize.svg"
+                alt="Analyze"
+                width={20}
+                height={20}
+                className="w-5 h-5"
+              />
             )}
             <span>{submitting ? 'Submitting...' : t('analyzeButton')}</span>
             {!submitting && (isRTL ? (

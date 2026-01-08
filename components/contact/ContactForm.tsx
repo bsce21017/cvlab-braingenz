@@ -1,13 +1,14 @@
 'use client';
 
 import { useLanguage } from '@/contexts/LanguageContext';
-import { Send, ShieldCheck } from 'lucide-react';
+import { Send } from 'lucide-react';
+import Image from 'next/image';
 
 export default function ContactForm() {
   const { t } = useLanguage();
 
   return (
-    <div className="bg-gray-50 rounded-lg p-8">
+    <div className="bg-white rounded-lg p-8">
       <div className="mb-6">
         <h3 className="text-xl font-semibold text-gray-900 mb-2">{t('contact.sendMessage')}</h3>
         <p className="text-sm text-gray-600">{t('contact.replyTime')}</p>
@@ -21,7 +22,7 @@ export default function ContactForm() {
           <input
             type="text"
             placeholder={t('contact.fullNamePlaceholder')}
-            className="w-full px-4 py-3 border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent placeholder:text-gray-400"
+            className="w-full px-4 py-3 border border-gray-200 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent placeholder:text-gray-400"
           />
         </div>
 
@@ -32,7 +33,7 @@ export default function ContactForm() {
           <input
             type="email"
             placeholder={t('contact.emailPlaceholder')}
-            className="w-full px-4 py-3 border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent placeholder:text-gray-400"
+            className="w-full px-4 py-3 border border-gray-200 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent placeholder:text-gray-400"
           />
         </div>
 
@@ -43,7 +44,7 @@ export default function ContactForm() {
           <input
             type="tel"
             placeholder={t('contact.phonePlaceholder')}
-            className="w-full px-4 py-3 border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent placeholder:text-gray-400"
+            className="w-full px-4 py-3 border border-gray-200 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent placeholder:text-gray-400"
           />
         </div>
 
@@ -54,7 +55,7 @@ export default function ContactForm() {
           <textarea
             rows={6}
             placeholder={t('contact.messagePlaceholder')}
-            className="w-full px-4 py-3 border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent placeholder:text-gray-400 resize-none"
+            className="w-full px-4 py-3 border border-gray-200 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent placeholder:text-gray-400 resize-none"
           />
         </div>
 
@@ -67,11 +68,16 @@ export default function ContactForm() {
         </button>
 
         <div className="flex items-center justify-center gap-2 text-sm text-gray-600">
-          <ShieldCheck className="w-4 h-4" />
+          <Image
+            src="/assets/contact-us-shield.svg"
+            alt="Shield"
+            width={16}
+            height={16}
+            className="w-4 h-4"
+          />
           <span>{t('contact.confidential')}</span>
         </div>
       </form>
     </div>
   );
 }
-

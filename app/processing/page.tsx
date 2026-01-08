@@ -193,24 +193,20 @@ function ProcessingContent() {
       <div className="flex-1 flex items-center justify-center px-6 pb-8">
         <div className="w-full max-w-3xl">
           <div className="flex flex-col items-center space-y-6">
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-black rounded-full"></div>
-              <p className="text-[#1D1D1F] text-base font-normal">
-                {t('processingStatusLabel')}
-              </p>
-            </div>
-
             <ProcessingAnimation />
 
             <div className="w-full space-y-4">
-              <ProgressBar progress={Math.round(displayProgress)} label={t('processingLabel')} />
+              <ProgressBar
+                progress={Math.round(displayProgress)}
+                label={mode === 'optimization' ? t('processingLabelFinal') : t('processingLabelInitial')}
+              />
 
               <div className="text-center space-y-2">
-                <h1 className="text-[#1D1D1F] text-2xl font-semibold leading-tight">
-                  {t('processingTitle')}
+                <h1 className="text-[#1D1D1F] text-2xl font-normal leading-tight">
+                  {mode === 'optimization' ? t('processingTitleFinal') : t('processingTitleInitial')}
                 </h1>
                 <p className="text-[#6E6E73] text-sm leading-relaxed max-w-2xl mx-auto">
-                  {t('processingDescription')}
+                  {mode === 'optimization' ? t('processingDescriptionFinal') : t('processingDescriptionInitial')}
                 </p>
                 {error && (
                   <p className="text-red-500 text-sm">{error}</p>

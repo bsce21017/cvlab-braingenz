@@ -1,6 +1,7 @@
 'use client';
 
 import { useLanguage } from '@/contexts/LanguageContext';
+import Image from 'next/image';
 
 export default function FAQSection() {
   const { t } = useLanguage();
@@ -12,12 +13,18 @@ export default function FAQSection() {
   ];
 
   return (
-    <div className="bg-gray-50 rounded-lg p-8 mt-6">
+    <div className="bg-white rounded-lg p-8 mt-6">
       <h3 className="text-xl font-semibold text-gray-900 mb-6">{t('contact.faq')}</h3>
       <div className="space-y-4">
         {faqs.map((faq) => (
           <div key={faq.id} className="flex items-start gap-3">
-            <div className="w-2 h-2 rounded-full bg-black mt-2 flex-shrink-0"></div>
+            <Image
+              src="/assets/contact-us-tick.svg"
+              alt="FAQ"
+              width={16}
+              height={16}
+              className="w-4 h-4 mt-0.5 flex-shrink-0"
+            />
             <p className="text-sm text-gray-900">{faq.question}</p>
           </div>
         ))}
@@ -25,4 +32,3 @@ export default function FAQSection() {
     </div>
   );
 }
-

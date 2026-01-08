@@ -1,6 +1,6 @@
 'use client';
 
-import { CreditCard, Lock, ShieldCheck, ArrowRight } from 'lucide-react';
+import { CreditCard, Lock, ArrowRight, ArrowLeft } from 'lucide-react';
 import Image from 'next/image';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -32,8 +32,14 @@ export default function PaymentForm({
         <h2 className="text-[#1D1D1F] text-2xl font-semibold">
           {t('paymentDetails')}
         </h2>
-        <div className="bg-[#FF3B30] text-white px-3 py-1 rounded-full flex items-center gap-1">
-          <div className="w-2 h-2 bg-white rounded-full"></div>
+        <div className="bg-[#FEF2F2] text-[#DC2626] px-3 py-1 rounded-full flex items-center gap-1">
+          <Image
+            src="/assets/clock.svg"
+            alt="Clock"
+            width={12}
+            height={12}
+            className="w-3 h-3"
+          />
           <span className="text-xs font-medium">{t('limitedOffer')}</span>
         </div>
       </div>
@@ -156,12 +162,18 @@ export default function PaymentForm({
         >
           <Lock className="w-5 h-5" />
           {t('payOptimize')}
-          <ArrowRight className="w-5 h-5" />
+          {isRTL ? <ArrowLeft className="w-5 h-5" /> : <ArrowRight className="w-5 h-5" />}
         </Button>
 
         <div className="text-center space-y-2">
           <div className="flex items-center justify-center gap-2 text-[#6E6E73]">
-            <ShieldCheck className="w-4 h-4" />
+            <Image
+              src="/assets/contact-us-shield.svg"
+              alt="Shield"
+              width={16}
+              height={16}
+              className="w-4 h-4"
+            />
             <span className="text-sm">{t('securePayment')}</span>
           </div>
           <p className="text-[#6E6E73] text-xs">

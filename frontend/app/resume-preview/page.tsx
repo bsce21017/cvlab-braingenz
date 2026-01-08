@@ -73,7 +73,7 @@ export default function ResumePreviewPage() {
       }
 
       // Create download URL with auth token
-      const downloadUrl = getDownloadUrl(parseInt(resumeId), format);
+      const downloadUrl = getDownloadUrl(parseInt(resumeId));
       
       // Create a temporary link and trigger download
       const link = document.createElement('a');

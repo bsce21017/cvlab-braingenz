@@ -1,6 +1,7 @@
 'use client';
 
-import { Search, AlertCircle, Zap, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
+import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import Header from './Header';
@@ -10,16 +11,15 @@ import { getPrompts, updatePrompt, Prompt, PromptStatus } from '@/lib/admin-api'
 import { formatDistanceToNow } from 'date-fns';
 import { ar } from 'date-fns/locale';
 
-// Map backend prompt IDs to icons and display names
-// These match exactly with the prompt files in backend/prompts/
-const PROMPT_ICONS: Record<string, React.ReactNode> = {
-  analyze_resume: <Search className="h-6 w-6" />,
-  generate_questions: <AlertCircle className="h-6 w-6 text-orange-500" />,
-  optimize_resume: <Zap className="h-6 w-6 text-green-500" />,
+// Map backend prompt IDs to custom icon paths
+const PROMPT_ICON_PATHS: Record<string, string> = {
+  analyze_resume: '/assets/analyse_resume.svg',
+  generate_questions: '/assets/question_generation.svg',
+  optimize_resume: '/assets/optimise_resume.svg',
   // Legacy IDs for backward compatibility
-  prompt1_analyst: <Search className="h-6 w-6" />,
-  prompt2_gatherer: <AlertCircle className="h-6 w-6 text-orange-500" />,
-  prompt3_craftsman: <Zap className="h-6 w-6 text-green-500" />,
+  prompt1_analyst: '/assets/analyse_resume.svg',
+  prompt2_gatherer: '/assets/question_generation.svg',
+  prompt3_craftsman: '/assets/optimise_resume.svg',
 };
 
 // Map prompt IDs to display names - matching screenshot design
@@ -83,7 +83,16 @@ export default function PromptManagementPage() {
   };
 
   const getPromptIcon = (promptId: string): React.ReactNode => {
-    return PROMPT_ICONS[promptId] || <Search className="h-6 w-6" />;
+    const iconPath = PROMPT_ICON_PATHS[promptId] || '/assets/analyse_resume.svg';
+    return (
+      <Image
+        src={iconPath}
+        alt={promptId}
+        width={24}
+        height={24}
+        className="h-6 w-6"
+      />
+    );
   };
 
   // Sort prompts to show in order: analyze_resume, generate_questions, optimize_resume
