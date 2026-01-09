@@ -139,7 +139,7 @@ export default function QuestionsPage() {
         />
 
         <div className="bg-white rounded-2xl shadow-sm p-8 mb-6">
-          <div className={isRTL ? 'text-right' : 'text-center'}>
+          <div className="text-center">
             <h2 className="text-2xl font-normal text-gray-900 mb-3">
               {t('resumeOptimizationTitle')}
             </h2>

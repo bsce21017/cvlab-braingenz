@@ -115,6 +115,7 @@ async def update_llm_config(
     # Validate model for provider - Latest production models as of December 2025
     valid_models = {
         LLMProvider.ANTHROPIC: [
+            "claude-sonnet-4-20250514",        # Claude Sonnet 4 (May 2025)
             "claude-sonnet-4-5-20250929",      # Latest Claude Sonnet 4.5 (Sept 2025) - Best performance
             "claude-opus-4-5-20251101",        # Latest Claude Opus 4.5 (Nov 2025) - Most capable
             "claude-haiku-4-5-20251001",       # Latest Claude Haiku 4.5 (Oct 2025) - Fastest

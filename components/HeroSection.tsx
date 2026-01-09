@@ -202,15 +202,19 @@ export default function HeroSection() {
   };
 
   return (
-    <section className="relative pt-8 pb-16 px-4 sm:px-6 lg:px-8 bg-gray-50">
+    <section className="relative pt-8 pb-16 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto text-center space-y-6">
-        <div className="space-y-4">
-          <h1 className="text-4xl md:text-5xl text-gray-900 leading-tight">
-            <span className="font-normal">{t('heroTitleLine1')}</span><br />
+        <div className="space-y-6">
+          <h1 className="text-5xl md:text-6xl lg:text-[72px] text-gray-900 leading-tight">
+            <span className="font-normal">{t('heroTitleLine1Part1')}</span>
+            {t('heroTitleLine1Part2') && t('heroTitleLine1Part2') !== 'heroTitleLine1Part2' && (
+              <>{' '}<span className="font-bold">{t('heroTitleLine1Part2')}</span></>
+            )}
+            <br />
             <span className="font-bold">{t('heroTitleLine2')}</span>
           </h1>
 
-          <p className={`text-base text-gray-600 leading-relaxed max-w-2xl mx-auto ${language === 'ar' ? 'font-bold' : ''}`}>
+          <p className="text-lg md:text-xl leading-relaxed max-w-2xl mx-auto font-normal" style={{ color: '#475569' }}>
             {t('heroSubtitleLine1')}<br />
             {t('heroSubtitleLine2')}
           </p>
@@ -220,9 +224,9 @@ export default function HeroSection() {
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
-          className={`bg-white border-2 border-dashed rounded-xl py-3 px-4 space-y-2 transition-all flex flex-col items-center justify-center mx-auto w-full ${
+          className={`bg-transparent border-2 border-dashed rounded-xl py-3 px-4 space-y-2 transition-all flex flex-col items-center justify-center mx-auto w-full ${
             isDragging
-              ? 'border-black bg-gray-50'
+              ? 'border-black bg-gray-50/50'
               : isUploading
               ? 'border-gray-400'
               : 'border-gray-300 hover:border-gray-400 cursor-pointer'
@@ -260,9 +264,15 @@ export default function HeroSection() {
 
               <Button
                 onClick={handleButtonClick}
-                className="bg-black hover:bg-gray-800 text-white px-6 py-2.5 h-auto rounded-lg text-sm font-medium"
+                className="bg-black hover:bg-gray-800 text-white px-6 py-2.5 h-auto rounded-lg text-sm font-medium flex items-center gap-2"
               >
-                <Upload className="w-4 h-4 mr-2" />
+                <Image
+                  src="/assets/upload_resume.svg"
+                  alt="Upload"
+                  width={16}
+                  height={16}
+                  className="w-4 h-4"
+                />
                 {t('uploadResume')}
               </Button>
 

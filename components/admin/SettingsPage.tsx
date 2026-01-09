@@ -42,7 +42,13 @@ export default function SettingsPage() {
     try {
       setSaving(true);
       const updated = await updateLLMConfig(provider, model);
-      setConfig(updated);
+      // Update config with the values we just saved
+      setConfig({
+        ...updated,
+        provider: provider,
+        model: model,
+        max_tokens: maxTokens,
+      });
       toast.success(t('admin.settings.saved'));
     } catch (error) {
       console.error('Failed to update LLM config:', error);
@@ -53,6 +59,7 @@ export default function SettingsPage() {
   };
 
   const anthropicModels = [
+    'claude-sonnet-4-20250514',
     'claude-sonnet-4-5-20250929',
     'claude-opus-4-5-20251101',
     'claude-haiku-4-5-20251001',

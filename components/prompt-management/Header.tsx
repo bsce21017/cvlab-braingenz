@@ -73,48 +73,85 @@ export default function PromptManagementHeader() {
         </div>
 
         <div className="flex items-center gap-6" dir="ltr">
-          <div className="flex items-center gap-3">
-            <NotificationDropdown />
+          <NotificationDropdown />
 
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-2 hover:opacity-80 transition-opacity cursor-pointer">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-purple-600 text-xs font-bold text-white">
-                    {userInitials}
-                  </div>
-                  <div className="hidden sm:block">
-                    <div className="text-xs font-medium text-gray-900">
-                      {userName}
+          {isArabic ? (
+            <>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="flex items-center gap-3 hover:opacity-80 transition-opacity cursor-pointer">
+                    <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center">
+                      <span className="text-white font-semibold text-sm">{userInitials}</span>
                     </div>
-                    <div className="text-xs text-gray-500">{userEmail}</div>
-                  </div>
-                  <ChevronDown className="h-4 w-4 text-gray-600" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuItem disabled className="opacity-100">
-                  <User className="mr-2 h-4 w-4" />
-                  <div className="flex flex-col">
-                    <span className="text-sm font-medium">{userName}</span>
-                    <span className="text-xs text-gray-500">{userEmail}</span>
-                  </div>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem 
-                  onClick={handleSignOut} 
-                  disabled={isSigningOut}
-                  className="text-red-600 focus:text-red-600 focus:bg-red-50"
-                >
-                  <LogOut className="mr-2 h-4 w-4" />
-                  {isSigningOut ? 'Signing out...' : 'Logout'}
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+                    <div className="hidden sm:block">
+                      <div className="text-sm font-medium text-gray-900">
+                        {userName}
+                      </div>
+                    </div>
+                    <ChevronDown className="h-4 w-4 text-gray-600" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuItem disabled className="opacity-100">
+                    <User className="mr-2 h-4 w-4" />
+                    <div className="flex flex-col">
+                      <span className="text-sm font-medium">{userName}</span>
+                    </div>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={handleSignOut}
+                    disabled={isSigningOut}
+                    className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    {isSigningOut ? 'Signing out...' : 'Logout'}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
 
-          <div className="border-l border-gray-200 pl-6">
-            <LanguageSwitcher />
-          </div>
+              <div className="border-l border-gray-200 pl-4">
+                <LanguageSwitcher />
+              </div>
+            </>
+          ) : (
+            <>
+              <LanguageSwitcher />
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="flex items-center gap-3 pl-4 border-l border-gray-200 hover:opacity-80 transition-opacity cursor-pointer">
+                    <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center">
+                      <span className="text-white font-semibold text-sm">{userInitials}</span>
+                    </div>
+                    <div className="hidden sm:block">
+                      <div className="text-sm font-medium text-gray-900">
+                        {userName}
+                      </div>
+                    </div>
+                    <ChevronDown className="h-4 w-4 text-gray-600" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuItem disabled className="opacity-100">
+                    <User className="mr-2 h-4 w-4" />
+                    <div className="flex flex-col">
+                      <span className="text-sm font-medium">{userName}</span>
+                    </div>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={handleSignOut}
+                    disabled={isSigningOut}
+                    className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    {isSigningOut ? 'Signing out...' : 'Logout'}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </>
+          )}
         </div>
       </div>
     </header>

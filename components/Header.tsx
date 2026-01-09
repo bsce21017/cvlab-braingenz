@@ -141,11 +141,8 @@ export default function Header() {
                 <div className="h-10 w-32 bg-gray-100 animate-pulse rounded-lg" />
               ) : user ? (
                 <div className="flex items-center gap-4">
-                  {/* Notification Dropdown */}
-                  <UserNotificationDropdown />
-                  
                   {/* User Profile Section */}
-                  <Link href="/profile" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+                  <Link href="/profile" className={`flex items-center gap-3 hover:opacity-80 transition-opacity ${language === 'ar' ? 'flex-row-reverse' : ''}`}>
                     <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
                       {userAvatar ? (
                         <Image
@@ -163,9 +160,11 @@ export default function Header() {
                     </div>
                     <div className="hidden sm:block">
                       <p className="text-sm font-medium text-gray-900 leading-tight">{userName}</p>
-                      <p className="text-xs text-gray-500 leading-tight">{userEmail}</p>
                     </div>
                   </Link>
+
+                  {/* Notification Dropdown */}
+                  <UserNotificationDropdown />
 
                   {/* Sign Out Button */}
                   <Button

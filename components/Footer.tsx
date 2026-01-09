@@ -4,7 +4,6 @@ import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { Twitter, Linkedin } from 'lucide-react';
 
 export default function Footer() {
   const { t } = useLanguage();
@@ -71,22 +70,8 @@ export default function Footer() {
           </div>
         </div>
 
-        <div className="border-t border-gray-800 pt-6 flex justify-between items-center">
+        <div className="border-t border-gray-800 pt-6">
           <p className="text-gray-400 text-sm">{t('copyright')}</p>
-          <div className="flex gap-4">
-            <a
-              href="#"
-              className="text-gray-400 hover:text-white transition-colors"
-            >
-              <Twitter className="w-5 h-5" />
-            </a>
-            <a
-              href="#"
-              className="text-gray-400 hover:text-white transition-colors"
-            >
-              <Linkedin className="w-5 h-5" />
-            </a>
-          </div>
         </div>
       </div>
     </footer>

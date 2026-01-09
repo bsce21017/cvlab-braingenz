@@ -164,22 +164,6 @@ export default function PaymentForm({
           {t('payOptimize')}
           {isRTL ? <ArrowLeft className="w-5 h-5" /> : <ArrowRight className="w-5 h-5" />}
         </Button>
-
-        <div className="text-center space-y-2">
-          <div className="flex items-center justify-center gap-2 text-[#6E6E73]">
-            <Image
-              src="/assets/contact-us-shield.svg"
-              alt="Shield"
-              width={16}
-              height={16}
-              className="w-4 h-4"
-            />
-            <span className="text-sm">{t('securePayment')}</span>
-          </div>
-          <p className="text-[#6E6E73] text-xs">
-            {t('noRecurring')}
-          </p>
-        </div>
       </form>
     </div>
   );
