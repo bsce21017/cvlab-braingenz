@@ -39,14 +39,11 @@ export default function ResumePreviewHeader() {
             />
           </div>
 
-          {/* Right side - Notifications, Profile, Logout */}
-          <div className="flex items-center gap-6" dir="ltr">
-            {/* Notification dropdown */}
-            <UserNotificationDropdown />
-
+          {/* Right side - Profile, Notifications, Logout */}
+          <div className={`flex items-center gap-6 ${isRTL ? 'flex-row-reverse' : ''}`}>
             {/* Profile section */}
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden">
+            <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
+              <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
                 {userAvatar ? (
                   <Image
                     src={userAvatar}
@@ -63,9 +60,11 @@ export default function ResumePreviewHeader() {
               </div>
               <div>
                 <p className="text-sm font-medium text-gray-900">{userName}</p>
-                <p className="text-xs text-gray-500">{userEmail}</p>
               </div>
             </div>
+
+            {/* Notification dropdown */}
+            <UserNotificationDropdown />
 
             {/* Logout link */}
             <button

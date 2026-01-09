@@ -53,9 +53,9 @@ class Settings(BaseSettings):
     MAX_FILE_SIZE: int = int(os.getenv("MAX_FILE_SIZE", "10485760"))  # 10MB
     ALLOWED_EXTENSIONS: set = {".pdf", ".doc", ".docx"}
 
-    # LLM Settings - Using Claude Sonnet 4 for best performance
+    # LLM Settings - Using Claude Sonnet 4.5 for best performance
     DEFAULT_LLM_PROVIDER: str = os.getenv("DEFAULT_LLM_PROVIDER", "claude")
-    CLAUDE_MODEL: str = os.getenv("CLAUDE_MODEL", "claude-sonnet-4-20250514")
+    CLAUDE_MODEL: str = os.getenv("CLAUDE_MODEL", "claude-sonnet-4-5-20250929")
     OPENAI_MODEL: str = os.getenv("OPENAI_MODEL", "gpt-4o")
     MAX_TOKENS: int = int(os.getenv("MAX_TOKENS", "8000"))
 

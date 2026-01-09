@@ -85,11 +85,20 @@ export default function Home() {
       <Suspense fallback={null}>
         <VerificationHandler onVerified={handleVerified} />
       </Suspense>
-      <Header />
 
-      {/* Main Content - Original vertical layout: Hero first, then How It Works */}
-      <main className="flex-1">
+      {/* Header and Hero with 3-color gradient background (top to bottom) */}
+      <div
+        className="relative"
+        style={{
+          background: 'linear-gradient(to bottom, #F3F4F6 0%, #FFFFFF 50%, #EFF6FF 100%)',
+        }}
+      >
+        <Header />
         <HeroSection />
+      </div>
+
+      {/* Main Content - Original vertical layout */}
+      <main className="flex-1">
         <HowItWorks />
       </main>
 
