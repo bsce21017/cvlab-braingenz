@@ -1,15 +1,136 @@
 /**
  * Download resume utilities for PDF and Word generation
+ *
+ * This file generates Word documents that match the web template styling exactly.
+ * Font sizes, colors, spacing, and layout are precisely calibrated to match
+ * the React/Tailwind templates.
  */
 
-import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, Table, TableRow, TableCell, WidthType, BorderStyle, ShadingType } from 'docx';
-import { ResumeData } from './resumeDataTypes';
+import {
+  Document,
+  Packer,
+  Paragraph,
+  TextRun,
+  AlignmentType,
+  Table,
+  TableRow,
+  TableCell,
+  WidthType,
+  BorderStyle,
+  LevelFormat,
+  convertInchesToTwip,
+  INumberingOptions,
+  IBorderOptions,
+  TableLayoutType,
+  VerticalAlign,
+} from "docx";
+import { ResumeData } from "./resumeDataTypes";
 
-// Font configuration - using Inter to match templates, with Calibri as fallback
-// Note: Inter may not be available on all systems, Word will use fallback fonts
-const FONT_FAMILY = 'Inter';
+// ============================================================================
+// FONT & SIZE CONFIGURATION
+// ============================================================================
 
-// Helper function to create TextRun with consistent font
+// Using Calibri as it's universally available and closest to Inter
+const FONT_FAMILY = "Calibri";
+
+// Tailwind to docx size conversion (docx uses half-points)
+// text-sm = 14px = 10.5pt = 21 half-points
+// text-base = 16px = 12pt = 24 half-points
+// text-xl = 20px = 15pt = 30 half-points
+// text-3xl = 30px = 22.5pt = 45 half-points
+// text-4xl = 36px = 27pt = 54 half-points
+const FONT_SIZES = {
+  "text-sm": 21, // 14px - body text, bullets
+  "text-base": 24, // 16px - section headings
+  "text-xl": 30, // 20px - subtitle
+  "text-3xl": 45, // 30px - name (most templates)
+  "text-4xl": 54, // 36px - name (executive)
+};
+
+// Spacing constants in twips (1 twip = 1/20 point)
+const SPACING = {
+  xs: 30, // ~2px
+  sm: 60, // ~4px
+  md: 120, // ~8px
+  lg: 180, // ~12px
+  xl: 240, // ~16px
+  "2xl": 300, // ~20px
+  "3xl": 360, // ~24px
+};
+
+// Color constants matching Tailwind colors (without #)
+const COLORS = {
+  // Primary colors for each template
+  classicBlue: "2563EB", // blue-600
+  modernBlack: "000000", // black
+  executiveAmber: "B45309", // amber-700
+  technicalBlue: "1D4ED8", // blue-700
+
+  // Gray scale
+  gray900: "111827",
+  gray800: "1F2937",
+  gray700: "374151",
+  gray600: "4B5563",
+  gray500: "6B7280",
+  gray400: "9CA3AF",
+  gray300: "D1D5DB",
+
+  white: "FFFFFF",
+  black: "000000",
+};
+
+// ============================================================================
+// BORDER CONFIGURATIONS
+// ============================================================================
+
+// Completely invisible borders for layout tables
+const INVISIBLE_BORDER: IBorderOptions = {
+  style: BorderStyle.NONE,
+  size: 0,
+  color: COLORS.white,
+};
+
+const NO_BORDERS = {
+  top: INVISIBLE_BORDER,
+  bottom: INVISIBLE_BORDER,
+  left: INVISIBLE_BORDER,
+  right: INVISIBLE_BORDER,
+  insideHorizontal: INVISIBLE_BORDER,
+  insideVertical: INVISIBLE_BORDER,
+};
+
+// ============================================================================
+// NUMBERING CONFIGURATION FOR PROPER BULLETS
+// ============================================================================
+
+const createNumberingConfig = (): INumberingOptions => ({
+  config: [
+    {
+      reference: "resume-bullets",
+      levels: [
+        {
+          level: 0,
+          format: LevelFormat.BULLET,
+          text: "•",
+          alignment: AlignmentType.LEFT,
+          style: {
+            paragraph: {
+              indent: {
+                left: convertInchesToTwip(0.2),
+                hanging: convertInchesToTwip(0.15),
+              },
+            },
+          },
+        },
+      ],
+    },
+  ],
+});
+
+// ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
+
 function createTextRun(
   text: string,
   options: {
@@ -17,388 +138,77 @@ function createTextRun(
     size?: number;
     color?: string;
     font?: string;
-  } = {}
+  } = {},
 ): TextRun {
   return new TextRun({
     text,
     bold: options.bold,
-    size: options.size,
-    color: options.color,
+    size: options.size || FONT_SIZES["text-sm"],
+    color: options.color || COLORS.gray700,
     font: options.font || FONT_FAMILY,
   });
 }
 
-// Border configuration for tables without borders
-const NO_BORDERS = {
-  top: { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' },
-  bottom: { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' },
-  left: { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' },
-  right: { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' },
-  insideHorizontal: { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' },
-  insideVertical: { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' },
-};
-
-/**
- * Download resume as PDF from HTML element
- */
-export async function downloadResumeAsPDF(element: HTMLElement, filename: string = 'resume.pdf'): Promise<void> {
-  console.log('[downloadResume] Starting PDF generation for:', filename);
-  console.log('[downloadResume] Element:', element);
-  
-  try {
-    // Fix for technical template gradient header - replace with solid color for PDF
-    const gradientHeaders = element.querySelectorAll('h1');
-    const originalStyles: { element: HTMLElement; originalClass: string; originalColor: string }[] = [];
-    
-    gradientHeaders.forEach((header) => {
-      const htmlHeader = header as HTMLElement;
-      if (htmlHeader.className.includes('bg-clip-text') || htmlHeader.className.includes('text-transparent')) {
-        originalStyles.push({
-          element: htmlHeader,
-          originalClass: htmlHeader.className,
-          originalColor: htmlHeader.style.color || '',
-        });
-        // Remove gradient-related classes and add solid blue color
-        htmlHeader.className = htmlHeader.className
-          .replace(/bg-gradient-to-r\s+from-\[#[^\]]+\]\s+to-\[#[^\]]+\]/g, '')
-          .replace(/bg-clip-text/g, '')
-          .replace(/text-transparent/g, '')
-          .trim();
-        // Set solid blue color via inline style (more reliable for PDF)
-        htmlHeader.style.color = '#2563eb';
-        htmlHeader.style.webkitBackgroundClip = 'unset';
-        htmlHeader.style.backgroundClip = 'unset';
-      }
-    });
-
-    // Remove min-height constraints that cause page splitting
-    const minHeightElements = element.querySelectorAll('[class*="min-h-"]');
-    const originalMinHeights: { element: HTMLElement; originalStyle: string }[] = [];
-    
-    minHeightElements.forEach((el) => {
-      const htmlEl = el as HTMLElement;
-      if (htmlEl.style.minHeight || htmlEl.className.includes('min-h-')) {
-        originalMinHeights.push({
-          element: htmlEl,
-          originalStyle: htmlEl.style.cssText,
-        });
-        htmlEl.style.minHeight = 'auto';
-        // Remove min-h-* classes
-        htmlEl.className = htmlEl.className.replace(/min-h-\[?\d+[^\s]*\]?/g, '').trim();
-      }
-    });
-
-    // Reduce spacing for Technical/Modern templates to fit on one page
-    const spaceYElements = element.querySelectorAll('[class*="space-y-"]');
-    const originalSpaceY: { element: HTMLElement; originalClass: string }[] = [];
-    spaceYElements.forEach((el) => {
-      const htmlEl = el as HTMLElement;
-      if (htmlEl.className.includes('space-y-5')) {
-        originalSpaceY.push({
-          element: htmlEl,
-          originalClass: htmlEl.className,
-        });
-        // Reduce spacing from space-y-5 to space-y-2 for PDF (more aggressive)
-        htmlEl.className = htmlEl.className.replace(/space-y-5/g, 'space-y-2');
-      }
-    });
-
-    // Reduce header spacing (mb-2, my-4) to prevent page breaks
-    const headerElements = element.querySelectorAll('[class*="mb-"], [class*="my-"], [class*="mt-"]');
-    const originalHeaderSpacing: { element: HTMLElement; originalClass: string }[] = [];
-    headerElements.forEach((el) => {
-      const htmlEl = el as HTMLElement;
-      const className = htmlEl.className;
-      // Reduce margin-bottom and margin-y values
-      if (className.includes('mb-2') || className.includes('mb-4') || className.includes('mb-6')) {
-        originalHeaderSpacing.push({
-          element: htmlEl,
-          originalClass: className,
-        });
-        htmlEl.className = className
-          .replace(/mb-2/g, 'mb-1')
-          .replace(/mb-4/g, 'mb-2')
-          .replace(/mb-6/g, 'mb-3');
-      }
-      if (className.includes('my-4') || className.includes('my-6')) {
-        if (!originalHeaderSpacing.find(e => e.element === htmlEl)) {
-          originalHeaderSpacing.push({
-            element: htmlEl,
-            originalClass: className,
-          });
-        }
-        htmlEl.className = htmlEl.className
-          .replace(/my-4/g, 'my-2')
-          .replace(/my-6/g, 'my-3');
-      }
-    });
-
-    // Reduce container padding (p-8 to p-4 for more space)
-    const paddedElements = element.querySelectorAll('[class*="p-8"]');
-    const originalPadding: { element: HTMLElement; originalClass: string }[] = [];
-    paddedElements.forEach((el) => {
-      const htmlEl = el as HTMLElement;
-      if (htmlEl.className.includes('p-8')) {
-        originalPadding.push({
-          element: htmlEl,
-          originalClass: htmlEl.className,
-        });
-        htmlEl.className = htmlEl.className.replace(/p-8/g, 'p-4');
-      }
-    });
-
-    // Remove any overflow/clipping CSS that might hide content
-    const overflowElements = element.querySelectorAll('*');
-    const originalOverflows: { element: HTMLElement; originalOverflow: string; originalTextOverflow: string; originalWhiteSpace: string }[] = [];
-    
-    overflowElements.forEach((el) => {
-      const htmlEl = el as HTMLElement;
-      const style = window.getComputedStyle(htmlEl);
-      if (style.overflow === 'hidden' || style.textOverflow === 'ellipsis' || style.whiteSpace === 'nowrap') {
-        originalOverflows.push({
-          element: htmlEl,
-          originalOverflow: htmlEl.style.overflow || '',
-          originalTextOverflow: htmlEl.style.textOverflow || '',
-          originalWhiteSpace: htmlEl.style.whiteSpace || '',
-        });
-        // Temporarily remove overflow restrictions for PDF capture
-        htmlEl.style.overflow = 'visible';
-        htmlEl.style.textOverflow = 'clip';
-        htmlEl.style.whiteSpace = 'normal';
-      }
-    });
-
-    // Ensure element itself doesn't clip content
-    const originalElementOverflow = element.style.overflow;
-    const originalElementOverflowX = element.style.overflowX;
-    const originalElementOverflowY = element.style.overflowY;
-    element.style.overflow = 'visible';
-    element.style.overflowX = 'visible';
-    element.style.overflowY = 'visible';
-
-    // Wait for DOM reflow after removing min-height and overflow
-    await new Promise(resolve => {
-      // Force reflow by reading offsetHeight
-      void element.offsetHeight;
-      // Use requestAnimationFrame to ensure reflow is complete
-      requestAnimationFrame(() => {
-        requestAnimationFrame(resolve);
-      });
-    });
-
-    // Dynamic import for browser-only library
-    console.log('[downloadResume] Importing html2pdf.js...');
-    const html2pdf = (await import('html2pdf.js')).default;
-    console.log('[downloadResume] html2pdf imported successfully');
-    
-    // Get accurate dimensions - use the maximum of scroll/offset/client dimensions
-    // This ensures we capture all content even if there's overflow
-    const elementHeight = Math.max(
-      element.scrollHeight,
-      element.offsetHeight,
-      element.clientHeight
-    );
-    const elementWidth = Math.max(
-      element.scrollWidth,
-      element.offsetWidth,
-      element.clientWidth
-    );
-    
-    console.log('[downloadResume] Element dimensions:', {
-      scrollHeight: element.scrollHeight,
-      scrollWidth: element.scrollWidth,
-      offsetHeight: element.offsetHeight,
-      offsetWidth: element.offsetWidth,
-      clientHeight: element.clientHeight,
-      clientWidth: element.clientWidth,
-      finalHeight: elementHeight,
-      finalWidth: elementWidth,
-    });
-    
-    // A4 dimensions in mm
-    const a4Height = 297; // Full A4 height
-    const a4Width = 210; // Full A4 width
-    const pxToMm = 0.264583; // 1px = 0.264583mm at 96dpi
-    const elementHeightMm = elementHeight * pxToMm;
-    const elementWidthMm = elementWidth * pxToMm;
-    
-    // Calculate scale - but be less aggressive, allow multi-page if needed
-    // Use margins of 10mm (5mm each side)
-    const availableHeight = a4Height - 10; // Top + bottom margins
-    const availableWidth = a4Width - 10; // Left + right margins
-    
-    const heightScale = availableHeight / elementHeightMm;
-    const widthScale = availableWidth / elementWidthMm;
-    
-    // Use the smaller scale, but don't go below 0.7 to maintain readability
-    // If content is too large, allow it to span multiple pages
-    const optimalScale = Math.min(heightScale, widthScale, 1);
-    const finalScale = Math.max(optimalScale, 0.7); // Minimum 0.7 scale for readability
-    
-    console.log('[downloadResume] Scale calculation:', {
-      elementHeightMm,
-      elementWidthMm,
-      availableHeight,
-      availableWidth,
-      heightScale,
-      widthScale,
-      optimalScale,
-      finalScale,
-    });
-    
-    // Use higher scale for html2canvas to ensure quality
-    // html2canvas scale is independent of PDF page size
-    const canvasScale = 2; // High quality rendering
-    
-    const opt = {
-      margin: [5, 5, 5, 5] as [number, number, number, number], // 5mm margins
-      filename: filename,
-      image: { type: 'jpeg' as const, quality: 0.98 },
-      html2canvas: { 
-        scale: canvasScale, // High quality canvas rendering
-        useCORS: true,
-        logging: false,
-        letterRendering: true,
-        // Use actual element dimensions, not scroll dimensions
-        // This ensures all content is captured
-        width: elementWidth,
-        height: elementHeight,
-        windowWidth: elementWidth,
-        windowHeight: elementHeight,
-        // Additional options to ensure full content capture
-        allowTaint: true,
-        backgroundColor: '#ffffff',
-        removeContainer: false,
-        // Ensure text is fully rendered - remove all overflow restrictions in cloned doc
-        onclone: (clonedDoc: any) => {
-          // Find all elements in cloned document and remove overflow restrictions
-          // html2pdf passes a Document-like object, use any to avoid type conflicts
-          if (clonedDoc && typeof clonedDoc.querySelectorAll === 'function') {
-            const allElements = clonedDoc.querySelectorAll('*');
-            allElements.forEach((el: any) => {
-              // Check if element is an HTMLElement
-              if (el instanceof HTMLElement) {
-                // Force remove all overflow restrictions
-                el.style.overflow = 'visible';
-                el.style.overflowX = 'visible';
-                el.style.overflowY = 'visible';
-                // Remove text overflow clipping
-                if (el.style.textOverflow === 'ellipsis') {
-                  el.style.textOverflow = 'clip';
-                }
-                // Remove white-space nowrap that might cause clipping
-                if (el.style.whiteSpace === 'nowrap') {
-                  el.style.whiteSpace = 'normal';
-                }
-              }
-            });
-          }
-        },
-      },
-      jsPDF: { 
-        unit: 'mm', 
-        format: 'a4', 
-        orientation: 'portrait' as const,
-        compress: true,
-        // Allow content to span multiple pages if needed
-        putOnlyUsedFonts: true,
-        floatPrecision: 16,
-      },
-      pagebreak: { 
-        mode: ['css', 'legacy'], // Changed from 'avoid-all' to allow natural page breaks
-        avoid: ['.avoid-break'],
-      },
-    };
-
-    console.log('[downloadResume] Calling html2pdf().set().from().save()...');
-    await html2pdf().set(opt).from(element).save();
-    console.log('[downloadResume] PDF generation completed successfully');
-
-    // Restore original gradient classes and styles
-    originalStyles.forEach(({ element: el, originalClass, originalColor }) => {
-      el.className = originalClass;
-      if (originalColor) {
-        el.style.color = originalColor;
-      } else {
-        el.style.color = '';
-      }
-      el.style.webkitBackgroundClip = '';
-      el.style.backgroundClip = '';
-    });
-
-    // Restore original min-height styles
-    originalMinHeights.forEach(({ element: el, originalStyle }) => {
-      el.style.cssText = originalStyle;
-    });
-
-    // Restore original spacing
-    originalSpaceY.forEach(({ element: el, originalClass }) => {
-      el.className = originalClass;
-    });
-
-    // Restore original header spacing
-    originalHeaderSpacing.forEach(({ element: el, originalClass }) => {
-      el.className = originalClass;
-    });
-
-    // Restore original padding
-    originalPadding.forEach(({ element: el, originalClass }) => {
-      el.className = originalClass;
-    });
-
-    // Restore original overflow styles
-    originalOverflows.forEach(({ element: el, originalOverflow, originalTextOverflow, originalWhiteSpace }) => {
-      el.style.overflow = originalOverflow;
-      el.style.textOverflow = originalTextOverflow;
-      el.style.whiteSpace = originalWhiteSpace;
-    });
-
-    // Restore original element overflow
-    element.style.overflow = originalElementOverflow;
-    element.style.overflowX = originalElementOverflowX;
-    element.style.overflowY = originalElementOverflowY;
-  } catch (error) {
-    console.error('[downloadResume] Error generating PDF:', error);
-    console.error('[downloadResume] Error stack:', error instanceof Error ? error.stack : 'No stack trace');
-    throw new Error(`Failed to generate PDF: ${error instanceof Error ? error.message : 'Unknown error'}`);
-  }
+function createBulletParagraph(
+  text: string,
+  options: {
+    size?: number;
+    color?: string;
+    spacingAfter?: number;
+  } = {},
+): Paragraph {
+  return new Paragraph({
+    numbering: { reference: "resume-bullets", level: 0 },
+    children: [
+      createTextRun(text, {
+        size: options.size || FONT_SIZES["text-sm"],
+        color: options.color || COLORS.gray700,
+      }),
+    ],
+    spacing: { after: options.spacingAfter ?? SPACING.xs },
+  });
 }
 
-/**
- * Download resume as Word document with template-specific styling
- */
-export async function downloadResumeAsWord(data: ResumeData, template: string, filename: string = 'resume.docx'): Promise<void> {
-  console.log('[downloadResume] Starting Word generation for:', filename, 'Template:', template);
-  console.log('[downloadResume] Resume Data:', data);
+function createSpacer(height: number = SPACING.xl): Paragraph {
+  return new Paragraph({ spacing: { after: height } });
+}
+
+// ============================================================================
+// MAIN EXPORT FUNCTION
+// ============================================================================
+
+export async function downloadResumeAsWord(
+  data: ResumeData,
+  template: string,
+  filename: string = "resume.docx",
+): Promise<void> {
+  console.log(
+    "[downloadResume] Starting Word generation for:",
+    filename,
+    "Template:",
+    template,
+  );
+  console.log("[downloadResume] Resume Data:", data);
 
   try {
     const children: (Paragraph | Table)[] = [];
 
-    // Template-specific color constants
-    const BLUE = '#2563eb';
-    const TECHNICAL_BLUE = '#1D61CB'; // Technical template uses darker blue
-    const GOLD = '#b45309';
-    const BLACK = '#000000';
-    const GRAY_600 = '#4b5563';
-    const GRAY_700 = '#374151';
-    const GRAY_500 = '#6b7280';
-
-    // Apply template-specific formatting
+    // Generate template-specific content
     switch (template) {
-      case 'classic':
-        generateClassicTemplate(data, children, BLUE, GRAY_600, GRAY_700);
+      case "classic":
+        generateClassicTemplate(data, children);
         break;
-      case 'modern':
-        generateModernTemplate(data, children, BLACK, GRAY_600, GRAY_700);
+      case "modern":
+        generateModernTemplate(data, children);
         break;
-      case 'executive':
-        generateExecutiveTemplate(data, children, GOLD, GRAY_600, GRAY_700);
+      case "executive":
+        generateExecutiveTemplate(data, children);
         break;
-      case 'technical':
-        generateTechnicalTemplate(data, children, TECHNICAL_BLUE, GRAY_600, GRAY_700);
+      case "technical":
+        generateTechnicalTemplate(data, children);
         break;
       default:
-        generateClassicTemplate(data, children, BLUE, GRAY_600, GRAY_700);
+        generateClassicTemplate(data, children);
     }
 
     const doc = new Document({
@@ -407,13 +217,28 @@ export async function downloadResumeAsWord(data: ResumeData, template: string, f
           document: {
             run: {
               font: FONT_FAMILY,
+              size: FONT_SIZES["text-sm"],
             },
           },
         },
       },
+      numbering: createNumberingConfig(),
       sections: [
         {
-          properties: {},
+          properties: {
+            page: {
+              size: {
+                width: convertInchesToTwip(8.5), // US Letter width
+                height: convertInchesToTwip(11), // US Letter height
+              },
+              margin: {
+                top: convertInchesToTwip(0.5),
+                right: convertInchesToTwip(0.5),
+                bottom: convertInchesToTwip(0.5),
+                left: convertInchesToTwip(0.5),
+              },
+            },
+          },
           children: children,
         },
       ],
@@ -421,514 +246,680 @@ export async function downloadResumeAsWord(data: ResumeData, template: string, f
 
     const blob = await Packer.toBlob(doc);
     const url = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
+    const link = document.createElement("a");
     link.href = url;
     link.download = filename;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     window.URL.revokeObjectURL(url);
-    
-    console.log('[downloadResume] Word generation completed successfully');
+
+    console.log("[downloadResume] Word generation completed successfully");
   } catch (error) {
-    console.error('[downloadResume] Error generating Word document:', error);
-    console.error('[downloadResume] Error stack:', error instanceof Error ? error.stack : 'No stack trace');
-    throw new Error(`Failed to generate Word document: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    console.error("[downloadResume] Error generating Word document:", error);
+    throw new Error(
+      `Failed to generate Word document: ${error instanceof Error ? error.message : "Unknown error"}`,
+    );
   }
 }
 
-/**
- * Generate Classic Template (Two-column layout with blue headings)
- */
+// ============================================================================
+// CLASSIC TEMPLATE
+// Two-column layout: Left column for section headers, right for content
+// Blue name header, blue dividers, blue section labels
+// ============================================================================
+
 function generateClassicTemplate(
   data: ResumeData,
   children: (Paragraph | Table)[],
-  headingColor: string,
-  textColor: string,
-  secondaryTextColor: string
-) {
-  // Header - Blue Name (Centered, Uppercase)
+): void {
+  const primaryColor = COLORS.classicBlue;
+
+  // ==================== HEADER ====================
+  // Name - centered, uppercase, blue, bold
   children.push(
     new Paragraph({
       children: [
-        createTextRun((data.name || 'Your Name').toUpperCase(), {
+        createTextRun((data.name || "Your Name").toUpperCase(), {
           bold: true,
-          size: 36,
-          color: headingColor,
+          size: FONT_SIZES["text-3xl"],
+          color: primaryColor,
         }),
       ],
       alignment: AlignmentType.CENTER,
-      spacing: { after: 200 },
-    })
+      spacing: { after: SPACING.md },
+    }),
   );
 
-  // Contact Information (Centered)
-  const contactInfo: string[] = [];
-  if (data.email) contactInfo.push(data.email);
-  if (data.phone) contactInfo.push(data.phone);
-  if (data.location) contactInfo.push(data.location);
+  // Contact info - centered, gray
+  const contactParts: string[] = [];
+  if (data.email) contactParts.push(data.email);
+  if (data.phone) contactParts.push(data.phone);
+  if (data.location) contactParts.push(data.location);
 
-  if (contactInfo.length > 0) {
+  if (contactParts.length > 0) {
     children.push(
       new Paragraph({
         children: [
-          createTextRun(contactInfo.join(' | '), {
-            size: 20,
-            color: textColor,
+          createTextRun(contactParts.join(" | "), {
+            size: FONT_SIZES["text-sm"],
+            color: COLORS.gray600,
           }),
         ],
         alignment: AlignmentType.CENTER,
-        spacing: { after: 400 },
-      })
+        spacing: { after: SPACING.lg },
+      }),
     );
   }
 
-  // Horizontal Rule (using border)
+  // Thick blue divider line (h-1 in Tailwind = 4px)
   children.push(
     new Paragraph({
-      spacing: { after: 400 },
+      spacing: { after: SPACING["2xl"] },
       border: {
         bottom: {
-          color: '#d1d5db',
-          size: 1,
+          color: primaryColor,
+          size: 18, // ~2.25pt thick
           style: BorderStyle.SINGLE,
         },
       },
-    })
+    }),
   );
 
-  // Two-column layout for sections using Table
-  const createTwoColumnSection = (heading: string, content: (Paragraph | Table)[]) => {
-    const headingCell = new TableCell({
-      width: { size: 20, type: WidthType.PERCENTAGE },
-      children: [
+  // ==================== TWO-COLUMN SECTION HELPER ====================
+  // Left column: ~1.25 inches for section label
+  // Right column: remaining space for content
+  const LEFT_COL_WIDTH = 1800; // ~1.25 inches in twips
+  const RIGHT_COL_WIDTH = 8640; // Remaining width in twips (total ~10440 for 7.5" content area)
+
+  const createTwoColumnSection = (
+    heading: string | string[], // Can be multiline like "WORK\nEXPERIENCE"
+    contentParagraphs: Paragraph[],
+  ): Table => {
+    // Handle multiline headings
+    const headingLines = Array.isArray(heading) ? heading : heading.split("\n");
+    const headingParagraphs = headingLines.map(
+      (line, idx) =>
         new Paragraph({
           children: [
-            createTextRun(heading.toUpperCase(), {
+            createTextRun(line.toUpperCase(), {
               bold: true,
-              size: 22,
-              color: headingColor,
+              size: FONT_SIZES["text-base"],
+              color: primaryColor,
             }),
           ],
+          spacing: { after: idx < headingLines.length - 1 ? 0 : 0 },
         }),
-      ],
-    });
-
-    const contentCell = new TableCell({
-      width: { size: 80, type: WidthType.PERCENTAGE },
-      children: content,
-    });
+    );
 
     return new Table({
       width: { size: 100, type: WidthType.PERCENTAGE },
+      layout: TableLayoutType.FIXED,
       borders: NO_BORDERS,
       rows: [
         new TableRow({
-          children: [headingCell, contentCell],
+          children: [
+            // Left column - section heading
+            new TableCell({
+              width: { size: LEFT_COL_WIDTH, type: WidthType.DXA },
+              borders: NO_BORDERS,
+              verticalAlign: VerticalAlign.TOP,
+              children: headingParagraphs,
+            }),
+            // Right column - content
+            new TableCell({
+              width: { size: RIGHT_COL_WIDTH, type: WidthType.DXA },
+              borders: NO_BORDERS,
+              verticalAlign: VerticalAlign.TOP,
+              children:
+                contentParagraphs.length > 0
+                  ? contentParagraphs
+                  : [new Paragraph({})],
+            }),
+          ],
         }),
       ],
     });
   };
 
-  // Summary
-  if (data.summary) {
+  // Section divider - thin blue line
+  const addSectionDivider = (): void => {
+    children.push(
+      new Paragraph({
+        spacing: { before: SPACING.xl, after: SPACING.xl },
+        border: {
+          bottom: {
+            color: primaryColor,
+            size: 4, // thin line
+            style: BorderStyle.SINGLE,
+          },
+        },
+      }),
+    );
+  };
+
+  // ==================== SUMMARY SECTION ====================
+  if (data.summary && data.summary.trim().length > 0) {
     const summaryContent = [
       new Paragraph({
         children: [
           createTextRun(data.summary, {
-            size: 22,
-            color: textColor,
+            size: FONT_SIZES["text-sm"],
+            color: COLORS.gray700,
           }),
         ],
-        spacing: { after: 0 },
+        alignment: AlignmentType.BOTH, // justified text
       }),
     ];
-    children.push(createTwoColumnSection('Summary', summaryContent));
-    children.push(new Paragraph({ spacing: { after: 300 } }));
+    children.push(createTwoColumnSection("SUMMARY", summaryContent));
+    addSectionDivider();
   }
 
-  // Work Experience
+  // ==================== WORK EXPERIENCE SECTION ====================
   if (data.experience && data.experience.length > 0) {
     const expContent: Paragraph[] = [];
-    data.experience.forEach((exp) => {
-      // Title and Company
+
+    data.experience.forEach((exp, idx) => {
+      // Line 1: Job Title (bold)
       expContent.push(
         new Paragraph({
           children: [
-            createTextRun(exp.title || '', {
+            createTextRun(exp.title || "", {
               bold: true,
-              size: 24,
-              color: '#000000',
+              size: FONT_SIZES["text-sm"],
+              color: COLORS.black,
             }),
           ],
-          spacing: { after: 100 },
-        })
+          spacing: { after: SPACING.xs },
+        }),
       );
-      if (exp.company) {
-        expContent.push(
-          new Paragraph({
-            children: [
-              createTextRun(exp.company, {
-                size: 20,
-                color: textColor,
-              }),
-            ],
-            spacing: { after: 100 },
-          })
-        );
-      }
-      // Period
-      if (exp.period) {
-        expContent.push(
-          new Paragraph({
-            children: [
-              createTextRun(exp.period, {
-                size: 20,
-                color: secondaryTextColor,
-              }),
-            ],
-            spacing: { after: 200 },
-          })
-        );
-      }
+
+      // Line 2: Company | Location | Period
+      // Format: "Company Name | Location | Period" or "Company Name | Period" if no location
+      const companyParts: string[] = [];
+      if (exp.company) companyParts.push(exp.company);
+      // Check if experience has location field (it might be in the data)
+      if ((exp as any).location) companyParts.push((exp as any).location);
+      if (exp.period) companyParts.push(exp.period);
+
+      expContent.push(
+        new Paragraph({
+          children: [
+            createTextRun(companyParts.join(" | "), {
+              bold: true,
+              size: FONT_SIZES["text-sm"],
+              color: COLORS.black,
+            }),
+          ],
+          spacing: { after: SPACING.sm },
+        }),
+      );
+
       // Bullets
       if (exp.bullets && exp.bullets.length > 0) {
         exp.bullets.forEach((bullet) => {
           expContent.push(
-            new Paragraph({
-              children: [
-                createTextRun(`• ${bullet}`, {
-                  size: 20,
-                  color: textColor,
-                }),
-              ],
-              spacing: { after: 100 },
-              indent: { left: 200 },
-            })
+            createBulletParagraph(bullet, {
+              size: FONT_SIZES["text-sm"],
+              color: COLORS.gray700,
+              spacingAfter: SPACING.xs,
+            }),
           );
         });
       }
-      expContent.push(new Paragraph({ spacing: { after: 200 } }));
+
+      // Spacing between experiences
+      if (idx < data.experience!.length - 1) {
+        expContent.push(createSpacer(SPACING.lg));
+      }
     });
-    children.push(createTwoColumnSection('Work Experience', expContent));
-    children.push(new Paragraph({ spacing: { after: 300 } }));
+
+    children.push(createTwoColumnSection(["WORK", "EXPERIENCE"], expContent));
+    addSectionDivider();
   }
 
-  // Education
+  // ==================== EDUCATION SECTION ====================
   if (data.education && data.education.length > 0) {
     const eduContent: Paragraph[] = [];
-    data.education.forEach((edu) => {
+
+    data.education.forEach((edu, idx) => {
+      // Degree (bold)
+      expContent: [
+        new Paragraph({
+          children: [
+            createTextRun(edu.degree || "", {
+              bold: true,
+              size: FONT_SIZES["text-sm"],
+              color: COLORS.black,
+            }),
+            // Add period on same line, right-aligned using tab
+            new TextRun({ text: "\t" }),
+            createTextRun(edu.period || "", {
+              bold: true,
+              size: FONT_SIZES["text-sm"],
+              color: COLORS.black,
+            }),
+          ],
+          tabStops: [{ type: "right" as const, position: RIGHT_COL_WIDTH }],
+          spacing: { after: SPACING.xs },
+        }),
+      ];
+
       eduContent.push(
         new Paragraph({
           children: [
-            createTextRun(edu.degree || '', {
+            createTextRun(edu.degree || "", {
               bold: true,
-              size: 24,
-              color: '#000000',
+              size: FONT_SIZES["text-sm"],
+              color: COLORS.black,
+            }),
+            new TextRun({ text: "\t" }),
+            createTextRun(edu.period || "", {
+              bold: true,
+              size: FONT_SIZES["text-sm"],
+              color: COLORS.black,
             }),
           ],
-          spacing: { after: 100 },
-        })
+          tabStops: [{ type: "right" as const, position: RIGHT_COL_WIDTH }],
+          spacing: { after: SPACING.xs },
+        }),
       );
+
+      // Institution
       if (edu.institution) {
         eduContent.push(
           new Paragraph({
             children: [
               createTextRun(edu.institution, {
-                size: 20,
-                color: textColor,
+                size: FONT_SIZES["text-sm"],
+                color: COLORS.gray700,
               }),
             ],
-            spacing: { after: 100 },
-          })
+            spacing: { after: SPACING.sm },
+          }),
         );
       }
-      if (edu.period) {
-        eduContent.push(
-          new Paragraph({
-            children: [
-              createTextRun(edu.period, {
-                size: 20,
-                color: secondaryTextColor,
-              }),
-            ],
-            spacing: { after: 200 },
-          })
-        );
-      }
+
+      // Details (if any)
       if (edu.details && edu.details.length > 0) {
         edu.details.forEach((detail) => {
           eduContent.push(
-            new Paragraph({
-              children: [
-                createTextRun(`• ${detail}`, {
-                  size: 20,
-                  color: textColor,
-                }),
-              ],
-              spacing: { after: 100 },
-              indent: { left: 200 },
-            })
+            createBulletParagraph(detail, {
+              size: FONT_SIZES["text-sm"],
+              color: COLORS.gray700,
+              spacingAfter: SPACING.xs,
+            }),
           );
         });
       }
-      eduContent.push(new Paragraph({ spacing: { after: 200 } }));
+
+      if (idx < data.education!.length - 1) {
+        eduContent.push(createSpacer(SPACING.lg));
+      }
     });
-    children.push(createTwoColumnSection('Education', eduContent));
-    children.push(new Paragraph({ spacing: { after: 300 } }));
+
+    children.push(createTwoColumnSection("EDUCATION", eduContent));
+    addSectionDivider();
   }
 
-  // Key Skills (2 columns grid)
+  // ==================== SKILLS SECTION (2-column grid) ====================
   if (data.skills && data.skills.length > 0) {
-    const skillsContent: Paragraph[] = [];
+    // Create a nested 2-column table for skills
     const skillsPerColumn = Math.ceil(data.skills.length / 2);
     const leftSkills = data.skills.slice(0, skillsPerColumn);
     const rightSkills = data.skills.slice(skillsPerColumn);
 
     const skillsTable = new Table({
       width: { size: 100, type: WidthType.PERCENTAGE },
+      layout: TableLayoutType.FIXED,
       borders: NO_BORDERS,
       rows: [
         new TableRow({
           children: [
             new TableCell({
               width: { size: 50, type: WidthType.PERCENTAGE },
-              children: leftSkills.map(
-                (skill) =>
-                  new Paragraph({
-                    children: [
-                createTextRun(`• ${skill}`, {
-                  size: 20,
-                  color: textColor,
+              borders: NO_BORDERS,
+              children: leftSkills.map((skill) =>
+                createBulletParagraph(skill, {
+                  size: FONT_SIZES["text-sm"],
+                  color: COLORS.gray700,
+                  spacingAfter: SPACING.xs,
                 }),
-                    ],
-                    spacing: { after: 100 },
-                  })
               ),
             }),
             new TableCell({
               width: { size: 50, type: WidthType.PERCENTAGE },
-              children: rightSkills.map(
-                (skill) =>
-                  new Paragraph({
-                    children: [
-                createTextRun(`• ${skill}`, {
-                  size: 20,
-                  color: textColor,
-                }),
-                    ],
-                    spacing: { after: 100 },
-                  })
-              ),
+              borders: NO_BORDERS,
+              children:
+                rightSkills.length > 0
+                  ? rightSkills.map((skill) =>
+                      createBulletParagraph(skill, {
+                        size: FONT_SIZES["text-sm"],
+                        color: COLORS.gray700,
+                        spacingAfter: SPACING.xs,
+                      }),
+                    )
+                  : [new Paragraph({})],
             }),
           ],
         }),
       ],
     });
-    children.push(createTwoColumnSection('Key Skills', [skillsTable]));
-    children.push(new Paragraph({ spacing: { after: 300 } }));
-  }
 
-  // Certifications
-  if (data.certifications && data.certifications.length > 0) {
-    const certContent = data.certifications.map(
-      (cert) =>
-        new Paragraph({
+    // Wrap skills table in the two-column layout
+    const skillsContent = [
+      new Paragraph({
+        children: [],
+        spacing: { after: 0 },
+      }),
+    ];
+
+    // We need to add the skills table directly after the section table
+    children.push(createTwoColumnSection("KEY SKILLS", [new Paragraph({})]));
+
+    // Remove the empty paragraph we just added and add the proper content
+    children.pop();
+
+    // Create a proper two-column section with the skills table embedded
+    const skillsSectionTable = new Table({
+      width: { size: 100, type: WidthType.PERCENTAGE },
+      layout: TableLayoutType.FIXED,
+      borders: NO_BORDERS,
+      rows: [
+        new TableRow({
           children: [
-            createTextRun(`• ${cert}`, {
-              size: 20,
-              color: textColor,
+            new TableCell({
+              width: { size: LEFT_COL_WIDTH, type: WidthType.DXA },
+              borders: NO_BORDERS,
+              verticalAlign: VerticalAlign.TOP,
+              children: [
+                new Paragraph({
+                  children: [
+                    createTextRun("KEY SKILLS", {
+                      bold: true,
+                      size: FONT_SIZES["text-base"],
+                      color: primaryColor,
+                    }),
+                  ],
+                }),
+              ],
+            }),
+            new TableCell({
+              width: { size: RIGHT_COL_WIDTH, type: WidthType.DXA },
+              borders: NO_BORDERS,
+              verticalAlign: VerticalAlign.TOP,
+              children: [skillsTable],
             }),
           ],
-          spacing: { after: 100 },
-        })
-    );
-    children.push(createTwoColumnSection('Certifications', certContent));
-    children.push(new Paragraph({ spacing: { after: 300 } }));
+        }),
+      ],
+    });
+
+    children.push(skillsSectionTable);
+    addSectionDivider();
   }
 
-  // Languages
+  // ==================== PROJECTS SECTION ====================
+  if (data.projects && data.projects.length > 0) {
+    const projectContent: Paragraph[] = [];
+
+    data.projects.forEach((project, idx) => {
+      // Project name (bold)
+      projectContent.push(
+        new Paragraph({
+          children: [
+            createTextRun(project.name || "", {
+              bold: true,
+              size: FONT_SIZES["text-sm"],
+              color: COLORS.black,
+            }),
+            ...(project.period
+              ? [
+                  new TextRun({ text: "\t" }),
+                  createTextRun(project.period, {
+                    bold: true,
+                    size: FONT_SIZES["text-sm"],
+                    color: COLORS.black,
+                  }),
+                ]
+              : []),
+          ],
+          tabStops: [{ type: "right" as const, position: RIGHT_COL_WIDTH }],
+          spacing: { after: SPACING.xs },
+        }),
+      );
+
+      // Organization (if any)
+      if (project.organization) {
+        projectContent.push(
+          new Paragraph({
+            children: [
+              createTextRun(project.organization, {
+                size: FONT_SIZES["text-sm"],
+                color: COLORS.gray700,
+              }),
+            ],
+            spacing: { after: SPACING.sm },
+          }),
+        );
+      }
+
+      // Details
+      if (project.details && project.details.length > 0) {
+        project.details.forEach((detail) => {
+          projectContent.push(
+            createBulletParagraph(detail, {
+              size: FONT_SIZES["text-sm"],
+              color: COLORS.gray700,
+              spacingAfter: SPACING.xs,
+            }),
+          );
+        });
+      }
+
+      if (idx < data.projects!.length - 1) {
+        projectContent.push(createSpacer(SPACING.lg));
+      }
+    });
+
+    children.push(createTwoColumnSection("PROJECTS", projectContent));
+    addSectionDivider();
+  }
+
+  // ==================== CERTIFICATIONS SECTION ====================
+  if (data.certifications && data.certifications.length > 0) {
+    const certContent = data.certifications.map((cert) =>
+      createBulletParagraph(cert, {
+        size: FONT_SIZES["text-sm"],
+        color: COLORS.gray700,
+        spacingAfter: SPACING.xs,
+      }),
+    );
+    children.push(createTwoColumnSection("CERTIFICATIONS", certContent));
+    addSectionDivider();
+  }
+
+  // ==================== LANGUAGES SECTION ====================
   if (data.languages && data.languages.length > 0) {
     const langContent = [
       new Paragraph({
         children: [
-              createTextRun(data.languages.join(', '), {
-                size: 20,
-                color: textColor,
-              }),
+          createTextRun(data.languages.join(", "), {
+            size: FONT_SIZES["text-sm"],
+            color: COLORS.gray700,
+          }),
         ],
       }),
     ];
-    children.push(createTwoColumnSection('Languages', langContent));
+    children.push(createTwoColumnSection("LANGUAGES", langContent));
+    // No divider after last section
   }
 }
 
-/**
- * Generate Modern Template (Clean minimal with black headings and borders)
- */
+// ============================================================================
+// MODERN TEMPLATE
+// Clean minimal with black name, gray borders, 3-column skills
+// ============================================================================
+
 function generateModernTemplate(
   data: ResumeData,
   children: (Paragraph | Table)[],
-  headingColor: string,
-  textColor: string,
-  secondaryTextColor: string
-) {
-  // Header - Black Name (Centered, Uppercase)
+): void {
+  const primaryColor = COLORS.modernBlack;
+
+  // Header - Name
   children.push(
     new Paragraph({
       children: [
-        createTextRun((data.name || 'Your Name').toUpperCase(), {
+        createTextRun((data.name || "Your Name").toUpperCase(), {
           bold: true,
-          size: 36,
-          color: headingColor,
+          size: FONT_SIZES["text-3xl"],
+          color: primaryColor,
         }),
       ],
       alignment: AlignmentType.CENTER,
-      spacing: { after: 200 },
-    })
+      spacing: { after: SPACING.md },
+    }),
   );
 
-  // Contact Information
-  const contactInfo: string[] = [];
-  if (data.email) contactInfo.push(data.email);
-  if (data.phone) contactInfo.push(data.phone);
-  if (data.location) contactInfo.push(data.location);
+  // Contact info
+  const contactParts: string[] = [];
+  if (data.email) contactParts.push(data.email);
+  if (data.phone) contactParts.push(data.phone);
+  if (data.location) contactParts.push(data.location);
 
-  if (contactInfo.length > 0) {
+  if (contactParts.length > 0) {
     children.push(
       new Paragraph({
         children: [
-          createTextRun(contactInfo.join(' | '), {
-            size: 20,
-            color: textColor,
+          createTextRun(contactParts.join(" | "), {
+            size: FONT_SIZES["text-sm"],
+            color: COLORS.gray600,
           }),
         ],
         alignment: AlignmentType.CENTER,
-        spacing: { after: 400 },
-      })
+        spacing: { after: SPACING.lg },
+      }),
     );
   }
 
-  // Thick horizontal rule
+  // Thick black divider
   children.push(
     new Paragraph({
-      spacing: { after: 300 },
+      spacing: { after: SPACING.xl },
       border: {
         bottom: {
-          color: '#000000',
-          size: 6,
+          color: primaryColor,
+          size: 18,
           style: BorderStyle.SINGLE,
         },
       },
-    })
+    }),
   );
 
-  const createSection = (heading: string, content: (Paragraph | Table)[]) => {
-    // Heading with border-bottom
+  // Section heading helper with gray bottom border
+  const createSectionHeading = (title: string): void => {
     children.push(
       new Paragraph({
         children: [
-          createTextRun(heading.toUpperCase(), {
+          createTextRun(title.toUpperCase(), {
             bold: true,
-            size: 22,
-            color: headingColor,
+            size: FONT_SIZES["text-base"],
+            color: COLORS.gray900,
           }),
         ],
-        spacing: { after: 200 },
+        spacing: { after: SPACING.md },
         border: {
           bottom: {
-            color: '#d1d5db',
-            size: 1,
+            color: COLORS.gray400,
+            size: 4,
             style: BorderStyle.SINGLE,
           },
         },
-      })
+      }),
     );
-    // Content
-    content.forEach((p) => children.push(p));
-    children.push(new Paragraph({ spacing: { after: 300 } }));
   };
 
   // Summary
-  if (data.summary) {
-    createSection('Summary', [
+  if (data.summary && data.summary.trim().length > 0) {
+    createSectionHeading("Summary");
+    children.push(
       new Paragraph({
         children: [
           createTextRun(data.summary, {
-            size: 22,
-            color: textColor,
+            size: FONT_SIZES["text-sm"],
+            color: COLORS.gray700,
           }),
         ],
-        spacing: { after: 0 },
+        alignment: AlignmentType.BOTH,
+        spacing: { after: SPACING["2xl"] },
       }),
-    ]);
+    );
   }
 
-  // Professional Experience
+  // Experience
   if (data.experience && data.experience.length > 0) {
-    const expContent: Paragraph[] = [];
-    data.experience.forEach((exp) => {
-      expContent.push(
+    createSectionHeading("Professional Experience");
+
+    data.experience.forEach((exp, idx) => {
+      // Title
+      children.push(
         new Paragraph({
           children: [
-            createTextRun(exp.title || '', {
+            createTextRun(exp.title || "", {
               bold: true,
-              size: 24,
-              color: '#000000',
+              size: FONT_SIZES["text-sm"],
+              color: COLORS.black,
             }),
           ],
-          spacing: { after: 100 },
-        })
+          spacing: { after: SPACING.xs },
+        }),
       );
-      if (exp.company) {
-        expContent.push(
-          new Paragraph({
-            children: [
-              createTextRun(exp.company, {
-                size: 20,
-                color: textColor,
-              }),
-            ],
-            spacing: { after: 100 },
-          })
-        );
-      }
-      if (exp.period) {
-        expContent.push(
-          new Paragraph({
-            children: [
-              createTextRun(exp.period, {
-                size: 20,
-                color: secondaryTextColor,
-              }),
-            ],
-            spacing: { after: 200 },
-          })
-        );
-      }
+
+      // Company | Location | Period
+      const companyLine: string[] = [];
+      if (exp.company) companyLine.push(exp.company);
+      if ((exp as any).location) companyLine.push((exp as any).location);
+      if (exp.period) companyLine.push(exp.period);
+
+      children.push(
+        new Paragraph({
+          children: [
+            createTextRun(companyLine.join(" | "), {
+              bold: true,
+              size: FONT_SIZES["text-sm"],
+              color: COLORS.black,
+            }),
+          ],
+          spacing: { after: SPACING.sm },
+        }),
+      );
+
+      // Bullets
       if (exp.bullets && exp.bullets.length > 0) {
         exp.bullets.forEach((bullet) => {
-          expContent.push(
-            new Paragraph({
-              children: [
-                createTextRun(`• ${bullet}`, {
-                  size: 20,
-                  color: textColor,
-                }),
-              ],
-              spacing: { after: 100 },
-              indent: { left: 200 },
-            })
+          children.push(
+            createBulletParagraph(bullet, {
+              size: FONT_SIZES["text-sm"],
+              color: COLORS.gray700,
+              spacingAfter: SPACING.xs,
+            }),
           );
         });
       }
-      expContent.push(new Paragraph({ spacing: { after: 200 } }));
+
+      children.push(
+        createSpacer(
+          idx < data.experience!.length - 1 ? SPACING.lg : SPACING["2xl"],
+        ),
+      );
     });
-    createSection('Professional Experience', expContent);
   }
 
-  // Skills (3 columns)
+  // Skills (3-column grid, no bullets)
   if (data.skills && data.skills.length > 0) {
+    createSectionHeading("Skills");
+
     const skillsPerColumn = Math.ceil(data.skills.length / 3);
     const col1 = data.skills.slice(0, skillsPerColumn);
     const col2 = data.skills.slice(skillsPerColumn, skillsPerColumn * 2);
@@ -936,560 +927,425 @@ function generateModernTemplate(
 
     const skillsTable = new Table({
       width: { size: 100, type: WidthType.PERCENTAGE },
+      layout: TableLayoutType.FIXED,
       borders: NO_BORDERS,
       rows: [
         new TableRow({
           children: [
             new TableCell({
-              width: { size: 33.33, type: WidthType.PERCENTAGE },
+              width: { size: 33, type: WidthType.PERCENTAGE },
+              borders: NO_BORDERS,
               children: col1.map(
                 (skill) =>
                   new Paragraph({
                     children: [
                       createTextRun(skill, {
-                        size: 20,
-                        color: textColor,
+                        size: FONT_SIZES["text-sm"],
+                        color: COLORS.gray700,
                       }),
                     ],
-                    spacing: { after: 100 },
-                  })
+                    spacing: { after: SPACING.sm },
+                  }),
               ),
             }),
             new TableCell({
-              width: { size: 33.33, type: WidthType.PERCENTAGE },
-              children: col2.map(
-                (skill) =>
-                  new Paragraph({
-                    children: [
-                      createTextRun(skill, {
-                        size: 20,
-                        color: textColor,
-                      }),
-                    ],
-                    spacing: { after: 100 },
-                  })
-              ),
+              width: { size: 33, type: WidthType.PERCENTAGE },
+              borders: NO_BORDERS,
+              children:
+                col2.length > 0
+                  ? col2.map(
+                      (skill) =>
+                        new Paragraph({
+                          children: [
+                            createTextRun(skill, {
+                              size: FONT_SIZES["text-sm"],
+                              color: COLORS.gray700,
+                            }),
+                          ],
+                          spacing: { after: SPACING.sm },
+                        }),
+                    )
+                  : [new Paragraph({})],
             }),
             new TableCell({
-              width: { size: 33.33, type: WidthType.PERCENTAGE },
-              children: col3.map(
-                (skill) =>
-                  new Paragraph({
-                    children: [
-                      createTextRun(skill, {
-                        size: 20,
-                        color: textColor,
-                      }),
-                    ],
-                    spacing: { after: 100 },
-                  })
-              ),
+              width: { size: 34, type: WidthType.PERCENTAGE },
+              borders: NO_BORDERS,
+              children:
+                col3.length > 0
+                  ? col3.map(
+                      (skill) =>
+                        new Paragraph({
+                          children: [
+                            createTextRun(skill, {
+                              size: FONT_SIZES["text-sm"],
+                              color: COLORS.gray700,
+                            }),
+                          ],
+                          spacing: { after: SPACING.sm },
+                        }),
+                    )
+                  : [new Paragraph({})],
             }),
           ],
         }),
       ],
     });
-    createSection('Skills', [skillsTable]);
+
+    children.push(skillsTable);
+    children.push(createSpacer(SPACING["2xl"]));
   }
 
   // Education
   if (data.education && data.education.length > 0) {
-    const eduContent: Paragraph[] = [];
-    data.education.forEach((edu) => {
-      eduContent.push(
+    createSectionHeading("Education");
+
+    data.education.forEach((edu, idx) => {
+      children.push(
         new Paragraph({
           children: [
-            createTextRun(edu.degree || '', {
+            createTextRun(edu.degree || "", {
               bold: true,
-              size: 24,
-              color: '#000000',
+              size: FONT_SIZES["text-sm"],
+              color: COLORS.black,
+            }),
+            new TextRun({ text: "\t" }),
+            createTextRun(edu.period || "", {
+              bold: true,
+              size: FONT_SIZES["text-sm"],
+              color: COLORS.black,
             }),
           ],
-          spacing: { after: 100 },
-        })
+          tabStops: [
+            { type: "right" as const, position: convertInchesToTwip(7.5) },
+          ],
+          spacing: { after: SPACING.xs },
+        }),
       );
+
       if (edu.institution) {
-        eduContent.push(
+        children.push(
           new Paragraph({
             children: [
               createTextRun(edu.institution, {
-                size: 20,
-                color: textColor,
+                size: FONT_SIZES["text-sm"],
+                color: COLORS.gray700,
               }),
             ],
-            spacing: { after: 100 },
-          })
+            spacing: { after: SPACING.sm },
+          }),
         );
       }
-      if (edu.period) {
-        eduContent.push(
-          new Paragraph({
-            children: [
-              createTextRun(edu.period, {
-                size: 20,
-                color: secondaryTextColor,
-              }),
-            ],
-            spacing: { after: 200 },
-          })
-        );
-      }
+
       if (edu.details && edu.details.length > 0) {
         edu.details.forEach((detail) => {
-          eduContent.push(
-            new Paragraph({
-              children: [
-                createTextRun(`• ${detail}`, {
-                  size: 20,
-                  color: textColor,
-                }),
-              ],
-              spacing: { after: 100 },
-              indent: { left: 200 },
-            })
+          children.push(
+            createBulletParagraph(detail, {
+              size: FONT_SIZES["text-sm"],
+              color: COLORS.gray700,
+              spacingAfter: SPACING.xs,
+            }),
           );
         });
       }
-      eduContent.push(new Paragraph({ spacing: { after: 200 } }));
+
+      children.push(
+        createSpacer(
+          idx < data.education!.length - 1 ? SPACING.lg : SPACING["2xl"],
+        ),
+      );
     });
-    createSection('Education', eduContent);
+  }
+
+  // Projects
+  if (data.projects && data.projects.length > 0) {
+    createSectionHeading("Projects");
+
+    data.projects.forEach((project, idx) => {
+      children.push(
+        new Paragraph({
+          children: [
+            createTextRun(project.name || "", {
+              bold: true,
+              size: FONT_SIZES["text-sm"],
+              color: COLORS.black,
+            }),
+            ...(project.period
+              ? [
+                  new TextRun({ text: "\t" }),
+                  createTextRun(project.period, {
+                    bold: true,
+                    size: FONT_SIZES["text-sm"],
+                    color: COLORS.black,
+                  }),
+                ]
+              : []),
+          ],
+          tabStops: [
+            { type: "right" as const, position: convertInchesToTwip(7.5) },
+          ],
+          spacing: { after: SPACING.xs },
+        }),
+      );
+
+      if (project.organization) {
+        children.push(
+          new Paragraph({
+            children: [
+              createTextRun(project.organization, {
+                size: FONT_SIZES["text-sm"],
+                color: COLORS.gray700,
+              }),
+            ],
+            spacing: { after: SPACING.sm },
+          }),
+        );
+      }
+
+      if (project.details && project.details.length > 0) {
+        project.details.forEach((detail) => {
+          children.push(
+            createBulletParagraph(detail, {
+              size: FONT_SIZES["text-sm"],
+              color: COLORS.gray700,
+              spacingAfter: SPACING.xs,
+            }),
+          );
+        });
+      }
+
+      children.push(
+        createSpacer(
+          idx < data.projects!.length - 1 ? SPACING.lg : SPACING["2xl"],
+        ),
+      );
+    });
   }
 
   // Additional Information
-  if ((data.languages && data.languages.length > 0) || (data.certifications && data.certifications.length > 0)) {
-    const additionalContent: Paragraph[] = [];
+  if (
+    (data.languages && data.languages.length > 0) ||
+    (data.certifications && data.certifications.length > 0)
+  ) {
+    createSectionHeading("Additional Information");
+
     if (data.languages && data.languages.length > 0) {
-      additionalContent.push(
+      children.push(
         new Paragraph({
           children: [
-            new TextRun({
-              text: 'Languages: ',
+            createTextRun("Languages: ", {
               bold: true,
-              size: 20,
-              color: textColor,
+              size: FONT_SIZES["text-sm"],
+              color: COLORS.gray700,
             }),
-              createTextRun(data.languages.join(', '), {
-                size: 20,
-                color: textColor,
-              }),
+            createTextRun(data.languages.join(", "), {
+              size: FONT_SIZES["text-sm"],
+              color: COLORS.gray700,
+            }),
           ],
-          spacing: { after: 100 },
-        })
+          spacing: { after: SPACING.sm },
+        }),
       );
     }
+
     if (data.certifications && data.certifications.length > 0) {
-      additionalContent.push(
+      children.push(
         new Paragraph({
           children: [
-            new TextRun({
-              text: 'Certifications: ',
+            createTextRun("Certifications: ", {
               bold: true,
-              size: 20,
-              color: textColor,
+              size: FONT_SIZES["text-sm"],
+              color: COLORS.gray700,
             }),
-            new TextRun({
-              text: data.certifications.join(', '),
-              size: 20,
-              color: textColor,
+            createTextRun(data.certifications.join(", "), {
+              size: FONT_SIZES["text-sm"],
+              color: COLORS.gray700,
             }),
           ],
-          spacing: { after: 100 },
-        })
+          spacing: { after: SPACING.sm },
+        }),
       );
     }
-    createSection('Additional Information', additionalContent);
   }
 }
 
-/**
- * Generate Executive Template (Gold accents, left-aligned name)
- */
+// ============================================================================
+// EXECUTIVE TEMPLATE
+// Large name, amber/gold accents, centered header with title
+// ============================================================================
+
 function generateExecutiveTemplate(
   data: ResumeData,
   children: (Paragraph | Table)[],
-  headingColor: string,
-  textColor: string,
-  secondaryTextColor: string
-) {
-  // Header - Large Bold Name (Left-aligned)
+): void {
+  const primaryColor = COLORS.executiveAmber;
+
+  // Header - Large Name
   children.push(
     new Paragraph({
       children: [
-        createTextRun(data.name || 'Your Name', {
+        createTextRun((data.name || "Your Name").toUpperCase(), {
           bold: true,
-          size: 48,
-          color: '#000000',
+          size: FONT_SIZES["text-4xl"],
+          color: COLORS.gray900,
         }),
       ],
-      spacing: { after: 100 },
-    })
+      alignment: AlignmentType.CENTER,
+      spacing: { after: SPACING.sm },
+    }),
   );
 
-  // Title in Gold
+  // Title
   if (data.title) {
     children.push(
       new Paragraph({
         children: [
           createTextRun(data.title.toUpperCase(), {
             bold: true,
-            size: 28,
-            color: headingColor,
-          }),
-        ],
-        spacing: { after: 200 },
-      })
-    );
-  }
-
-  // Contact Information
-  const contactInfo: string[] = [];
-  if (data.location) contactInfo.push(data.location);
-  if (data.email) contactInfo.push(data.email);
-  if (data.website) contactInfo.push(data.website);
-
-  if (contactInfo.length > 0) {
-    children.push(
-      new Paragraph({
-        children: [
-          createTextRun(contactInfo.join(' | '), {
-            size: 20,
-            color: textColor,
-          }),
-        ],
-        spacing: { after: 400 },
-      })
-    );
-  }
-
-  // Thick Gold horizontal rule
-  children.push(
-    new Paragraph({
-      spacing: { after: 300 },
-      border: {
-        bottom: {
-          color: headingColor,
-          size: 6,
-          style: BorderStyle.SINGLE,
-        },
-      },
-    })
-  );
-
-  const createSection = (heading: string, content: (Paragraph | Table)[]) => {
-    children.push(
-      new Paragraph({
-        children: [
-          createTextRun(heading.toUpperCase(), {
-            bold: true,
-            size: 22,
-            color: headingColor,
-          }),
-        ],
-        spacing: { after: 200 },
-      })
-    );
-    content.forEach((p) => children.push(p));
-    children.push(new Paragraph({ spacing: { after: 300 } }));
-  };
-
-  // Summary
-  if (data.summary) {
-    createSection('Summary', [
-      new Paragraph({
-        children: [
-          createTextRun(data.summary, {
-            size: 22,
-            color: textColor,
-          }),
-        ],
-        spacing: { after: 0 },
-      }),
-    ]);
-  }
-
-  // Professional Experience
-  if (data.experience && data.experience.length > 0) {
-    const expContent: Paragraph[] = [];
-    data.experience.forEach((exp) => {
-      expContent.push(
-        new Paragraph({
-          children: [
-            createTextRun(exp.title || '', {
-              bold: true,
-              size: 24,
-              color: '#000000',
-            }),
-          ],
-          spacing: { after: 100 },
-        })
-      );
-      if (exp.company) {
-        expContent.push(
-          new Paragraph({
-            children: [
-              createTextRun(exp.company, {
-                size: 20,
-                color: textColor,
-              }),
-            ],
-            spacing: { after: 100 },
-          })
-        );
-      }
-      if (exp.period) {
-        expContent.push(
-          new Paragraph({
-            children: [
-              createTextRun(exp.period, {
-                size: 20,
-                color: secondaryTextColor,
-              }),
-            ],
-            spacing: { after: 200 },
-          })
-        );
-      }
-      if (exp.bullets && exp.bullets.length > 0) {
-        exp.bullets.forEach((bullet) => {
-          expContent.push(
-            new Paragraph({
-              children: [
-                createTextRun(`• ${bullet}`, {
-                  size: 20,
-                  color: textColor,
-                }),
-              ],
-              spacing: { after: 100 },
-              indent: { left: 200 },
-            })
-          );
-        });
-      }
-      expContent.push(new Paragraph({ spacing: { after: 200 } }));
-    });
-    createSection('Professional Experience', expContent);
-  }
-
-  // Education
-  if (data.education && data.education.length > 0) {
-    const eduContent: Paragraph[] = [];
-    data.education.forEach((edu) => {
-      eduContent.push(
-        new Paragraph({
-          children: [
-            createTextRun(edu.degree || '', {
-              bold: true,
-              size: 24,
-              color: '#000000',
-            }),
-          ],
-          spacing: { after: 100 },
-        })
-      );
-      if (edu.institution) {
-        eduContent.push(
-          new Paragraph({
-            children: [
-              createTextRun(edu.institution, {
-                size: 20,
-                color: textColor,
-              }),
-            ],
-            spacing: { after: 100 },
-          })
-        );
-      }
-      if (edu.period) {
-        eduContent.push(
-          new Paragraph({
-            children: [
-              createTextRun(edu.period, {
-                size: 20,
-                color: secondaryTextColor,
-              }),
-            ],
-            spacing: { after: 200 },
-          })
-        );
-      }
-      if (edu.details && edu.details.length > 0) {
-        edu.details.forEach((detail) => {
-          eduContent.push(
-            new Paragraph({
-              children: [
-                createTextRun(`• ${detail}`, {
-                  size: 20,
-                  color: textColor,
-                }),
-              ],
-              spacing: { after: 100 },
-              indent: { left: 200 },
-            })
-          );
-        });
-      }
-      eduContent.push(new Paragraph({ spacing: { after: 200 } }));
-    });
-    createSection('Education', eduContent);
-  }
-
-  // Additional Information
-  if ((data.languages && data.languages.length > 0) || (data.certifications && data.certifications.length > 0)) {
-    const additionalContent: Paragraph[] = [];
-    if (data.languages && data.languages.length > 0) {
-      additionalContent.push(
-        new Paragraph({
-          children: [
-            new TextRun({
-              text: '• ',
-              size: 20,
-              color: textColor,
-            }),
-            new TextRun({
-              text: 'Languages: ',
-              bold: true,
-              size: 20,
-              color: textColor,
-            }),
-              createTextRun(data.languages.join(', '), {
-                size: 20,
-                color: textColor,
-              }),
-          ],
-          spacing: { after: 100 },
-          indent: { left: 200 },
-        })
-      );
-    }
-    if (data.certifications && data.certifications.length > 0) {
-      additionalContent.push(
-        new Paragraph({
-          children: [
-            new TextRun({
-              text: '• ',
-              size: 20,
-              color: textColor,
-            }),
-            new TextRun({
-              text: 'Certifications: ',
-              bold: true,
-              size: 20,
-              color: textColor,
-            }),
-            new TextRun({
-              text: data.certifications.join(', '),
-              size: 20,
-              color: textColor,
-            }),
-          ],
-          spacing: { after: 100 },
-          indent: { left: 200 },
-        })
-      );
-    }
-    createSection('Additional Information', additionalContent);
-  }
-}
-
-/**
- * Generate Technical Template (Blue headings, skills before experience)
- */
-function generateTechnicalTemplate(
-  data: ResumeData,
-  children: (Paragraph | Table)[],
-  headingColor: string,
-  textColor: string,
-  secondaryTextColor: string
-) {
-  // Color constants matching the template
-  const GRAY_600 = '#4b5563';
-  const GRAY_700 = '#374151';
-
-  // Header - Blue Name (Centered, Uppercase) - matches text-3xl
-  children.push(
-    new Paragraph({
-      children: [
-        createTextRun((data.name || 'Your Name').toUpperCase(), {
-          bold: true,
-          size: 36, // text-3xl equivalent
-          color: headingColor,
-        }),
-      ],
-      alignment: AlignmentType.CENTER,
-      spacing: { after: 200 },
-    })
-  );
-
-  // Contact Information - smaller text (text-sm)
-  const contactInfo: string[] = [];
-  if (data.email) contactInfo.push(data.email);
-  if (data.email && data.phone) contactInfo.push('|');
-  if (data.phone) contactInfo.push(data.phone);
-  if ((data.email || data.phone) && data.location) contactInfo.push('|');
-  if (data.location) contactInfo.push(data.location);
-
-  if (contactInfo.length > 0) {
-    children.push(
-      new Paragraph({
-        children: [
-          createTextRun(contactInfo.join(' '), {
-            size: 18, // text-sm equivalent
-            color: GRAY_600,
+            size: FONT_SIZES["text-xl"],
+            color: COLORS.gray900,
           }),
         ],
         alignment: AlignmentType.CENTER,
-        spacing: { after: 400 },
-      })
+        spacing: { after: SPACING.md },
+      }),
     );
   }
 
-  const createSection = (heading: string, content: (Paragraph | Table)[]) => {
-    // Section heading with top AND bottom borders (border-t border-b)
+  // Contact info
+  const contactParts: string[] = [];
+  if (data.location) contactParts.push(data.location);
+  if (data.email) contactParts.push(data.email);
+  if (data.website) contactParts.push(data.website);
+
+  if (contactParts.length > 0) {
     children.push(
       new Paragraph({
         children: [
-          createTextRun(heading.toUpperCase(), {
-            bold: true,
-            size: 22, // text-base equivalent
-            color: headingColor,
+          createTextRun(contactParts.join(" | "), {
+            size: FONT_SIZES["text-sm"],
+            color: COLORS.gray600,
           }),
         ],
-        spacing: { before: 200, after: 200 },
+        alignment: AlignmentType.CENTER,
+        spacing: { after: SPACING.lg },
+      }),
+    );
+  }
+
+  // Gold divider
+  children.push(
+    new Paragraph({
+      spacing: { after: SPACING["2xl"] },
+      border: {
+        bottom: {
+          color: primaryColor,
+          size: 12,
+          style: BorderStyle.SINGLE,
+        },
+      },
+    }),
+  );
+
+  // Section heading with gold bottom border
+  const createSectionHeading = (title: string): void => {
+    children.push(
+      new Paragraph({
+        children: [
+          createTextRun(title.toUpperCase(), {
+            bold: true,
+            size: FONT_SIZES["text-base"],
+            color: COLORS.gray900,
+          }),
+        ],
+        spacing: { after: SPACING.md },
         border: {
-          top: {
-            color: headingColor,
-            size: 1,
-            style: BorderStyle.SINGLE,
-          },
           bottom: {
-            color: headingColor,
-            size: 1,
+            color: primaryColor,
+            size: 4,
             style: BorderStyle.SINGLE,
           },
         },
-      })
+      }),
     );
-    content.forEach((p) => children.push(p));
-    children.push(new Paragraph({ spacing: { after: 300 } }));
   };
 
   // Summary
-  if (data.summary) {
-    createSection('Summary', [
+  if (data.summary && data.summary.trim().length > 0) {
+    createSectionHeading("Summary");
+    children.push(
       new Paragraph({
         children: [
           createTextRun(data.summary, {
-            size: 20, // text-sm equivalent
-            color: GRAY_700,
+            size: FONT_SIZES["text-sm"],
+            color: COLORS.gray700,
           }),
         ],
-        spacing: { after: 0 },
+        alignment: AlignmentType.BOTH,
+        spacing: { after: SPACING["2xl"] },
       }),
-    ]);
+    );
   }
 
-  // Technical Skills (BEFORE Experience - 3 columns grid)
+  // Experience
+  if (data.experience && data.experience.length > 0) {
+    createSectionHeading("Professional Experience");
+
+    data.experience.forEach((exp, idx) => {
+      children.push(
+        new Paragraph({
+          children: [
+            createTextRun(exp.title || "", {
+              bold: true,
+              size: FONT_SIZES["text-sm"],
+              color: COLORS.black,
+            }),
+          ],
+          spacing: { after: SPACING.xs },
+        }),
+      );
+
+      const companyLine: string[] = [];
+      if (exp.company) companyLine.push(exp.company);
+      if ((exp as any).location) companyLine.push((exp as any).location);
+      if (exp.period) companyLine.push(exp.period);
+
+      children.push(
+        new Paragraph({
+          children: [
+            createTextRun(companyLine.join(" | "), {
+              bold: true,
+              size: FONT_SIZES["text-sm"],
+              color: COLORS.black,
+            }),
+          ],
+          spacing: { after: SPACING.sm },
+        }),
+      );
+
+      if (exp.bullets && exp.bullets.length > 0) {
+        exp.bullets.forEach((bullet) => {
+          children.push(
+            createBulletParagraph(bullet, {
+              size: FONT_SIZES["text-sm"],
+              color: COLORS.gray700,
+              spacingAfter: SPACING.xs,
+            }),
+          );
+        });
+      }
+
+      children.push(
+        createSpacer(
+          idx < data.experience!.length - 1 ? SPACING.lg : SPACING["2xl"],
+        ),
+      );
+    });
+  }
+
+  // Skills (3-column grid)
   if (data.skills && data.skills.length > 0) {
+    createSectionHeading("Core Competencies");
+
     const skillsPerColumn = Math.ceil(data.skills.length / 3);
     const col1 = data.skills.slice(0, skillsPerColumn);
     const col2 = data.skills.slice(skillsPerColumn, skillsPerColumn * 2);
@@ -1497,278 +1353,899 @@ function generateTechnicalTemplate(
 
     const skillsTable = new Table({
       width: { size: 100, type: WidthType.PERCENTAGE },
+      layout: TableLayoutType.FIXED,
       borders: NO_BORDERS,
       rows: [
         new TableRow({
           children: [
             new TableCell({
-              width: { size: 33.33, type: WidthType.PERCENTAGE },
+              width: { size: 33, type: WidthType.PERCENTAGE },
+              borders: NO_BORDERS,
               children: col1.map(
                 (skill) =>
                   new Paragraph({
                     children: [
                       createTextRun(skill, {
-                        size: 20, // text-sm equivalent
-                        color: GRAY_700,
+                        size: FONT_SIZES["text-sm"],
+                        color: COLORS.gray700,
                       }),
                     ],
-                    spacing: { after: 50 }, // gap-y-1 equivalent
-                  })
+                    spacing: { after: SPACING.sm },
+                  }),
               ),
             }),
             new TableCell({
-              width: { size: 33.33, type: WidthType.PERCENTAGE },
-              children: col2.map(
-                (skill) =>
-                  new Paragraph({
-                    children: [
-                      new TextRun({
-                        text: skill,
-                        size: 20,
-                        color: GRAY_700,
-                      }),
-                    ],
-                    spacing: { after: 50 },
-                  })
-              ),
+              width: { size: 33, type: WidthType.PERCENTAGE },
+              borders: NO_BORDERS,
+              children:
+                col2.length > 0
+                  ? col2.map(
+                      (skill) =>
+                        new Paragraph({
+                          children: [
+                            createTextRun(skill, {
+                              size: FONT_SIZES["text-sm"],
+                              color: COLORS.gray700,
+                            }),
+                          ],
+                          spacing: { after: SPACING.sm },
+                        }),
+                    )
+                  : [new Paragraph({})],
             }),
             new TableCell({
-              width: { size: 33.33, type: WidthType.PERCENTAGE },
-              children: col3.map(
-                (skill) =>
-                  new Paragraph({
-                    children: [
-                      new TextRun({
-                        text: skill,
-                        size: 20,
-                        color: GRAY_700,
-                      }),
-                    ],
-                    spacing: { after: 50 },
-                  })
-              ),
+              width: { size: 34, type: WidthType.PERCENTAGE },
+              borders: NO_BORDERS,
+              children:
+                col3.length > 0
+                  ? col3.map(
+                      (skill) =>
+                        new Paragraph({
+                          children: [
+                            createTextRun(skill, {
+                              size: FONT_SIZES["text-sm"],
+                              color: COLORS.gray700,
+                            }),
+                          ],
+                          spacing: { after: SPACING.sm },
+                        }),
+                    )
+                  : [new Paragraph({})],
             }),
           ],
         }),
       ],
     });
-    createSection('Technical Skills', [skillsTable]);
-  }
 
-  // Professional Experience
-  if (data.experience && data.experience.length > 0) {
-    const expContent: (Paragraph | Table)[] = [];
-    data.experience.forEach((exp) => {
-      // Title and company on same line, period on right (flex justify-between) - using table
-      const titleCompany = exp.title ? `${exp.title}${exp.company ? `, ${exp.company}` : ''}` : exp.company || '';
-      expContent.push(
-        new Table({
-          width: { size: 100, type: WidthType.PERCENTAGE },
-          borders: NO_BORDERS,
-          rows: [
-            new TableRow({
-              children: [
-                new TableCell({
-                  width: { size: 70, type: WidthType.PERCENTAGE },
-                  children: [
-                    new Paragraph({
-                      children: [
-                        new TextRun({
-                          text: titleCompany,
-                          bold: true,
-                          size: 20, // text-sm equivalent
-                          color: '#000000',
-                        }),
-                      ],
-                    }),
-                  ],
-                }),
-                ...(exp.period ? [
-                  new TableCell({
-                    width: { size: 30, type: WidthType.PERCENTAGE },
-                    children: [
-                      new Paragraph({
-                        children: [
-                          createTextRun(exp.period, {
-                            bold: true,
-                            size: 20,
-                            color: headingColor,
-                          }),
-                        ],
-                        alignment: AlignmentType.RIGHT,
-                      }),
-                    ],
-                  }),
-                ] : []),
-              ],
-            }),
-          ],
-        })
-      );
-      if (exp.bullets && exp.bullets.length > 0) {
-        exp.bullets.forEach((bullet) => {
-          expContent.push(
-            new Paragraph({
-              children: [
-                createTextRun('• ', {
-                  size: 20,
-                  color: GRAY_600,
-                }),
-                createTextRun(bullet, {
-                  size: 20,
-                  color: GRAY_700,
-                }),
-              ],
-              spacing: { after: 50 },
-              indent: { left: 200 },
-            })
-          );
-        });
-      }
-      expContent.push(new Paragraph({ spacing: { after: 200 } }));
-    });
-    createSection('Professional Experience', expContent);
+    children.push(skillsTable);
+    children.push(createSpacer(SPACING["2xl"]));
   }
 
   // Education
   if (data.education && data.education.length > 0) {
-    const eduContent: (Paragraph | Table)[] = [];
-    data.education.forEach((edu) => {
-      // Degree and period on same line (flex justify-between) - using table
-      eduContent.push(
-        new Table({
-          width: { size: 100, type: WidthType.PERCENTAGE },
-          borders: NO_BORDERS,
-          rows: [
-            new TableRow({
-              children: [
-                new TableCell({
-                  width: { size: 70, type: WidthType.PERCENTAGE },
-                  children: [
-                    new Paragraph({
-                      children: [
-                        new TextRun({
-                          text: edu.degree || '',
-                          bold: true,
-                          size: 20, // text-sm equivalent
-                          color: '#000000',
-                        }),
-                      ],
-                    }),
-                  ],
-                }),
-                ...(edu.period ? [
-                  new TableCell({
-                    width: { size: 30, type: WidthType.PERCENTAGE },
-                    children: [
-                      new Paragraph({
-                        children: [
-                            createTextRun(edu.period, {
-                              bold: true,
-                              size: 20,
-                              color: headingColor,
-                            }),
-                        ],
-                        alignment: AlignmentType.RIGHT,
-                      }),
-                    ],
-                  }),
-                ] : []),
-              ],
+    createSectionHeading("Education");
+
+    data.education.forEach((edu, idx) => {
+      children.push(
+        new Paragraph({
+          children: [
+            createTextRun(edu.degree || "", {
+              bold: true,
+              size: FONT_SIZES["text-sm"],
+              color: COLORS.black,
+            }),
+            new TextRun({ text: "\t" }),
+            createTextRun(edu.period || "", {
+              bold: true,
+              size: FONT_SIZES["text-sm"],
+              color: COLORS.black,
             }),
           ],
-        })
+          tabStops: [
+            { type: "right" as const, position: convertInchesToTwip(7.5) },
+          ],
+          spacing: { after: SPACING.xs },
+        }),
       );
+
       if (edu.institution) {
-        eduContent.push(
+        children.push(
           new Paragraph({
             children: [
-                createTextRun(edu.institution, {
-                  size: 20,
-                  color: GRAY_700,
-                }),
+              createTextRun(edu.institution, {
+                size: FONT_SIZES["text-sm"],
+                color: COLORS.gray700,
+              }),
             ],
-            spacing: { after: 100 },
-          })
+            spacing: { after: SPACING.sm },
+          }),
         );
       }
+
       if (edu.details && edu.details.length > 0) {
         edu.details.forEach((detail) => {
-          eduContent.push(
-            new Paragraph({
-              children: [
-                new TextRun({
-                  text: '• ',
-                  size: 20,
-                  color: GRAY_600,
-                }),
-                          createTextRun(detail, {
-                            size: 20,
-                            color: GRAY_700,
-                          }),
-              ],
-              spacing: { after: 100 },
-              indent: { left: 200 },
-            })
+          children.push(
+            createBulletParagraph(detail, {
+              size: FONT_SIZES["text-sm"],
+              color: COLORS.gray700,
+              spacingAfter: SPACING.xs,
+            }),
           );
         });
       }
-      eduContent.push(new Paragraph({ spacing: { after: 200 } }));
+
+      children.push(
+        createSpacer(
+          idx < data.education!.length - 1 ? SPACING.lg : SPACING["2xl"],
+        ),
+      );
     });
-    createSection('Education', eduContent);
   }
 
-  // Additional Information
-  if ((data.languages && data.languages.length > 0) || (data.certifications && data.certifications.length > 0)) {
-    const additionalContent: Paragraph[] = [];
-    if (data.languages && data.languages.length > 0) {
-      additionalContent.push(
+  // Projects
+  if (data.projects && data.projects.length > 0) {
+    createSectionHeading("Key Projects");
+
+    data.projects.forEach((project, idx) => {
+      children.push(
         new Paragraph({
           children: [
-              createTextRun('• ', {
-                size: 20,
-                color: GRAY_600,
-              }),
-              createTextRun('Languages: ', {
-                bold: true,
-                size: 20,
-                color: GRAY_700,
-              }),
-              createTextRun(data.languages.join(', ') + '.', {
-                size: 20,
-                color: GRAY_700,
-              }),
-          ],
-          spacing: { after: 50 },
-          indent: { left: 200 },
-        })
-      );
-    }
-    if (data.certifications && data.certifications.length > 0) {
-      additionalContent.push(
-        new Paragraph({
-          children: [
-            new TextRun({
-              text: '• ',
-              size: 20,
-              color: GRAY_600,
-            }),
-            createTextRun('Certifications: ', {
+            createTextRun(project.name || "", {
               bold: true,
-              size: 20,
-              color: GRAY_700,
+              size: FONT_SIZES["text-sm"],
+              color: COLORS.black,
             }),
-            createTextRun(data.certifications.join(', ') + '.', {
-              size: 20,
-              color: GRAY_700,
-            }),
+            ...(project.period
+              ? [
+                  new TextRun({ text: "\t" }),
+                  createTextRun(project.period, {
+                    bold: true,
+                    size: FONT_SIZES["text-sm"],
+                    color: COLORS.black,
+                  }),
+                ]
+              : []),
           ],
-          spacing: { after: 50 },
-          indent: { left: 200 },
-        })
+          tabStops: [
+            { type: "right" as const, position: convertInchesToTwip(7.5) },
+          ],
+          spacing: { after: SPACING.xs },
+        }),
       );
-    }
-    createSection('Additional Information', additionalContent);
+
+      if (project.organization) {
+        children.push(
+          new Paragraph({
+            children: [
+              createTextRun(project.organization, {
+                size: FONT_SIZES["text-sm"],
+                color: COLORS.gray700,
+              }),
+            ],
+            spacing: { after: SPACING.sm },
+          }),
+        );
+      }
+
+      if (project.details && project.details.length > 0) {
+        project.details.forEach((detail) => {
+          children.push(
+            createBulletParagraph(detail, {
+              size: FONT_SIZES["text-sm"],
+              color: COLORS.gray700,
+              spacingAfter: SPACING.xs,
+            }),
+          );
+        });
+      }
+
+      children.push(
+        createSpacer(
+          idx < data.projects!.length - 1 ? SPACING.lg : SPACING["2xl"],
+        ),
+      );
+    });
+  }
+
+  // Certifications
+  if (data.certifications && data.certifications.length > 0) {
+    createSectionHeading("Certifications");
+    data.certifications.forEach((cert) => {
+      children.push(
+        createBulletParagraph(cert, {
+          size: FONT_SIZES["text-sm"],
+          color: COLORS.gray700,
+          spacingAfter: SPACING.xs,
+        }),
+      );
+    });
+    children.push(createSpacer(SPACING["2xl"]));
+  }
+
+  // Languages
+  if (data.languages && data.languages.length > 0) {
+    createSectionHeading("Languages");
+    children.push(
+      new Paragraph({
+        children: [
+          createTextRun(data.languages.join(", "), {
+            size: FONT_SIZES["text-sm"],
+            color: COLORS.gray700,
+          }),
+        ],
+      }),
+    );
   }
 }
 
+// ============================================================================
+// TECHNICAL TEMPLATE
+// Blue name, top+bottom borders on headings, period in blue
+// ============================================================================
+
+function generateTechnicalTemplate(
+  data: ResumeData,
+  children: (Paragraph | Table)[],
+): void {
+  const primaryColor = COLORS.technicalBlue;
+
+  // Header - Name (blue)
+  children.push(
+    new Paragraph({
+      children: [
+        createTextRun((data.name || "Your Name").toUpperCase(), {
+          bold: true,
+          size: FONT_SIZES["text-3xl"],
+          color: primaryColor,
+        }),
+      ],
+      alignment: AlignmentType.CENTER,
+      spacing: { after: SPACING.md },
+    }),
+  );
+
+  // Contact info
+  const contactParts: string[] = [];
+  if (data.email) contactParts.push(data.email);
+  if (data.phone) contactParts.push(data.phone);
+  if (data.location) contactParts.push(data.location);
+
+  if (contactParts.length > 0) {
+    children.push(
+      new Paragraph({
+        children: [
+          createTextRun(contactParts.join(" | "), {
+            size: FONT_SIZES["text-sm"],
+            color: COLORS.gray600,
+          }),
+        ],
+        alignment: AlignmentType.CENTER,
+        spacing: { after: SPACING["2xl"] },
+      }),
+    );
+  }
+
+  // Section heading with TOP and BOTTOM blue borders
+  const createSectionHeading = (title: string): void => {
+    children.push(
+      new Paragraph({
+        children: [
+          createTextRun(title.toUpperCase(), {
+            bold: true,
+            size: FONT_SIZES["text-base"],
+            color: primaryColor,
+          }),
+        ],
+        spacing: { before: SPACING.sm, after: SPACING.sm },
+        border: {
+          top: {
+            color: primaryColor,
+            size: 4,
+            style: BorderStyle.SINGLE,
+          },
+          bottom: {
+            color: primaryColor,
+            size: 4,
+            style: BorderStyle.SINGLE,
+          },
+        },
+      }),
+    );
+    children.push(createSpacer(SPACING.md));
+  };
+
+  // Summary
+  if (data.summary && data.summary.trim().length > 0) {
+    createSectionHeading("Summary");
+    children.push(
+      new Paragraph({
+        children: [
+          createTextRun(data.summary, {
+            size: FONT_SIZES["text-sm"],
+            color: COLORS.gray700,
+          }),
+        ],
+        alignment: AlignmentType.BOTH,
+        spacing: { after: SPACING["2xl"] },
+      }),
+    );
+  }
+
+  // Technical Skills (BEFORE experience) - 3-column grid
+  if (data.skills && data.skills.length > 0) {
+    createSectionHeading("Technical Skills");
+
+    const skillsPerColumn = Math.ceil(data.skills.length / 3);
+    const col1 = data.skills.slice(0, skillsPerColumn);
+    const col2 = data.skills.slice(skillsPerColumn, skillsPerColumn * 2);
+    const col3 = data.skills.slice(skillsPerColumn * 2);
+
+    const skillsTable = new Table({
+      width: { size: 100, type: WidthType.PERCENTAGE },
+      layout: TableLayoutType.FIXED,
+      borders: NO_BORDERS,
+      rows: [
+        new TableRow({
+          children: [
+            new TableCell({
+              width: { size: 33, type: WidthType.PERCENTAGE },
+              borders: NO_BORDERS,
+              children: col1.map(
+                (skill) =>
+                  new Paragraph({
+                    children: [
+                      createTextRun(skill, {
+                        size: FONT_SIZES["text-sm"],
+                        color: COLORS.gray700,
+                      }),
+                    ],
+                    spacing: { after: SPACING.sm },
+                  }),
+              ),
+            }),
+            new TableCell({
+              width: { size: 33, type: WidthType.PERCENTAGE },
+              borders: NO_BORDERS,
+              children:
+                col2.length > 0
+                  ? col2.map(
+                      (skill) =>
+                        new Paragraph({
+                          children: [
+                            createTextRun(skill, {
+                              size: FONT_SIZES["text-sm"],
+                              color: COLORS.gray700,
+                            }),
+                          ],
+                          spacing: { after: SPACING.sm },
+                        }),
+                    )
+                  : [new Paragraph({})],
+            }),
+            new TableCell({
+              width: { size: 34, type: WidthType.PERCENTAGE },
+              borders: NO_BORDERS,
+              children:
+                col3.length > 0
+                  ? col3.map(
+                      (skill) =>
+                        new Paragraph({
+                          children: [
+                            createTextRun(skill, {
+                              size: FONT_SIZES["text-sm"],
+                              color: COLORS.gray700,
+                            }),
+                          ],
+                          spacing: { after: SPACING.sm },
+                        }),
+                    )
+                  : [new Paragraph({})],
+            }),
+          ],
+        }),
+      ],
+    });
+
+    children.push(skillsTable);
+    children.push(createSpacer(SPACING["2xl"]));
+  }
+
+  // Professional Experience (period in BLUE)
+  if (data.experience && data.experience.length > 0) {
+    createSectionHeading("Professional Experience");
+
+    data.experience.forEach((exp, idx) => {
+      children.push(
+        new Paragraph({
+          children: [
+            createTextRun(exp.title || "", {
+              bold: true,
+              size: FONT_SIZES["text-sm"],
+              color: COLORS.black,
+            }),
+          ],
+          spacing: { after: SPACING.xs },
+        }),
+      );
+
+      // Company | Location | Period (period in blue)
+      const companyParts: TextRun[] = [];
+      const textParts: string[] = [];
+      if (exp.company) textParts.push(exp.company);
+      if ((exp as any).location) textParts.push((exp as any).location);
+
+      if (textParts.length > 0) {
+        companyParts.push(
+          createTextRun(textParts.join(" | ") + (exp.period ? " | " : ""), {
+            bold: true,
+            size: FONT_SIZES["text-sm"],
+            color: COLORS.black,
+          }),
+        );
+      }
+
+      if (exp.period) {
+        companyParts.push(
+          createTextRun(exp.period, {
+            bold: true,
+            size: FONT_SIZES["text-sm"],
+            color: primaryColor, // BLUE period
+          }),
+        );
+      }
+
+      children.push(
+        new Paragraph({
+          children: companyParts,
+          spacing: { after: SPACING.sm },
+        }),
+      );
+
+      if (exp.bullets && exp.bullets.length > 0) {
+        exp.bullets.forEach((bullet) => {
+          children.push(
+            createBulletParagraph(bullet, {
+              size: FONT_SIZES["text-sm"],
+              color: COLORS.gray700,
+              spacingAfter: SPACING.xs,
+            }),
+          );
+        });
+      }
+
+      children.push(
+        createSpacer(
+          idx < data.experience!.length - 1 ? SPACING.lg : SPACING["2xl"],
+        ),
+      );
+    });
+  }
+
+  // Education (period in blue)
+  if (data.education && data.education.length > 0) {
+    createSectionHeading("Education");
+
+    data.education.forEach((edu, idx) => {
+      children.push(
+        new Paragraph({
+          children: [
+            createTextRun(edu.degree || "", {
+              bold: true,
+              size: FONT_SIZES["text-sm"],
+              color: COLORS.black,
+            }),
+            new TextRun({ text: "\t" }),
+            createTextRun(edu.period || "", {
+              bold: true,
+              size: FONT_SIZES["text-sm"],
+              color: primaryColor, // BLUE period
+            }),
+          ],
+          tabStops: [
+            { type: "right" as const, position: convertInchesToTwip(7.5) },
+          ],
+          spacing: { after: SPACING.xs },
+        }),
+      );
+
+      if (edu.institution) {
+        children.push(
+          new Paragraph({
+            children: [
+              createTextRun(edu.institution, {
+                size: FONT_SIZES["text-sm"],
+                color: COLORS.gray700,
+              }),
+            ],
+            spacing: { after: SPACING.sm },
+          }),
+        );
+      }
+
+      if (edu.details && edu.details.length > 0) {
+        edu.details.forEach((detail) => {
+          children.push(
+            createBulletParagraph(detail, {
+              size: FONT_SIZES["text-sm"],
+              color: COLORS.gray700,
+              spacingAfter: SPACING.xs,
+            }),
+          );
+        });
+      }
+
+      children.push(
+        createSpacer(
+          idx < data.education!.length - 1 ? SPACING.lg : SPACING["2xl"],
+        ),
+      );
+    });
+  }
+
+  // Projects (period in blue)
+  if (data.projects && data.projects.length > 0) {
+    createSectionHeading("Projects");
+
+    data.projects.forEach((project, idx) => {
+      const projectNameParts: TextRun[] = [
+        createTextRun(project.name || "", {
+          bold: true,
+          size: FONT_SIZES["text-sm"],
+          color: COLORS.black,
+        }),
+      ];
+
+      if (project.period) {
+        projectNameParts.push(new TextRun({ text: "\t" }));
+        projectNameParts.push(
+          createTextRun(project.period, {
+            bold: true,
+            size: FONT_SIZES["text-sm"],
+            color: primaryColor, // BLUE period
+          }),
+        );
+      }
+
+      children.push(
+        new Paragraph({
+          children: projectNameParts,
+          tabStops: [
+            { type: "right" as const, position: convertInchesToTwip(7.5) },
+          ],
+          spacing: { after: SPACING.xs },
+        }),
+      );
+
+      if (project.organization) {
+        children.push(
+          new Paragraph({
+            children: [
+              createTextRun(project.organization, {
+                size: FONT_SIZES["text-sm"],
+                color: COLORS.gray700,
+              }),
+            ],
+            spacing: { after: SPACING.sm },
+          }),
+        );
+      }
+
+      if (project.details && project.details.length > 0) {
+        project.details.forEach((detail) => {
+          children.push(
+            createBulletParagraph(detail, {
+              size: FONT_SIZES["text-sm"],
+              color: COLORS.gray700,
+              spacingAfter: SPACING.xs,
+            }),
+          );
+        });
+      }
+
+      children.push(
+        createSpacer(
+          idx < data.projects!.length - 1 ? SPACING.lg : SPACING["2xl"],
+        ),
+      );
+    });
+  }
+
+  // Additional Information
+  if (
+    (data.languages && data.languages.length > 0) ||
+    (data.certifications && data.certifications.length > 0)
+  ) {
+    createSectionHeading("Additional Information");
+
+    if (data.languages && data.languages.length > 0) {
+      children.push(
+        createBulletParagraph(`Languages: ${data.languages.join(", ")}.`, {
+          size: FONT_SIZES["text-sm"],
+          color: COLORS.gray700,
+          spacingAfter: SPACING.xs,
+        }),
+      );
+    }
+
+    if (data.certifications && data.certifications.length > 0) {
+      children.push(
+        createBulletParagraph(
+          `Certifications: ${data.certifications.join(", ")}.`,
+          {
+            size: FONT_SIZES["text-sm"],
+            color: COLORS.gray700,
+            spacingAfter: SPACING.xs,
+          },
+        ),
+      );
+    }
+  }
+}
+
+// ============================================================================
+// PDF DOWNLOAD (existing implementation)
+// ============================================================================
+
+export async function downloadResumeAsPDF(
+  element: HTMLElement,
+  filename: string = "resume.pdf",
+): Promise<void> {
+  console.log("[downloadResume] Starting PDF generation for:", filename);
+
+  try {
+    const gradientHeaders = element.querySelectorAll("h1");
+    const originalStyles: {
+      element: HTMLElement;
+      originalClass: string;
+      originalColor: string;
+    }[] = [];
+
+    gradientHeaders.forEach((header) => {
+      const htmlHeader = header as HTMLElement;
+      if (
+        htmlHeader.className.includes("bg-clip-text") ||
+        htmlHeader.className.includes("text-transparent")
+      ) {
+        originalStyles.push({
+          element: htmlHeader,
+          originalClass: htmlHeader.className,
+          originalColor: htmlHeader.style.color || "",
+        });
+        htmlHeader.className = htmlHeader.className
+          .replace(/bg-gradient-to-r\s+from-\[#[^\]]+\]\s+to-\[#[^\]]+\]/g, "")
+          .replace(/bg-clip-text/g, "")
+          .replace(/text-transparent/g, "")
+          .trim();
+        htmlHeader.style.color = "#2563eb";
+        htmlHeader.style.webkitBackgroundClip = "unset";
+        htmlHeader.style.backgroundClip = "unset";
+      }
+    });
+
+    const minHeightElements = element.querySelectorAll('[class*="min-h-"]');
+    const originalMinHeights: {
+      element: HTMLElement;
+      originalStyle: string;
+    }[] = [];
+
+    minHeightElements.forEach((el) => {
+      const htmlEl = el as HTMLElement;
+      if (htmlEl.style.minHeight || htmlEl.className.includes("min-h-")) {
+        originalMinHeights.push({
+          element: htmlEl,
+          originalStyle: htmlEl.style.cssText,
+        });
+        htmlEl.style.minHeight = "auto";
+        htmlEl.className = htmlEl.className
+          .replace(/min-h-\[?\d+[^\s]*\]?/g, "")
+          .trim();
+      }
+    });
+
+    const spaceYElements = element.querySelectorAll('[class*="space-y-"]');
+    const originalSpaceY: { element: HTMLElement; originalClass: string }[] =
+      [];
+    spaceYElements.forEach((el) => {
+      const htmlEl = el as HTMLElement;
+      if (htmlEl.className.includes("space-y-5")) {
+        originalSpaceY.push({
+          element: htmlEl,
+          originalClass: htmlEl.className,
+        });
+        htmlEl.className = htmlEl.className.replace(/space-y-5/g, "space-y-2");
+      }
+    });
+
+    const headerElements = element.querySelectorAll(
+      '[class*="mb-"], [class*="my-"], [class*="mt-"]',
+    );
+    const originalHeaderSpacing: {
+      element: HTMLElement;
+      originalClass: string;
+    }[] = [];
+    headerElements.forEach((el) => {
+      const htmlEl = el as HTMLElement;
+      const className = htmlEl.className;
+      if (
+        className.includes("mb-2") ||
+        className.includes("mb-4") ||
+        className.includes("mb-6")
+      ) {
+        originalHeaderSpacing.push({
+          element: htmlEl,
+          originalClass: className,
+        });
+        htmlEl.className = className
+          .replace(/mb-2/g, "mb-1")
+          .replace(/mb-4/g, "mb-2")
+          .replace(/mb-6/g, "mb-3");
+      }
+      if (className.includes("my-4") || className.includes("my-6")) {
+        if (!originalHeaderSpacing.find((e) => e.element === htmlEl)) {
+          originalHeaderSpacing.push({
+            element: htmlEl,
+            originalClass: className,
+          });
+        }
+        htmlEl.className = htmlEl.className
+          .replace(/my-4/g, "my-2")
+          .replace(/my-6/g, "my-3");
+      }
+    });
+
+    const paddedElements = element.querySelectorAll('[class*="p-8"]');
+    const originalPadding: { element: HTMLElement; originalClass: string }[] =
+      [];
+    paddedElements.forEach((el) => {
+      const htmlEl = el as HTMLElement;
+      if (htmlEl.className.includes("p-8")) {
+        originalPadding.push({
+          element: htmlEl,
+          originalClass: htmlEl.className,
+        });
+        htmlEl.className = htmlEl.className.replace(/p-8/g, "p-4");
+      }
+    });
+
+    const overflowElements = element.querySelectorAll("*");
+    const originalOverflows: {
+      element: HTMLElement;
+      originalOverflow: string;
+      originalTextOverflow: string;
+      originalWhiteSpace: string;
+    }[] = [];
+
+    overflowElements.forEach((el) => {
+      const htmlEl = el as HTMLElement;
+      const style = window.getComputedStyle(htmlEl);
+      if (
+        style.overflow === "hidden" ||
+        style.textOverflow === "ellipsis" ||
+        style.whiteSpace === "nowrap"
+      ) {
+        originalOverflows.push({
+          element: htmlEl,
+          originalOverflow: htmlEl.style.overflow || "",
+          originalTextOverflow: htmlEl.style.textOverflow || "",
+          originalWhiteSpace: htmlEl.style.whiteSpace || "",
+        });
+        htmlEl.style.overflow = "visible";
+        htmlEl.style.textOverflow = "clip";
+        htmlEl.style.whiteSpace = "normal";
+      }
+    });
+
+    const originalElementOverflow = element.style.overflow;
+    const originalElementOverflowX = element.style.overflowX;
+    const originalElementOverflowY = element.style.overflowY;
+    element.style.overflow = "visible";
+    element.style.overflowX = "visible";
+    element.style.overflowY = "visible";
+
+    await new Promise((resolve) => {
+      void element.offsetHeight;
+      requestAnimationFrame(() => {
+        requestAnimationFrame(resolve);
+      });
+    });
+
+    const html2pdf = (await import("html2pdf.js")).default;
+
+    const elementHeight = Math.max(
+      element.scrollHeight,
+      element.offsetHeight,
+      element.clientHeight,
+    );
+    const elementWidth = Math.max(
+      element.scrollWidth,
+      element.offsetWidth,
+      element.clientWidth,
+    );
+
+    const opt = {
+      margin: [5, 5, 5, 5] as [number, number, number, number],
+      filename: filename,
+      image: { type: "jpeg" as const, quality: 0.98 },
+      html2canvas: {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        letterRendering: true,
+        width: elementWidth,
+        height: elementHeight,
+        windowWidth: elementWidth,
+        windowHeight: elementHeight,
+        allowTaint: true,
+        backgroundColor: "#ffffff",
+        removeContainer: false,
+        onclone: (clonedDoc: any) => {
+          if (clonedDoc && typeof clonedDoc.querySelectorAll === "function") {
+            const allElements = clonedDoc.querySelectorAll("*");
+            allElements.forEach((el: any) => {
+              if (el instanceof HTMLElement) {
+                el.style.overflow = "visible";
+                el.style.overflowX = "visible";
+                el.style.overflowY = "visible";
+                if (el.style.textOverflow === "ellipsis")
+                  el.style.textOverflow = "clip";
+                if (el.style.whiteSpace === "nowrap")
+                  el.style.whiteSpace = "normal";
+              }
+            });
+          }
+        },
+      },
+      jsPDF: {
+        unit: "mm",
+        format: "a4",
+        orientation: "portrait" as const,
+        compress: true,
+        putOnlyUsedFonts: true,
+        floatPrecision: 16,
+      },
+      pagebreak: { mode: ["css", "legacy"], avoid: [".avoid-break"] },
+    };
+
+    await html2pdf().set(opt).from(element).save();
+
+    // Restore styles
+    originalStyles.forEach(({ element: el, originalClass, originalColor }) => {
+      el.className = originalClass;
+      el.style.color = originalColor || "";
+      el.style.webkitBackgroundClip = "";
+      el.style.backgroundClip = "";
+    });
+    originalMinHeights.forEach(({ element: el, originalStyle }) => {
+      el.style.cssText = originalStyle;
+    });
+    originalSpaceY.forEach(({ element: el, originalClass }) => {
+      el.className = originalClass;
+    });
+    originalHeaderSpacing.forEach(({ element: el, originalClass }) => {
+      el.className = originalClass;
+    });
+    originalPadding.forEach(({ element: el, originalClass }) => {
+      el.className = originalClass;
+    });
+    originalOverflows.forEach(
+      ({
+        element: el,
+        originalOverflow,
+        originalTextOverflow,
+        originalWhiteSpace,
+      }) => {
+        el.style.overflow = originalOverflow;
+        el.style.textOverflow = originalTextOverflow;
+        el.style.whiteSpace = originalWhiteSpace;
+      },
+    );
+    element.style.overflow = originalElementOverflow;
+    element.style.overflowX = originalElementOverflowX;
+    element.style.overflowY = originalElementOverflowY;
+  } catch (error) {
+    console.error("[downloadResume] Error generating PDF:", error);
+    throw new Error(
+      `Failed to generate PDF: ${error instanceof Error ? error.message : "Unknown error"}`,
+    );
+  }
+}
