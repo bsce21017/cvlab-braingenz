@@ -30,8 +30,9 @@ import { ResumeData } from "./resumeDataTypes";
 // FONT & SIZE CONFIGURATION
 // ============================================================================
 
-// Using Calibri as it's universally available and closest to Inter
-const FONT_FAMILY = "Calibri";
+// Using Arial - it's truly cross-platform (available on Windows, Mac, Linux)
+// Calibri is Windows-only and causes issues on Mac
+const FONT_FAMILY = "Arial";
 
 // Tailwind to docx size conversion (docx uses half-points)
 // text-sm = 14px = 10.5pt = 21 half-points
@@ -83,13 +84,15 @@ const COLORS = {
 // BORDER CONFIGURATIONS
 // ============================================================================
 
-// Completely invisible borders for layout tables
+// Mac Word requires explicit border settings - BorderStyle.NONE alone isn't enough
+// Using NIL style which is more universally supported
 const INVISIBLE_BORDER: IBorderOptions = {
-  style: BorderStyle.NONE,
+  style: BorderStyle.NIL, // NIL is more reliable than NONE on Mac
   size: 0,
-  color: COLORS.white,
+  color: "FFFFFF",
 };
 
+// For tables, we need to be very explicit about all borders
 const NO_BORDERS = {
   top: INVISIBLE_BORDER,
   bottom: INVISIBLE_BORDER,
@@ -97,6 +100,14 @@ const NO_BORDERS = {
   right: INVISIBLE_BORDER,
   insideHorizontal: INVISIBLE_BORDER,
   insideVertical: INVISIBLE_BORDER,
+};
+
+// Cell-specific borders (some versions of Word need this separately)
+const NO_CELL_BORDERS = {
+  top: { style: BorderStyle.NIL, size: 0, color: "FFFFFF" },
+  bottom: { style: BorderStyle.NIL, size: 0, color: "FFFFFF" },
+  left: { style: BorderStyle.NIL, size: 0, color: "FFFFFF" },
+  right: { style: BorderStyle.NIL, size: 0, color: "FFFFFF" },
 };
 
 // ============================================================================
@@ -362,14 +373,14 @@ function generateClassicTemplate(
             // Left column - section heading
             new TableCell({
               width: { size: LEFT_COL_WIDTH, type: WidthType.DXA },
-              borders: NO_BORDERS,
+              borders: NO_CELL_BORDERS,
               verticalAlign: VerticalAlign.TOP,
               children: headingParagraphs,
             }),
             // Right column - content
             new TableCell({
               width: { size: RIGHT_COL_WIDTH, type: WidthType.DXA },
-              borders: NO_BORDERS,
+              borders: NO_CELL_BORDERS,
               verticalAlign: VerticalAlign.TOP,
               children:
                 contentParagraphs.length > 0
@@ -578,7 +589,7 @@ function generateClassicTemplate(
           children: [
             new TableCell({
               width: { size: 50, type: WidthType.PERCENTAGE },
-              borders: NO_BORDERS,
+              borders: NO_CELL_BORDERS,
               children: leftSkills.map((skill) =>
                 createBulletParagraph(skill, {
                   size: FONT_SIZES["text-sm"],
@@ -589,7 +600,7 @@ function generateClassicTemplate(
             }),
             new TableCell({
               width: { size: 50, type: WidthType.PERCENTAGE },
-              borders: NO_BORDERS,
+              borders: NO_CELL_BORDERS,
               children:
                 rightSkills.length > 0
                   ? rightSkills.map((skill) =>
@@ -630,7 +641,7 @@ function generateClassicTemplate(
           children: [
             new TableCell({
               width: { size: LEFT_COL_WIDTH, type: WidthType.DXA },
-              borders: NO_BORDERS,
+              borders: NO_CELL_BORDERS,
               verticalAlign: VerticalAlign.TOP,
               children: [
                 new Paragraph({
@@ -646,7 +657,7 @@ function generateClassicTemplate(
             }),
             new TableCell({
               width: { size: RIGHT_COL_WIDTH, type: WidthType.DXA },
-              borders: NO_BORDERS,
+              borders: NO_CELL_BORDERS,
               verticalAlign: VerticalAlign.TOP,
               children: [skillsTable],
             }),
@@ -934,7 +945,7 @@ function generateModernTemplate(
           children: [
             new TableCell({
               width: { size: 33, type: WidthType.PERCENTAGE },
-              borders: NO_BORDERS,
+              borders: NO_CELL_BORDERS,
               children: col1.map(
                 (skill) =>
                   new Paragraph({
@@ -950,7 +961,7 @@ function generateModernTemplate(
             }),
             new TableCell({
               width: { size: 33, type: WidthType.PERCENTAGE },
-              borders: NO_BORDERS,
+              borders: NO_CELL_BORDERS,
               children:
                 col2.length > 0
                   ? col2.map(
@@ -969,7 +980,7 @@ function generateModernTemplate(
             }),
             new TableCell({
               width: { size: 34, type: WidthType.PERCENTAGE },
-              borders: NO_BORDERS,
+              borders: NO_CELL_BORDERS,
               children:
                 col3.length > 0
                   ? col3.map(
@@ -1360,7 +1371,7 @@ function generateExecutiveTemplate(
           children: [
             new TableCell({
               width: { size: 33, type: WidthType.PERCENTAGE },
-              borders: NO_BORDERS,
+              borders: NO_CELL_BORDERS,
               children: col1.map(
                 (skill) =>
                   new Paragraph({
@@ -1376,7 +1387,7 @@ function generateExecutiveTemplate(
             }),
             new TableCell({
               width: { size: 33, type: WidthType.PERCENTAGE },
-              borders: NO_BORDERS,
+              borders: NO_CELL_BORDERS,
               children:
                 col2.length > 0
                   ? col2.map(
@@ -1395,7 +1406,7 @@ function generateExecutiveTemplate(
             }),
             new TableCell({
               width: { size: 34, type: WidthType.PERCENTAGE },
-              borders: NO_BORDERS,
+              borders: NO_CELL_BORDERS,
               children:
                 col3.length > 0
                   ? col3.map(
@@ -1689,7 +1700,7 @@ function generateTechnicalTemplate(
           children: [
             new TableCell({
               width: { size: 33, type: WidthType.PERCENTAGE },
-              borders: NO_BORDERS,
+              borders: NO_CELL_BORDERS,
               children: col1.map(
                 (skill) =>
                   new Paragraph({
@@ -1705,7 +1716,7 @@ function generateTechnicalTemplate(
             }),
             new TableCell({
               width: { size: 33, type: WidthType.PERCENTAGE },
-              borders: NO_BORDERS,
+              borders: NO_CELL_BORDERS,
               children:
                 col2.length > 0
                   ? col2.map(
@@ -1724,7 +1735,7 @@ function generateTechnicalTemplate(
             }),
             new TableCell({
               width: { size: 34, type: WidthType.PERCENTAGE },
-              borders: NO_BORDERS,
+              borders: NO_CELL_BORDERS,
               children:
                 col3.length > 0
                   ? col3.map(
