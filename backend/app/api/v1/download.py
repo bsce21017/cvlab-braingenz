@@ -210,19 +210,33 @@ async def upload_pdf_to_s3(
 
         logger.info(f"Uploaded PDF to S3: {pdf_s3_key}")
 
-        # Update cv_info_store with PDF path
+        # Get optimized resume to get text S3 path
         optimized = db.query(OptimizedResume).filter(
             OptimizedResume.resume_id == request.resume_id
         ).first()
 
         if optimized and optimized.s3_key:
+            # Check if cv_info_store record already exists
             cv_info = db.query(CVInfoStore).filter(
                 CVInfoStore.text_s3_file_path == optimized.s3_key
             ).first()
+
             if cv_info:
+                # Update existing record
                 cv_info.pdf_s3_file_path = pdf_s3_key
                 db.commit()
                 logger.info(f"Updated cv_info_store id={cv_info.id} with PDF path")
+            else:
+                # Create new record with both paths (never null)
+                from app.models.cv_info_store import MetadataStatus
+                cv_info = CVInfoStore(
+                    text_s3_file_path=optimized.s3_key,
+                    pdf_s3_file_path=pdf_s3_key,
+                    metadata_status=MetadataStatus.PENDING
+                )
+                db.add(cv_info)
+                db.commit()
+                logger.info(f"Created cv_info_store id={cv_info.id} with both paths")
 
         return {"status": "success", "pdf_s3_key": pdf_s3_key, "pdf_s3_url": pdf_s3_url}
 
