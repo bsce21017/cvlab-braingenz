@@ -184,6 +184,114 @@ function createSpacer(height: number = SPACING.xl): Paragraph {
   return new Paragraph({ spacing: { after: height } });
 }
 
+const ZERO_CELL_MARGINS = {
+  top: 0,
+  bottom: 0,
+  left: 0,
+  right: 0,
+};
+
+/**
+ * Robust "left text + right text" line that NEVER pushes the right text to the next line.
+ * Uses a fixed-layout 2-cell table instead of tabs (tabs can wrap on long left text).
+ */
+function createLeftRightLine(
+  left: string,
+  right: string,
+  options: {
+    leftBold?: boolean;
+    rightBold?: boolean;
+    leftColor?: string;
+    rightColor?: string;
+    leftSize?: number;
+    rightSize?: number;
+    spacingAfter?: number;
+    rightColPercent?: number; // default 35 when left exists
+  } = {},
+): Table {
+  const leftText = (left ?? "").trim();
+  const rightText = (right ?? "").trim();
+
+  const after = options.spacingAfter ?? SPACING.xs;
+
+  const rightPara = new Paragraph({
+    children: [
+      createTextRun(rightText, {
+        bold: options.rightBold,
+        size: options.rightSize ?? FONT_SIZES["text-sm"],
+        color: options.rightColor ?? COLORS.black,
+      }),
+    ],
+    alignment: AlignmentType.RIGHT,
+    spacing: { after },
+    keepNext: true,
+  });
+
+  // ✅ If left is empty, use ONE full-width cell (no fake left column spacing)
+  if (!leftText) {
+    return new Table({
+      width: { size: 100, type: WidthType.PERCENTAGE },
+      layout: TableLayoutType.FIXED,
+      borders: NO_BORDERS,
+      rows: [
+        new TableRow({
+          children: [
+            new TableCell({
+              width: { size: 100, type: WidthType.PERCENTAGE },
+              borders: NO_CELL_BORDERS,
+              margins: ZERO_CELL_MARGINS,
+              verticalAlign: VerticalAlign.TOP,
+              children: [rightPara],
+            }),
+          ],
+        }),
+      ],
+    });
+  }
+
+  // Normal case: left + right in two columns
+  const rightPct = Math.min(45, Math.max(25, options.rightColPercent ?? 35));
+  const leftPct = 100 - rightPct;
+
+  const leftPara = new Paragraph({
+    children: [
+      createTextRun(leftText, {
+        bold: options.leftBold,
+        size: options.leftSize ?? FONT_SIZES["text-sm"],
+        color: options.leftColor ?? COLORS.black,
+      }),
+    ],
+    spacing: { after },
+    keepNext: true,
+  });
+
+  return new Table({
+    width: { size: 100, type: WidthType.PERCENTAGE },
+    layout: TableLayoutType.FIXED,
+    borders: NO_BORDERS,
+    rows: [
+      new TableRow({
+        children: [
+          new TableCell({
+            width: { size: leftPct, type: WidthType.PERCENTAGE },
+            borders: NO_CELL_BORDERS,
+            margins: ZERO_CELL_MARGINS,
+            verticalAlign: VerticalAlign.TOP,
+            children: [leftPara],
+          }),
+          new TableCell({
+            width: { size: rightPct, type: WidthType.PERCENTAGE },
+            borders: NO_CELL_BORDERS,
+            margins: ZERO_CELL_MARGINS,
+            verticalAlign: VerticalAlign.TOP,
+            children: [rightPara],
+          }),
+        ],
+      }),
+    ],
+  });
+}
+
 // ============================================================================
 // MAIN EXPORT FUNCTION
 // ============================================================================
@@ -323,14 +431,14 @@ function generateClassicTemplate(
     );
   }
 
-  // Thick blue divider line (h-1 in Tailwind = 4px)
+  // Blue divider line
   children.push(
     new Paragraph({
       spacing: { after: SPACING["2xl"] },
       border: {
         bottom: {
           color: primaryColor,
-          size: 18, // ~2.25pt thick
+          size: 4, // thin line
           style: BorderStyle.SINGLE,
         },
       },
@@ -338,14 +446,14 @@ function generateClassicTemplate(
   );
 
   // ==================== TWO-COLUMN SECTION HELPER ====================
-  // Left column: ~1.25 inches for section label
+  // Left column: ~1.75 inches for section label (increased for better spacing)
   // Right column: remaining space for content
-  const LEFT_COL_WIDTH = 1800; // ~1.25 inches in twips
-  const RIGHT_COL_WIDTH = 8640; // Remaining width in twips (total ~10440 for 7.5" content area)
+  const LEFT_COL_WIDTH = 2520; // ~1.75 inches in twips
+  const RIGHT_COL_WIDTH = 8280; // Remaining width in twips (total ~10800 for 7.5" content area)
 
   const createTwoColumnSection = (
     heading: string | string[], // Can be multiline like "WORK\nEXPERIENCE"
-    contentParagraphs: Paragraph[],
+    contentBlocks: (Paragraph | Table)[],
   ): Table => {
     // Handle multiline headings
     const headingLines = Array.isArray(heading) ? heading : heading.split("\n");
@@ -383,9 +491,7 @@ function generateClassicTemplate(
               borders: NO_CELL_BORDERS,
               verticalAlign: VerticalAlign.TOP,
               children:
-                contentParagraphs.length > 0
-                  ? contentParagraphs
-                  : [new Paragraph({})],
+                contentBlocks.length > 0 ? contentBlocks : [new Paragraph({})],
             }),
           ],
         }),
@@ -393,7 +499,7 @@ function generateClassicTemplate(
     });
   };
 
-  // Section divider - thin blue line
+  // Section divider - very thin blue line
   const addSectionDivider = (): void => {
     children.push(
       new Paragraph({
@@ -401,7 +507,7 @@ function generateClassicTemplate(
         border: {
           bottom: {
             color: primaryColor,
-            size: 4, // thin line
+            size: 2, // very thin line
             style: BorderStyle.SINGLE,
           },
         },
@@ -411,7 +517,7 @@ function generateClassicTemplate(
 
   // ==================== SUMMARY SECTION ====================
   if (data.summary && data.summary.trim().length > 0) {
-    const summaryContent = [
+    const summaryContent: (Paragraph | Table)[] = [
       new Paragraph({
         children: [
           createTextRun(data.summary, {
@@ -428,7 +534,7 @@ function generateClassicTemplate(
 
   // ==================== WORK EXPERIENCE SECTION ====================
   if (data.experience && data.experience.length > 0) {
-    const expContent: Paragraph[] = [];
+    const expContent: (Paragraph | Table)[] = [];
 
     data.experience.forEach((exp, idx) => {
       // Line 1: Job Title (bold)
@@ -442,47 +548,71 @@ function generateClassicTemplate(
             }),
           ],
           spacing: { after: SPACING.xs },
+          keepNext: true, // Keep with next line to avoid orphans
         }),
       );
 
-      // Line 2: Company | Location | Period
-      // Format: "Company Name | Location | Period" or "Company Name | Period" if no location
+      // Line 2: Company | Location (left) AND Period (right) - FIXED (no wrap)
       const companyParts: string[] = [];
       if (exp.company) companyParts.push(exp.company);
-      // Check if experience has location field (it might be in the data)
       if ((exp as any).location) companyParts.push((exp as any).location);
-      if (exp.period) companyParts.push(exp.period);
 
-      expContent.push(
-        new Paragraph({
-          children: [
-            createTextRun(companyParts.join(" | "), {
-              bold: true,
-              size: FONT_SIZES["text-sm"],
-              color: COLORS.black,
-            }),
-          ],
-          spacing: { after: SPACING.sm },
-        }),
-      );
+      const left = companyParts.join(" | ");
+      const right = exp.period || "";
+
+      if (right) {
+        expContent.push(
+          createLeftRightLine(left, right, {
+            leftBold: true,
+            rightBold: true,
+            leftColor: COLORS.black,
+            rightColor: COLORS.black,
+            leftSize: FONT_SIZES["text-sm"],
+            rightSize: FONT_SIZES["text-sm"],
+            spacingAfter: SPACING.xs,
+            rightColPercent: 35, // give the date enough space so it never wraps
+          }),
+        );
+      } else {
+        // No period: just a normal paragraph
+        expContent.push(
+          new Paragraph({
+            children: [
+              createTextRun(left, {
+                bold: true,
+                size: FONT_SIZES["text-sm"],
+                color: COLORS.black,
+              }),
+            ],
+            spacing: { after: SPACING.xs },
+            keepNext: true,
+          }),
+        );
+      }
+
+      const isLastExp = idx === data.experience!.length - 1;
+      const gapAfterExp = isLastExp ? SPACING["2xl"] : SPACING.sm;
 
       // Bullets
       if (exp.bullets && exp.bullets.length > 0) {
-        exp.bullets.forEach((bullet) => {
+        exp.bullets.forEach((bullet, bIdx) => {
+          const isLastBullet = bIdx === exp.bullets!.length - 1;
           expContent.push(
+            // ✅ FIX
             createBulletParagraph(bullet, {
               size: FONT_SIZES["text-sm"],
               color: COLORS.gray700,
-              spacingAfter: SPACING.xs,
+              spacingAfter: isLastBullet ? gapAfterExp : SPACING.xs,
             }),
           );
         });
       }
 
-      // Spacing between experiences
-      if (idx < data.experience!.length - 1) {
-        expContent.push(createSpacer(SPACING.lg));
-      }
+      // // Spacing between experiences
+      // if (idx < data.experience!.length - 1) {
+      //   const hasBullets = !!(exp.bullets && exp.bullets.length > 0);
+      //   expContent.push(createSpacer(hasBullets ? SPACING.lg : SPACING.sm));
+      // }
     });
 
     children.push(createTwoColumnSection(["WORK", "EXPERIENCE"], expContent));
@@ -491,50 +621,39 @@ function generateClassicTemplate(
 
   // ==================== EDUCATION SECTION ====================
   if (data.education && data.education.length > 0) {
-    const eduContent: Paragraph[] = [];
+    const eduContent: (Paragraph | Table)[] = [];
 
     data.education.forEach((edu, idx) => {
-      // Degree (bold)
-      expContent: [
-        new Paragraph({
-          children: [
-            createTextRun(edu.degree || "", {
-              bold: true,
-              size: FONT_SIZES["text-sm"],
-              color: COLORS.black,
-            }),
-            // Add period on same line, right-aligned using tab
-            new TextRun({ text: "\t" }),
-            createTextRun(edu.period || "", {
-              bold: true,
-              size: FONT_SIZES["text-sm"],
-              color: COLORS.black,
-            }),
-          ],
-          tabStops: [{ type: "right" as const, position: RIGHT_COL_WIDTH }],
-          spacing: { after: SPACING.xs },
-        }),
-      ];
+      // Degree (left) and period (right) - FIXED (no wrap)
+      const left = edu.degree || "";
+      const right = edu.period || "";
 
-      eduContent.push(
-        new Paragraph({
-          children: [
-            createTextRun(edu.degree || "", {
-              bold: true,
-              size: FONT_SIZES["text-sm"],
-              color: COLORS.black,
-            }),
-            new TextRun({ text: "\t" }),
-            createTextRun(edu.period || "", {
-              bold: true,
-              size: FONT_SIZES["text-sm"],
-              color: COLORS.black,
-            }),
-          ],
-          tabStops: [{ type: "right" as const, position: RIGHT_COL_WIDTH }],
-          spacing: { after: SPACING.xs },
-        }),
-      );
+      if (right) {
+        eduContent.push(
+          createLeftRightLine(left, right, {
+            leftBold: true,
+            rightBold: true,
+            leftColor: COLORS.black,
+            rightColor: COLORS.black,
+            spacingAfter: SPACING.xs,
+            rightColPercent: 35,
+          }),
+        );
+      } else {
+        eduContent.push(
+          new Paragraph({
+            children: [
+              createTextRun(left, {
+                bold: true,
+                size: FONT_SIZES["text-sm"],
+                color: COLORS.black,
+              }),
+            ],
+            spacing: { after: SPACING.xs },
+            keepNext: true,
+          }),
+        );
+      }
 
       // Institution
       if (edu.institution) {
@@ -546,7 +665,7 @@ function generateClassicTemplate(
                 color: COLORS.gray700,
               }),
             ],
-            spacing: { after: SPACING.sm },
+            spacing: { after: SPACING.xs }, // Reduced from SPACING.sm
           }),
         );
       }
@@ -565,7 +684,7 @@ function generateClassicTemplate(
       }
 
       if (idx < data.education!.length - 1) {
-        eduContent.push(createSpacer(SPACING.lg));
+        eduContent.push(createSpacer(SPACING.md)); // Reduced from SPACING.lg
       }
     });
 
@@ -617,20 +736,6 @@ function generateClassicTemplate(
       ],
     });
 
-    // Wrap skills table in the two-column layout
-    const skillsContent = [
-      new Paragraph({
-        children: [],
-        spacing: { after: 0 },
-      }),
-    ];
-
-    // We need to add the skills table directly after the section table
-    children.push(createTwoColumnSection("KEY SKILLS", [new Paragraph({})]));
-
-    // Remove the empty paragraph we just added and add the proper content
-    children.pop();
-
     // Create a proper two-column section with the skills table embedded
     const skillsSectionTable = new Table({
       width: { size: 100, type: WidthType.PERCENTAGE },
@@ -672,33 +777,38 @@ function generateClassicTemplate(
 
   // ==================== PROJECTS SECTION ====================
   if (data.projects && data.projects.length > 0) {
-    const projectContent: Paragraph[] = [];
+    const projectContent: (Paragraph | Table)[] = [];
 
     data.projects.forEach((project, idx) => {
-      // Project name (bold)
-      projectContent.push(
-        new Paragraph({
-          children: [
-            createTextRun(project.name || "", {
-              bold: true,
-              size: FONT_SIZES["text-sm"],
-              color: COLORS.black,
-            }),
-            ...(project.period
-              ? [
-                  new TextRun({ text: "\t" }),
-                  createTextRun(project.period, {
-                    bold: true,
-                    size: FONT_SIZES["text-sm"],
-                    color: COLORS.black,
-                  }),
-                ]
-              : []),
-          ],
-          tabStops: [{ type: "right" as const, position: RIGHT_COL_WIDTH }],
-          spacing: { after: SPACING.xs },
-        }),
-      );
+      const left = project.name || "";
+      const right = project.period || "";
+
+      // Project name (left) and period (right) - FIXED (no wrap)
+      if (right) {
+        projectContent.push(
+          createLeftRightLine(left, right, {
+            leftBold: true,
+            rightBold: true,
+            leftColor: COLORS.black,
+            rightColor: COLORS.black,
+            spacingAfter: SPACING.xs,
+            rightColPercent: 35,
+          }),
+        );
+      } else {
+        projectContent.push(
+          new Paragraph({
+            children: [
+              createTextRun(left, {
+                bold: true,
+                size: FONT_SIZES["text-sm"],
+                color: COLORS.black,
+              }),
+            ],
+            spacing: { after: SPACING.xs },
+          }),
+        );
+      }
 
       // Organization (if any)
       if (project.organization) {
@@ -739,7 +849,7 @@ function generateClassicTemplate(
 
   // ==================== CERTIFICATIONS SECTION ====================
   if (data.certifications && data.certifications.length > 0) {
-    const certContent = data.certifications.map((cert) =>
+    const certContent: (Paragraph | Table)[] = data.certifications.map((cert) =>
       createBulletParagraph(cert, {
         size: FONT_SIZES["text-sm"],
         color: COLORS.gray700,
@@ -752,7 +862,7 @@ function generateClassicTemplate(
 
   // ==================== LANGUAGES SECTION ====================
   if (data.languages && data.languages.length > 0) {
-    const langContent = [
+    const langContent: (Paragraph | Table)[] = [
       new Paragraph({
         children: [
           createTextRun(data.languages.join(", "), {
@@ -814,14 +924,14 @@ function generateModernTemplate(
     );
   }
 
-  // Thick black divider
+  // Black divider
   children.push(
     new Paragraph({
       spacing: { after: SPACING.xl },
       border: {
         bottom: {
           color: primaryColor,
-          size: 18,
+          size: 4, // thin line
           style: BorderStyle.SINGLE,
         },
       },
@@ -843,10 +953,11 @@ function generateModernTemplate(
         border: {
           bottom: {
             color: COLORS.gray400,
-            size: 4,
+            size: 2, // very thin line
             style: BorderStyle.SINGLE,
           },
         },
+        keepNext: true, // Keep with next paragraph
       }),
     );
   };
@@ -884,46 +995,70 @@ function generateModernTemplate(
             }),
           ],
           spacing: { after: SPACING.xs },
+          keepNext: true, // Keep with next line
         }),
       );
 
-      // Company | Location | Period
-      const companyLine: string[] = [];
-      if (exp.company) companyLine.push(exp.company);
-      if ((exp as any).location) companyLine.push((exp as any).location);
-      if (exp.period) companyLine.push(exp.period);
+      // Company | Location (left) and Period (right) - FIXED (no wrap)
+      const leftParts: string[] = [];
+      if (exp.company) leftParts.push(exp.company);
+      if ((exp as any).location) leftParts.push((exp as any).location);
 
-      children.push(
-        new Paragraph({
-          children: [
-            createTextRun(companyLine.join(" | "), {
-              bold: true,
-              size: FONT_SIZES["text-sm"],
-              color: COLORS.black,
-            }),
-          ],
-          spacing: { after: SPACING.sm },
-        }),
-      );
+      const left = leftParts.join(" | ");
+      const right = exp.period || "";
+
+      if (right) {
+        children.push(
+          createLeftRightLine(left, right, {
+            leftBold: true,
+            rightBold: true,
+            leftColor: COLORS.black,
+            rightColor: COLORS.black,
+            spacingAfter: SPACING.xs,
+            rightColPercent: 35,
+          }),
+        );
+      } else if (left) {
+        children.push(
+          new Paragraph({
+            children: [
+              createTextRun(left, {
+                bold: true,
+                size: FONT_SIZES["text-sm"],
+                color: COLORS.black,
+              }),
+            ],
+            spacing: { after: SPACING.xs },
+            keepNext: true,
+          }),
+        );
+      }
+
+      const isLastExp = idx === data.experience!.length - 1;
+      const gapAfterExp = isLastExp ? SPACING["2xl"] : SPACING.sm;
 
       // Bullets
       if (exp.bullets && exp.bullets.length > 0) {
-        exp.bullets.forEach((bullet) => {
+        exp.bullets.forEach((bullet, bIdx) => {
+          const isLastBullet = bIdx === exp.bullets!.length - 1;
           children.push(
             createBulletParagraph(bullet, {
               size: FONT_SIZES["text-sm"],
               color: COLORS.gray700,
-              spacingAfter: SPACING.xs,
+              spacingAfter: isLastBullet ? gapAfterExp : SPACING.xs,
             }),
           );
         });
+      } else {
+        // No bullets: put the spacing on the company/date line instead
+        // (make sure your createLeftRightLine call uses spacingAfter: gapAfterExp)
       }
 
-      children.push(
-        createSpacer(
-          idx < data.experience!.length - 1 ? SPACING.lg : SPACING["2xl"],
-        ),
-      );
+      // children.push(
+      //   createSpacer(
+      //     idx < data.experience!.length - 1 ? SPACING.lg : SPACING["2xl"],
+      //   ),
+      // );
     });
   }
 
@@ -1011,27 +1146,35 @@ function generateModernTemplate(
     createSectionHeading("Education");
 
     data.education.forEach((edu, idx) => {
-      children.push(
-        new Paragraph({
-          children: [
-            createTextRun(edu.degree || "", {
-              bold: true,
-              size: FONT_SIZES["text-sm"],
-              color: COLORS.black,
-            }),
-            new TextRun({ text: "\t" }),
-            createTextRun(edu.period || "", {
-              bold: true,
-              size: FONT_SIZES["text-sm"],
-              color: COLORS.black,
-            }),
-          ],
-          tabStops: [
-            { type: "right" as const, position: convertInchesToTwip(7.5) },
-          ],
-          spacing: { after: SPACING.xs },
-        }),
-      );
+      // Degree (left) and period (right) - FIXED (no wrap)
+      const left = edu.degree || "";
+      const right = edu.period || "";
+      if (right) {
+        children.push(
+          createLeftRightLine(left, right, {
+            leftBold: true,
+            rightBold: true,
+            leftColor: COLORS.black,
+            rightColor: COLORS.black,
+            spacingAfter: SPACING.xs,
+            rightColPercent: 35,
+          }),
+        );
+      } else {
+        children.push(
+          new Paragraph({
+            children: [
+              createTextRun(left, {
+                bold: true,
+                size: FONT_SIZES["text-sm"],
+                color: COLORS.black,
+              }),
+            ],
+            spacing: { after: SPACING.xs },
+            keepNext: true,
+          }),
+        );
+      }
 
       if (edu.institution) {
         children.push(
@@ -1042,7 +1185,7 @@ function generateModernTemplate(
                 color: COLORS.gray700,
               }),
             ],
-            spacing: { after: SPACING.sm },
+            spacing: { after: SPACING.xs }, // Reduced from SPACING.sm
           }),
         );
       }
@@ -1061,7 +1204,7 @@ function generateModernTemplate(
 
       children.push(
         createSpacer(
-          idx < data.education!.length - 1 ? SPACING.lg : SPACING["2xl"],
+          idx < data.education!.length - 1 ? SPACING.md : SPACING["2xl"], // Reduced from SPACING.lg
         ),
       );
     });
@@ -1072,31 +1215,35 @@ function generateModernTemplate(
     createSectionHeading("Projects");
 
     data.projects.forEach((project, idx) => {
-      children.push(
-        new Paragraph({
-          children: [
-            createTextRun(project.name || "", {
-              bold: true,
-              size: FONT_SIZES["text-sm"],
-              color: COLORS.black,
-            }),
-            ...(project.period
-              ? [
-                  new TextRun({ text: "\t" }),
-                  createTextRun(project.period, {
-                    bold: true,
-                    size: FONT_SIZES["text-sm"],
-                    color: COLORS.black,
-                  }),
-                ]
-              : []),
-          ],
-          tabStops: [
-            { type: "right" as const, position: convertInchesToTwip(7.5) },
-          ],
-          spacing: { after: SPACING.xs },
-        }),
-      );
+      const left = project.name || "";
+      const right = project.period || "";
+
+      // Project name (left) and period (right) - FIXED (no wrap)
+      if (right) {
+        children.push(
+          createLeftRightLine(left, right, {
+            leftBold: true,
+            rightBold: true,
+            leftColor: COLORS.black,
+            rightColor: COLORS.black,
+            spacingAfter: SPACING.xs,
+            rightColPercent: 35,
+          }),
+        );
+      } else {
+        children.push(
+          new Paragraph({
+            children: [
+              createTextRun(left, {
+                bold: true,
+                size: FONT_SIZES["text-sm"],
+                color: COLORS.black,
+              }),
+            ],
+            spacing: { after: SPACING.xs },
+          }),
+        );
+      }
 
       if (project.organization) {
         children.push(
@@ -1250,7 +1397,7 @@ function generateExecutiveTemplate(
       border: {
         bottom: {
           color: primaryColor,
-          size: 12,
+          size: 4, // thin line
           style: BorderStyle.SINGLE,
         },
       },
@@ -1272,10 +1419,11 @@ function generateExecutiveTemplate(
         border: {
           bottom: {
             color: primaryColor,
-            size: 4,
+            size: 2, // very thin line
             style: BorderStyle.SINGLE,
           },
         },
+        keepNext: true, // Keep with next paragraph
       }),
     );
   };
@@ -1312,44 +1460,70 @@ function generateExecutiveTemplate(
             }),
           ],
           spacing: { after: SPACING.xs },
+          keepNext: true, // Keep with next line
         }),
       );
 
-      const companyLine: string[] = [];
-      if (exp.company) companyLine.push(exp.company);
-      if ((exp as any).location) companyLine.push((exp as any).location);
-      if (exp.period) companyLine.push(exp.period);
+      // Company | Location (left) and Period (right) - FIXED (no wrap)
+      const leftParts: string[] = [];
+      if (exp.company) leftParts.push(exp.company);
+      if ((exp as any).location) leftParts.push((exp as any).location);
 
-      children.push(
-        new Paragraph({
-          children: [
-            createTextRun(companyLine.join(" | "), {
-              bold: true,
-              size: FONT_SIZES["text-sm"],
-              color: COLORS.black,
-            }),
-          ],
-          spacing: { after: SPACING.sm },
-        }),
-      );
+      const left = leftParts.join(" | ");
+      const right = exp.period || "";
 
+      if (right) {
+        children.push(
+          createLeftRightLine(left, right, {
+            leftBold: true,
+            rightBold: true,
+            leftColor: COLORS.black,
+            rightColor: COLORS.black,
+            spacingAfter: SPACING.xs,
+            rightColPercent: 35,
+          }),
+        );
+      } else if (left) {
+        children.push(
+          new Paragraph({
+            children: [
+              createTextRun(left, {
+                bold: true,
+                size: FONT_SIZES["text-sm"],
+                color: COLORS.black,
+              }),
+            ],
+            spacing: { after: SPACING.xs },
+            keepNext: true,
+          }),
+        );
+      }
+
+      const isLastExp = idx === data.experience!.length - 1;
+      const gapAfterExp = isLastExp ? SPACING["2xl"] : SPACING.sm;
+
+      // Bullets
       if (exp.bullets && exp.bullets.length > 0) {
-        exp.bullets.forEach((bullet) => {
+        exp.bullets.forEach((bullet, bIdx) => {
+          const isLastBullet = bIdx === exp.bullets!.length - 1;
           children.push(
             createBulletParagraph(bullet, {
               size: FONT_SIZES["text-sm"],
               color: COLORS.gray700,
-              spacingAfter: SPACING.xs,
+              spacingAfter: isLastBullet ? gapAfterExp : SPACING.xs,
             }),
           );
         });
+      } else {
+        // No bullets: put the spacing on the company/date line instead
+        // (make sure your createLeftRightLine call uses spacingAfter: gapAfterExp)
       }
 
-      children.push(
-        createSpacer(
-          idx < data.experience!.length - 1 ? SPACING.lg : SPACING["2xl"],
-        ),
-      );
+      // children.push(
+      //   createSpacer(
+      //     idx < data.experience!.length - 1 ? SPACING.lg : SPACING["2xl"],
+      //   ),
+      // );
     });
   }
 
@@ -1437,27 +1611,36 @@ function generateExecutiveTemplate(
     createSectionHeading("Education");
 
     data.education.forEach((edu, idx) => {
-      children.push(
-        new Paragraph({
-          children: [
-            createTextRun(edu.degree || "", {
-              bold: true,
-              size: FONT_SIZES["text-sm"],
-              color: COLORS.black,
-            }),
-            new TextRun({ text: "\t" }),
-            createTextRun(edu.period || "", {
-              bold: true,
-              size: FONT_SIZES["text-sm"],
-              color: COLORS.black,
-            }),
-          ],
-          tabStops: [
-            { type: "right" as const, position: convertInchesToTwip(7.5) },
-          ],
-          spacing: { after: SPACING.xs },
-        }),
-      );
+      const left = edu.degree || "";
+      const right = edu.period || "";
+
+      // Degree (left) and period (right) - FIXED (no wrap)
+      if (right) {
+        children.push(
+          createLeftRightLine(left, right, {
+            leftBold: true,
+            rightBold: true,
+            leftColor: COLORS.black,
+            rightColor: COLORS.black,
+            spacingAfter: SPACING.xs,
+            rightColPercent: 35,
+          }),
+        );
+      } else {
+        children.push(
+          new Paragraph({
+            children: [
+              createTextRun(left, {
+                bold: true,
+                size: FONT_SIZES["text-sm"],
+                color: COLORS.black,
+              }),
+            ],
+            spacing: { after: SPACING.xs },
+            keepNext: true,
+          }),
+        );
+      }
 
       if (edu.institution) {
         children.push(
@@ -1468,7 +1651,7 @@ function generateExecutiveTemplate(
                 color: COLORS.gray700,
               }),
             ],
-            spacing: { after: SPACING.sm },
+            spacing: { after: SPACING.xs }, // Reduced from SPACING.sm
           }),
         );
       }
@@ -1487,7 +1670,7 @@ function generateExecutiveTemplate(
 
       children.push(
         createSpacer(
-          idx < data.education!.length - 1 ? SPACING.lg : SPACING["2xl"],
+          idx < data.education!.length - 1 ? SPACING.md : SPACING["2xl"], // Reduced from SPACING.lg
         ),
       );
     });
@@ -1498,31 +1681,35 @@ function generateExecutiveTemplate(
     createSectionHeading("Key Projects");
 
     data.projects.forEach((project, idx) => {
-      children.push(
-        new Paragraph({
-          children: [
-            createTextRun(project.name || "", {
-              bold: true,
-              size: FONT_SIZES["text-sm"],
-              color: COLORS.black,
-            }),
-            ...(project.period
-              ? [
-                  new TextRun({ text: "\t" }),
-                  createTextRun(project.period, {
-                    bold: true,
-                    size: FONT_SIZES["text-sm"],
-                    color: COLORS.black,
-                  }),
-                ]
-              : []),
-          ],
-          tabStops: [
-            { type: "right" as const, position: convertInchesToTwip(7.5) },
-          ],
-          spacing: { after: SPACING.xs },
-        }),
-      );
+      const left = project.name || "";
+      const right = project.period || "";
+
+      // Project name (left) and period (right) - FIXED (no wrap)
+      if (right) {
+        children.push(
+          createLeftRightLine(left, right, {
+            leftBold: true,
+            rightBold: true,
+            leftColor: COLORS.black,
+            rightColor: COLORS.black,
+            spacingAfter: SPACING.xs,
+            rightColPercent: 35,
+          }),
+        );
+      } else {
+        children.push(
+          new Paragraph({
+            children: [
+              createTextRun(left, {
+                bold: true,
+                size: FONT_SIZES["text-sm"],
+                color: COLORS.black,
+              }),
+            ],
+            spacing: { after: SPACING.xs },
+          }),
+        );
+      }
 
       if (project.organization) {
         children.push(
@@ -1647,22 +1834,23 @@ function generateTechnicalTemplate(
             color: primaryColor,
           }),
         ],
-        spacing: { before: SPACING.sm, after: SPACING.sm },
+        // ✅ control spacing here instead of using createSpacer()
+        spacing: { before: SPACING.sm, after: SPACING.md },
         border: {
           top: {
             color: primaryColor,
-            size: 4,
+            size: 2,
             style: BorderStyle.SINGLE,
           },
           bottom: {
             color: primaryColor,
-            size: 4,
+            size: 2,
             style: BorderStyle.SINGLE,
           },
         },
+        keepNext: true,
       }),
     );
-    children.push(createSpacer(SPACING.md));
   };
 
   // Summary
@@ -1761,7 +1949,7 @@ function generateTechnicalTemplate(
     children.push(createSpacer(SPACING["2xl"]));
   }
 
-  // Professional Experience (period in BLUE)
+  // Professional Experience (period in BLUE) - FIXED (no wrap)
   if (data.experience && data.experience.length > 0) {
     createSectionHeading("Professional Experience");
 
@@ -1776,88 +1964,106 @@ function generateTechnicalTemplate(
             }),
           ],
           spacing: { after: SPACING.xs },
+          keepNext: true,
         }),
       );
 
-      // Company | Location | Period (period in blue)
-      const companyParts: TextRun[] = [];
-      const textParts: string[] = [];
-      if (exp.company) textParts.push(exp.company);
-      if ((exp as any).location) textParts.push((exp as any).location);
+      const leftParts: string[] = [];
+      if (exp.company) leftParts.push(exp.company);
+      if ((exp as any).location) leftParts.push((exp as any).location);
 
-      if (textParts.length > 0) {
-        companyParts.push(
-          createTextRun(textParts.join(" | ") + (exp.period ? " | " : ""), {
-            bold: true,
-            size: FONT_SIZES["text-sm"],
-            color: COLORS.black,
+      const left = leftParts.join(" | ");
+      const right = exp.period || "";
+
+      if (right) {
+        children.push(
+          createLeftRightLine(left, right, {
+            leftBold: true,
+            rightBold: true,
+            leftColor: COLORS.black,
+            rightColor: primaryColor, // BLUE period
+            spacingAfter: SPACING.xs,
+            rightColPercent: 35,
+          }),
+        );
+      } else if (left) {
+        children.push(
+          new Paragraph({
+            children: [
+              createTextRun(left, {
+                bold: true,
+                size: FONT_SIZES["text-sm"],
+                color: COLORS.black,
+              }),
+            ],
+            spacing: { after: SPACING.xs },
+            keepNext: true,
           }),
         );
       }
 
-      if (exp.period) {
-        companyParts.push(
-          createTextRun(exp.period, {
-            bold: true,
-            size: FONT_SIZES["text-sm"],
-            color: primaryColor, // BLUE period
-          }),
-        );
-      }
+      const isLastExp = idx === data.experience!.length - 1;
+      const gapAfterExp = isLastExp ? SPACING["2xl"] : SPACING.sm;
 
-      children.push(
-        new Paragraph({
-          children: companyParts,
-          spacing: { after: SPACING.sm },
-        }),
-      );
-
+      // Bullets
       if (exp.bullets && exp.bullets.length > 0) {
-        exp.bullets.forEach((bullet) => {
+        exp.bullets.forEach((bullet, bIdx) => {
+          const isLastBullet = bIdx === exp.bullets!.length - 1;
           children.push(
             createBulletParagraph(bullet, {
               size: FONT_SIZES["text-sm"],
               color: COLORS.gray700,
-              spacingAfter: SPACING.xs,
+              spacingAfter: isLastBullet ? gapAfterExp : SPACING.xs,
             }),
           );
         });
+      } else {
+        // No bullets: put the spacing on the company/date line instead
+        // (make sure your createLeftRightLine call uses spacingAfter: gapAfterExp)
       }
 
-      children.push(
-        createSpacer(
-          idx < data.experience!.length - 1 ? SPACING.lg : SPACING["2xl"],
-        ),
-      );
+      // children.push(
+      //   createSpacer(
+      //     idx < data.experience!.length - 1 ? SPACING.lg : SPACING["2xl"],
+      //   ),
+      // );
     });
   }
 
-  // Education (period in blue)
+  // Education (period in blue) - FIXED (no wrap)
   if (data.education && data.education.length > 0) {
     createSectionHeading("Education");
 
     data.education.forEach((edu, idx) => {
-      children.push(
-        new Paragraph({
-          children: [
-            createTextRun(edu.degree || "", {
-              bold: true,
-              size: FONT_SIZES["text-sm"],
-              color: COLORS.black,
-            }),
-            new TextRun({ text: "\t" }),
-            createTextRun(edu.period || "", {
-              bold: true,
-              size: FONT_SIZES["text-sm"],
-              color: primaryColor, // BLUE period
-            }),
-          ],
-          tabStops: [
-            { type: "right" as const, position: convertInchesToTwip(7.5) },
-          ],
-          spacing: { after: SPACING.xs },
-        }),
-      );
+      const left = edu.degree || "";
+      const right = edu.period || "";
+
+      if (right) {
+        children.push(
+          createLeftRightLine(left, right, {
+            leftBold: true,
+            rightBold: true,
+            leftColor: COLORS.black,
+            rightColor: primaryColor, // BLUE period
+            spacingAfter: SPACING.xs,
+            rightColPercent: 35,
+          }),
+        );
+      } else {
+        children.push(
+          new Paragraph({
+            children: [
+              createTextRun(left, {
+                bold: true,
+                size: FONT_SIZES["text-sm"],
+                color: COLORS.black,
+              }),
+            ],
+            spacing: { after: SPACING.xs },
+            keepNext: true,
+          }),
+        );
+      }
 
       if (edu.institution) {
         children.push(
@@ -1868,7 +2074,7 @@ function generateTechnicalTemplate(
                 color: COLORS.gray700,
               }),
             ],
-            spacing: { after: SPACING.sm },
+            spacing: { after: SPACING.xs },
           }),
         );
       }
@@ -1887,45 +2093,45 @@ function generateTechnicalTemplate(
 
       children.push(
         createSpacer(
-          idx < data.education!.length - 1 ? SPACING.lg : SPACING["2xl"],
+          idx < data.education!.length - 1 ? SPACING.md : SPACING["2xl"],
         ),
       );
     });
   }
 
-  // Projects (period in blue)
+  // Projects (period in blue) - FIXED (no wrap)
   if (data.projects && data.projects.length > 0) {
     createSectionHeading("Projects");
 
     data.projects.forEach((project, idx) => {
-      const projectNameParts: TextRun[] = [
-        createTextRun(project.name || "", {
-          bold: true,
-          size: FONT_SIZES["text-sm"],
-          color: COLORS.black,
-        }),
-      ];
+      const left = project.name || "";
+      const right = project.period || "";
 
-      if (project.period) {
-        projectNameParts.push(new TextRun({ text: "\t" }));
-        projectNameParts.push(
-          createTextRun(project.period, {
-            bold: true,
-            size: FONT_SIZES["text-sm"],
-            color: primaryColor, // BLUE period
+      if (right) {
+        children.push(
+          createLeftRightLine(left, right, {
+            leftBold: true,
+            rightBold: true,
+            leftColor: COLORS.black,
+            rightColor: primaryColor, // BLUE period
+            spacingAfter: SPACING.xs,
+            rightColPercent: 35,
+          }),
+        );
+      } else {
+        children.push(
+          new Paragraph({
+            children: [
+              createTextRun(left, {
+                bold: true,
+                size: FONT_SIZES["text-sm"],
+                color: COLORS.black,
+              }),
+            ],
+            spacing: { after: SPACING.xs },
           }),
         );
       }
-
-      children.push(
-        new Paragraph({
-          children: projectNameParts,
-          tabStops: [
-            { type: "right" as const, position: convertInchesToTwip(7.5) },
-          ],
-          spacing: { after: SPACING.xs },
-        }),
-      );
 
       if (project.organization) {
         children.push(
