@@ -107,16 +107,6 @@ export default function ResumePreviewPage() {
 
       console.log('[Download] PDF download completed');
 
-      // Upload PDF to S3 in background (don't block user)
-      const resumeId = sessionStorage.getItem('resumeId');
-      if (resumeId) {
-        console.log('[Download] Uploading PDF to S3...');
-        generatePDFBase64(resumeData, selectedTemplate)
-          .then(pdfBase64 => uploadPDFToS3(parseInt(resumeId), pdfBase64, filename))
-          .then(result => console.log('[Download] PDF uploaded to S3:', result))
-          .catch(err => console.error('[Download] S3 upload failed (non-blocking):', err));
-      }
-
       return false; // Prevent any default behavior
     } catch (error) {
       console.error('[Download] Error downloading PDF:', error);
