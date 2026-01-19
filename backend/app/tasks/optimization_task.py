@@ -14,6 +14,7 @@ from app.models.analysis import Analysis
 from app.models.question import Question
 from app.models.answer import Answer
 from app.models.optimized_resume import OptimizedResume
+from app.models.cv_info_store import CVInfoStore, MetadataStatus
 from app.agents.prompt3_craftsman import craftsman_agent
 from app.services.file_service import file_service
 from app.services.s3_service import upload_content_to_s3
@@ -140,6 +141,20 @@ def optimize_resume_task(self, resume_id: int) -> Dict[str, Any]:
             # Update resume status
             resume.status = ResumeStatus.OPTIMIZED
             db.commit()
+
+            # Save to cv_info_store table for metadata extraction
+            # PDF path will be updated when user downloads from frontend
+            try:
+                cv_info = CVInfoStore(
+                    text_s3_file_path=s3_key,  # S3 key for text version
+                    pdf_s3_file_path=None,     # Will be updated when user downloads PDF from frontend
+                    metadata_status=MetadataStatus.PENDING
+                )
+                db.add(cv_info)
+                db.commit()
+                logger.info(f"Created cv_info_store record with id={cv_info.id} for resume_id={resume_id}")
+            except Exception as cv_info_error:
+                logger.warning(f"Failed to create cv_info_store record: {cv_info_error}")
 
             # Create notification for admin
             try:
