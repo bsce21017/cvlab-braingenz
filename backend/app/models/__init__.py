@@ -9,6 +9,7 @@ from app.models.optimized_resume import OptimizedResume
 from app.models.claim import Claim
 from app.models.notification import Notification, NotificationType
 from app.models.user_notification import UserNotification, UserNotificationType
+from app.models.cv_info_store import CVInfoStore, MetadataStatus
 
 __all__ = [
     "Resume",
@@ -20,5 +21,7 @@ __all__ = [
     "Notification",
     "NotificationType",
     "UserNotification",
-    "UserNotificationType"
+    "UserNotificationType",
+    "CVInfoStore",
+    "MetadataStatus"
 ]

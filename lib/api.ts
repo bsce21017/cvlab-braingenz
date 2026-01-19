@@ -269,6 +269,20 @@ export async function getResumePreview(resumeId: number): Promise<PreviewRespons
 }
 
 /**
+ * Upload generated PDF to S3
+ */
+export async function uploadPDFToS3(resumeId: number, pdfBase64: string, filename?: string): Promise<{ status: string; pdf_s3_key: string; pdf_s3_url: string }> {
+  return fetchAPI('/upload-pdf', {
+    method: 'POST',
+    body: JSON.stringify({
+      resume_id: resumeId,
+      pdf_base64: pdfBase64,
+      filename: filename
+    }),
+  });
+}
+
+/**
  * User Notifications API
  */
 export interface UserNotification {

@@ -9,9 +9,9 @@ import { ResumePreview } from '@/components/resume/ResumePreview';
 import { Button } from '@/components/ui/button';
 import LanguageSwitcher from '@/components/questions/LanguageSwitcher';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { getResumePreview, PreviewResponse } from '@/lib/api';
+import { getResumePreview, PreviewResponse, uploadPDFToS3 } from '@/lib/api';
 import { downloadResumeAsWord } from '@/lib/downloadResume';
-import { generateAndDownloadPDF } from '@/lib/generatePDF';
+import { generateAndDownloadPDF, generatePDFBase64 } from '@/lib/generatePDF';
 import { ResumeData } from '@/lib/resumeDataTypes';
 
 export default function ResumePreviewPage() {
@@ -57,11 +57,11 @@ export default function ResumePreviewPage() {
 
   // Handle resume data ready callback
   const handleResumeDataReady = (data: ResumeData | null, ref: React.RefObject<HTMLDivElement>) => {
-    console.log('[ResumePreviewPage] handleResumeDataReady called', { 
-      hasData: !!data, 
-      hasRef: !!ref, 
+    console.log('[ResumePreviewPage] handleResumeDataReady called', {
+      hasData: !!data,
+      hasRef: !!ref,
       refCurrent: !!ref?.current,
-      dataName: data?.name 
+      dataName: data?.name
     });
     setResumeData(data);
     if (ref && ref.current) {
@@ -71,6 +71,18 @@ export default function ResumePreviewPage() {
     } else {
       console.warn('[ResumePreviewPage] Ref not available in callback');
     }
+
+    // Auto-upload PDF to S3 when resume data is ready
+    const resumeId = sessionStorage.getItem('resumeId');
+    if (data && resumeId) {
+      console.log('[ResumePreviewPage] Auto-uploading PDF to S3...');
+      const name = data.name || 'resume';
+      const filename = `${name.replace(/\s+/g, '_')}_${selectedTemplate}.pdf`;
+      generatePDFBase64(data, selectedTemplate)
+        .then(pdfBase64 => uploadPDFToS3(parseInt(resumeId), pdfBase64, filename))
+        .then(result => console.log('[ResumePreviewPage] PDF auto-uploaded to S3:', result))
+        .catch(err => console.error('[ResumePreviewPage] S3 auto-upload failed:', err));
+    }
   };
 
   // Download as PDF (using text-based PDF generation)
@@ -78,7 +90,7 @@ export default function ResumePreviewPage() {
     try {
       console.log('[Download] PDF button clicked');
       console.log('[Download] resumeData:', resumeData);
-      
+
       if (!resumeData) {
         console.error('[Download] resumeData is null');
         alert('Resume data not available. Please wait a moment and try again.');
@@ -87,13 +99,24 @@ export default function ResumePreviewPage() {
 
       const name = resumeData.name || 'resume';
       const filename = `${name.replace(/\s+/g, '_')}_${selectedTemplate}.pdf`;
-      
+
       console.log('[Download] Starting text-based PDF generation, filename:', filename);
-      
+
       // Use the new text-based PDF generation (selectable, searchable text)
       await generateAndDownloadPDF(resumeData, selectedTemplate, filename);
-      
+
       console.log('[Download] PDF download completed');
+
+      // Upload PDF to S3 in background (don't block user)
+      const resumeId = sessionStorage.getItem('resumeId');
+      if (resumeId) {
+        console.log('[Download] Uploading PDF to S3...');
+        generatePDFBase64(resumeData, selectedTemplate)
+          .then(pdfBase64 => uploadPDFToS3(parseInt(resumeId), pdfBase64, filename))
+          .then(result => console.log('[Download] PDF uploaded to S3:', result))
+          .catch(err => console.error('[Download] S3 upload failed (non-blocking):', err));
+      }
+
       return false; // Prevent any default behavior
     } catch (error) {
       console.error('[Download] Error downloading PDF:', error);

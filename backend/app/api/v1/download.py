@@ -3,15 +3,20 @@ Download API Endpoint
 Download optimized resume (supports both local and S3 storage)
 """
 import logging
-from fastapi import APIRouter, HTTPException, Depends
+import uuid
+import base64
+from fastapi import APIRouter, HTTPException, Depends, Body
 from fastapi.responses import FileResponse, RedirectResponse
 from sqlalchemy.orm import Session
 from pathlib import Path
+from pydantic import BaseModel
+from typing import Optional
 
 from app.db.database import get_db
 from app.models.resume import Resume, ResumeStatus
 from app.models.optimized_resume import OptimizedResume
-from app.services.s3_service import get_presigned_url
+from app.models.cv_info_store import CVInfoStore
+from app.services.s3_service import get_presigned_url, upload_content_to_s3
 from app.auth.middleware import get_current_user, AuthUser
 
 logger = logging.getLogger(__name__)
@@ -160,4 +165,69 @@ async def preview_optimized_resume(
         raise
     except Exception as e:
         logger.error(f"Error previewing resume: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+class PDFUploadRequest(BaseModel):
+    resume_id: int
+    pdf_base64: str
+    filename: Optional[str] = None
+
+
+@router.post("/upload-pdf")
+async def upload_pdf_to_s3(
+    request: PDFUploadRequest,
+    db: Session = Depends(get_db),
+    current_user: AuthUser = Depends(get_current_user)
+):
+    """
+    Upload client-generated PDF to S3 and update cv_info_store
+    """
+    try:
+        # Verify resume exists and user owns it
+        resume = db.query(Resume).filter(Resume.id == request.resume_id).first()
+        if not resume:
+            raise HTTPException(status_code=404, detail="Resume not found")
+        if resume.user_id != current_user.id:
+            raise HTTPException(status_code=403, detail="Access denied")
+        if resume.status != ResumeStatus.OPTIMIZED:
+            raise HTTPException(status_code=400, detail="Resume not optimized")
+
+        # Decode PDF
+        pdf_content = base64.b64decode(request.pdf_base64)
+
+        # Upload to S3
+        original_name = Path(resume.original_filename).stem
+        pdf_s3_key = f"optimized/{uuid.uuid4()}_{original_name}_optimized.pdf"
+        pdf_s3_url = upload_content_to_s3(
+            content=pdf_content,
+            s3_key=pdf_s3_key,
+            content_type='application/pdf'
+        )
+
+        if not pdf_s3_url:
+            raise HTTPException(status_code=500, detail="Failed to upload PDF to S3")
+
+        logger.info(f"Uploaded PDF to S3: {pdf_s3_key}")
+
+        # Update cv_info_store with PDF path
+        optimized = db.query(OptimizedResume).filter(
+            OptimizedResume.resume_id == request.resume_id
+        ).first()
+
+        if optimized and optimized.s3_key:
+            cv_info = db.query(CVInfoStore).filter(
+                CVInfoStore.text_s3_file_path == optimized.s3_key
+            ).first()
+            if cv_info:
+                cv_info.pdf_s3_file_path = pdf_s3_key
+                db.commit()
+                logger.info(f"Updated cv_info_store id={cv_info.id} with PDF path")
+
+        return {"status": "success", "pdf_s3_key": pdf_s3_key, "pdf_s3_url": pdf_s3_url}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error uploading PDF: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
