@@ -151,10 +151,17 @@ async def preview_optimized_resume(
         if optimized.s3_key:
             s3_download_url = get_presigned_url(optimized.s3_key, expiration=3600)
 
+        # Extract structured_data from optimized_json if available
+        # This allows the frontend to use pre-parsed data instead of text parsing
+        structured_data = None
+        if optimized.optimized_json and isinstance(optimized.optimized_json, dict):
+            structured_data = optimized.optimized_json.get("structured_data")
+
         return {
             "resume_id": resume_id,
             "original_filename": resume.original_filename,
             "optimized_text": optimized.optimized_text,
+            "structured_data": structured_data,  # NEW: Return structured data for reliable rendering
             "changes_summary": optimized.changes_summary,
             "file_format": optimized.file_format,
             "s3_url": optimized.s3_url,
