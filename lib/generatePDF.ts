@@ -16,7 +16,7 @@ import { getPDFTemplate, PDFTemplate, ensureFontsRegistered } from './pdfTemplat
  * Generate and download a PDF resume with real selectable text
  * 
  * @param data - The resume data to render
- * @param template - The template style to use ('classic' | 'modern' | 'executive' | 'technical')
+ * @param template - The template style to use ('classic' | 'modern' | 'executive')
  * @param filename - The filename for the downloaded PDF (default: 'resume.pdf')
  */
 export async function generateAndDownloadPDF(

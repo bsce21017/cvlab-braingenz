@@ -1,0 +1,389 @@
+{
+  "templateName": "Executive",
+  "description": "Professional executive-level resume template with navy blue accents, serif font, and formal structure",
+
+  "pageSettings": {
+    "size": "A4",
+    "width": "210mm",
+    "height": "297mm",
+    "margins": {
+      "top": "40pt",
+      "bottom": "40pt",
+      "left": "40pt",
+      "right": "40pt"
+    }
+  },
+
+  "fonts": {
+    "primary": {
+      "family": "Times New Roman",
+      "fallback": ["Times", "serif"]
+    }
+  },
+
+  "colors": {
+    "navy": {
+      "hex": "#003366",
+      "usage": ["name", "sectionHeadings", "headerDivider", "sectionUnderlines"]
+    },
+    "black": {
+      "hex": "#000000",
+      "usage": ["bodyText", "jobTitles", "bullets", "companyLine", "educationInstitution"]
+    },
+    "darkGray": {
+      "hex": "#444444",
+      "usage": ["contactInfo", "dates", "secondaryText"]
+    }
+  },
+
+  "header": {
+    "name": {
+      "fontSize": "20pt",
+      "fontWeight": "bold",
+      "textTransform": "uppercase",
+      "letterSpacing": "1px",
+      "color": "navy",
+      "textAlign": "center",
+      "marginBottom": "4pt"
+    },
+    "title": {
+      "fontSize": "12pt",
+      "fontWeight": "normal",
+      "textTransform": "uppercase",
+      "color": "darkGray",
+      "textAlign": "center",
+      "marginBottom": "4pt",
+      "note": "Optional - professional title like 'SENIOR PROJECT MANAGER'"
+    },
+    "contactLine": {
+      "fontSize": "9pt",
+      "fontWeight": "normal",
+      "color": "darkGray",
+      "textAlign": "center",
+      "separator": " | ",
+      "format": "phone | email | location",
+      "marginBottom": "12pt"
+    },
+    "divider": {
+      "height": "2.5pt",
+      "color": "navy",
+      "width": "100%",
+      "marginTop": "0pt",
+      "marginBottom": "12pt"
+    }
+  },
+
+  "sections": {
+    "heading": {
+      "fontSize": "11pt",
+      "fontWeight": "bold",
+      "textTransform": "uppercase",
+      "color": "navy",
+      "marginTop": "14pt",
+      "marginBottom": "0pt",
+      "underline": {
+        "height": "2pt",
+        "color": "navy",
+        "marginTop": "3pt",
+        "marginBottom": "8pt"
+      }
+    },
+    "spacingBetweenSections": "14pt"
+  },
+
+  "professionalSummary": {
+    "sectionHeading": "PROFESSIONAL SUMMARY",
+    "text": {
+      "fontSize": "9pt",
+      "fontWeight": "normal",
+      "color": "black",
+      "lineHeight": 1.4,
+      "textAlign": "justify",
+      "note": "Text is justified (aligned to both left and right margins)"
+    }
+  },
+
+  "coreCompetencies": {
+    "sectionHeading": "CORE COMPETENCIES",
+    "layout": "inline",
+    "separator": " | ",
+    "text": {
+      "fontSize": "9pt",
+      "fontWeight": "normal",
+      "color": "black",
+      "textAlign": "left",
+      "note": "Left-aligned, not centered. Skills separated by pipe characters."
+    }
+  },
+
+  "professionalExperience": {
+    "sectionHeading": "PROFESSIONAL EXPERIENCE",
+    "jobEntry": {
+      "title": {
+        "fontSize": "10pt",
+        "fontWeight": "bold",
+        "color": "black",
+        "marginBottom": "2pt"
+      },
+      "companyLine": {
+        "fontSize": "9pt",
+        "fontWeight": "normal",
+        "fontStyle": "normal",
+        "color": "black",
+        "format": "Company Name | Location | Date Range",
+        "separator": " | ",
+        "marginBottom": "4pt",
+        "note": "Company, location, and dates all on same line separated by pipes. Color is black, not gray."
+      },
+      "bullets": {
+        "character": "•",
+        "fontSize": "9pt",
+        "fontWeight": "normal",
+        "color": "black",
+        "lineHeight": 1.35,
+        "indent": "14pt",
+        "hangingIndent": "14pt",
+        "spacingBetween": "2pt"
+      },
+      "spacingBetweenJobs": "10pt"
+    }
+  },
+
+  "keyProjectAchievements": {
+    "sectionHeading": "KEY PROJECT ACHIEVEMENTS",
+    "bullets": {
+      "character": "•",
+      "fontSize": "9pt",
+      "fontWeight": "normal",
+      "color": "black",
+      "lineHeight": 1.35,
+      "indent": "14pt",
+      "spacingBetween": "2pt"
+    }
+  },
+
+  "education": {
+    "sectionHeading": "EDUCATION",
+    "entry": {
+      "degree": {
+        "fontSize": "10pt",
+        "fontWeight": "bold",
+        "color": "black",
+        "format": "Degree Name - Concentration (if applicable)",
+        "note": "Degree name can include concentration suffix with dash separator, e.g., 'Master of Business Administration (MBA) - Project Management Concentration'"
+      },
+      "institution": {
+        "fontSize": "9pt",
+        "fontWeight": "normal",
+        "fontStyle": "normal",
+        "color": "black",
+        "format": "Institution Name, Location, Year",
+        "marginBottom": "6pt",
+        "note": "Regular weight (not italic) per golden reference"
+      }
+    },
+    "spacingBetweenEntries": "6pt"
+  },
+
+  "professionalCertifications": {
+    "sectionHeading": "PROFESSIONAL CERTIFICATIONS",
+    "bullets": {
+      "character": "•",
+      "fontSize": "9pt",
+      "fontWeight": "normal",
+      "color": "black",
+      "indent": "14pt",
+      "spacingBetween": "2pt"
+    },
+    "entryFormat": {
+      "pattern": "Certification Name - Issuing Organization",
+      "separator": " - ",
+      "examples": [
+        "Program Management Professional (PgMP) - Project Management Institute (PMI)",
+        "Lean Six Sigma Green Belt - ASQ",
+        "NEBOSH International General Certificate in Occupational Health and Safety",
+        "Saudi Council of Engineers - Registered Professional Engineer"
+      ]
+    }
+  },
+
+  "professionalAffiliations": {
+    "sectionHeading": "PROFESSIONAL AFFILIATIONS",
+    "bullets": {
+      "character": "•",
+      "fontSize": "9pt",
+      "fontWeight": "normal",
+      "color": "black",
+      "indent": "14pt",
+      "spacingBetween": "2pt"
+    },
+    "entryFormat": {
+      "pattern": "Organization - Chapter/Details, Role (Year-Present)",
+      "separator": " - ",
+      "examples": [
+        "Project Management Institute (PMI) - Saudi Arabia Chapter, Board Member (2022-Present)",
+        "Saudi Council of Engineers - Active Member",
+        "Chartered Institute of Building (CIOB) - Member"
+      ]
+    }
+  },
+
+  "languagesAndTechnicalSkills": {
+    "sectionHeading": "LANGUAGES & TECHNICAL SKILLS",
+    "layout": "labelValue",
+    "noBullets": true,
+    "categories": {
+      "label": {
+        "fontSize": "9pt",
+        "fontWeight": "bold",
+        "color": "black",
+        "suffix": ":"
+      },
+      "value": {
+        "fontSize": "9pt",
+        "fontWeight": "normal",
+        "color": "black"
+      },
+      "format": "Label: Value1, Value2, Value3",
+      "lineHeight": 1.4,
+      "spacingBetween": "2pt"
+    },
+    "categoriesList": [
+      "Languages",
+      "Project Software",
+      "Technical",
+      "Standards"
+    ],
+    "languagesFormat": {
+      "pattern": "Language (Proficiency Level)",
+      "separator": " | ",
+      "example": "Arabic (Native) | English (Fluent - IELTS 7.5)",
+      "note": "Languages use pipe separator, others use comma separator"
+    },
+    "examples": {
+      "Languages": "Arabic (Native) | English (Fluent - IELTS 7.5)",
+      "Project Software": "Primavera P6, MS Project, Procore, Aconex, SAP PS Module",
+      "Technical": "AutoCAD, Revit (Basic), Power BI, Advanced Excel, SharePoint",
+      "Standards": "Aramco Engineering Standards, FIDIC Contracts, NEC4, Saudi Building Code"
+    }
+  },
+
+  "spacing": {
+    "pageMargin": "40pt",
+    "headerDividerMarginBottom": "12pt",
+    "sectionHeadingMarginTop": "14pt",
+    "sectionHeadingUnderlineMarginBottom": "8pt",
+    "betweenSections": "14pt",
+    "betweenJobEntries": "10pt",
+    "betweenBullets": "2pt",
+    "betweenEducationEntries": "6pt",
+    "afterJobTitle": "2pt",
+    "afterCompanyLine": "4pt",
+    "bulletIndent": "14pt"
+  },
+
+  "typography": {
+    "baseFontSize": "10pt",
+    "lineHeight": {
+      "body": 1.4,
+      "bullets": 1.35,
+      "tight": 1.2
+    }
+  },
+
+  "dividers": {
+    "headerDivider": {
+      "type": "solid",
+      "height": "2.5pt",
+      "color": "navy",
+      "width": "100%"
+    },
+    "sectionUnderline": {
+      "type": "solid",
+      "height": "2pt",
+      "color": "navy",
+      "width": "100%"
+    }
+  },
+
+  "bullets": {
+    "primary": {
+      "character": "•",
+      "color": "black"
+    }
+  },
+
+  "separators": {
+    "contactInfo": " | ",
+    "coreCompetencies": " | ",
+    "companyLocationDate": " | ",
+    "skills": ", ",
+    "languages": " | ",
+    "dateRange": " – ",
+    "certificationOrg": " - ",
+    "affiliationRole": " - "
+  },
+
+  "dateFormats": {
+    "experiencePeriod": {
+      "format": "MM/YYYY – MM/YYYY",
+      "current": "MM/YYYY – Present",
+      "separator": " – ",
+      "note": "Uses en-dash (–) not hyphen (-)"
+    },
+    "educationYear": {
+      "format": "YYYY",
+      "note": "Just the graduation year"
+    }
+  },
+
+  "textTransforms": {
+    "name": "uppercase",
+    "professionalTitle": "uppercase",
+    "sectionHeadings": "uppercase",
+    "jobTitles": "none",
+    "bodyText": "none"
+  },
+
+  "sectionOrder": [
+    "header",
+    "professionalSummary",
+    "coreCompetencies",
+    "professionalExperience",
+    "keyProjectAchievements",
+    "education",
+    "professionalCertifications",
+    "professionalAffiliations",
+    "languagesAndTechnicalSkills"
+  ],
+
+  "notes": {
+    "general": [
+      "This is a formal executive template suitable for senior professionals",
+      "Uses serif font (Times New Roman) throughout for traditional professional appearance",
+      "Navy blue (#003366) is the primary accent color for headings and dividers",
+      "All section headings are uppercase and bold with navy underline",
+      "Pipe character (|) is used as separator throughout"
+    ],
+    "header": [
+      "Name is prominently displayed in uppercase bold navy",
+      "Optional professional title can appear below name in smaller uppercase",
+      "Contact info uses pipe separators, centered",
+      "Thick navy divider line separates header from content"
+    ],
+    "experience": [
+      "Job title is bold black, stands alone on its line",
+      "Company, location, and date range are on same line separated by pipes, in black (not gray)",
+      "Bullets are solid (•) with standard indent",
+      "Consistent spacing between job entries"
+    ],
+    "education": [
+      "Degree name is bold, can include concentration with dash separator",
+      "Institution, location, and year on separate line in regular weight (not italic)"
+    ],
+    "skills": [
+      "Core competencies displayed inline with pipe separators",
+      "Technical skills use category labels (bold) followed by comma-separated values"
+    ]
+  }
+}

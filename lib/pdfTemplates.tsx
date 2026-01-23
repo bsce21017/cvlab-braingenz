@@ -1,9 +1,8 @@
 /**
  * PDF Templates using @react-pdf/renderer
- * These templates generate real text-based PDFs (selectable, searchable, editable)
+ * These templates match the golden reference designs
  */
 
-import React from 'react';
 import {
   Document,
   Page,
@@ -12,10 +11,9 @@ import {
   StyleSheet,
   Font,
 } from '@react-pdf/renderer';
-import { ResumeData, getSectionOrder, getSectionLabel, getPrimaryColor, SectionKey } from './resumeDataTypes';
+import { ResumeData } from './resumeDataTypes';
 
 // Register fonts using runtime fetch (works with both webpack and Turbopack)
-// This approach fetches fonts from public folder and registers them
 const isBrowser = typeof window !== 'undefined';
 const baseUrl = isBrowser ? window.location.origin : '';
 
@@ -31,28 +29,25 @@ async function registerFontFromUrl(family: string, url: string, fontWeight: numb
       throw new Error(`Failed to fetch font: ${response.statusText}`);
     }
     const fontData = await response.arrayBuffer();
-    
-    // Convert ArrayBuffer to base64 data URL with proper format
+
     const bytes = new Uint8Array(fontData);
     let binary = '';
     for (let i = 0; i < bytes.byteLength; i++) {
       binary += String.fromCharCode(bytes[i]);
     }
     const base64 = btoa(binary);
-    // Use application/octet-stream instead of font/truetype for better compatibility
     const dataUrl = `data:application/octet-stream;base64,${base64}`;
-    
-    // Ensure dataUrl is a string before registering
+
     if (typeof dataUrl !== 'string') {
       throw new Error('Failed to convert font to data URL string');
     }
-    
+
     Font.register({
       family,
       src: dataUrl,
       fontWeight: fontWeight as any,
     });
-    
+
     console.log(`[PDF] Registered ${family} ${fontWeight} successfully`);
     return true;
   } catch (error) {
@@ -110,1120 +105,255 @@ if (isBrowser) {
   ensureFontsRegistered().catch(console.error);
 }
 
-// Use Inter font for all templates
-const FONT_FAMILY = 'Inter';
+// ============================================================================
+// CLASSIC TEMPLATE - Serif font, black colors, bullet separators
+// ============================================================================
 
-// ============================================
-// CLASSIC TEMPLATE
-// ============================================
 const classicStyles = StyleSheet.create({
   page: {
-    padding: 30,
-    fontFamily: FONT_FAMILY,
-    fontSize: 11,
-    color: '#1f2937',
+    paddingTop: 54,
+    paddingBottom: 54,
+    paddingLeft: 54,
+    paddingRight: 54,
+    fontFamily: 'Times-Roman',
+    fontSize: 10,
+    color: '#000000',
+    lineHeight: 1.35,
   },
-  header: {
+  headerSection: {
     textAlign: 'center',
-    marginBottom: 12,
+    marginBottom: 4,
   },
   name: {
-    fontSize: 28,
-    fontWeight: 700,
-    color: '#004081',
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#000000',
     textTransform: 'uppercase',
-    letterSpacing: 1,
+    letterSpacing: 2,
+    marginBottom: 12,
   },
-  contactRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: 6,
+  contactLine: {
     fontSize: 10,
-    color: '#4b5563',
+    color: '#000000',
   },
-  contactItem: {
-    marginHorizontal: 4,
+  section: {
+    marginTop: 12,
   },
-  separator: {
-    marginHorizontal: 4,
-  },
-  headerLine: {
-    height: 3,
-    backgroundColor: '#004081',
-    marginBottom: 16,
-  },
-  sectionRow: {
-    flexDirection: 'row',
-    marginBottom: 12,
-  },
-  sectionLabelContainer: {
-    width: 120,
-    flexDirection: 'column',
-  },
-  sectionLabel: {
-    fontSize: 12,
-    fontWeight: 700,
-    color: '#004081',
+  sectionHeading: {
+    fontSize: 11,
+    fontWeight: 'bold',
+    color: '#000000',
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    marginBottom: 2,
   },
-  sectionContent: {
-    flex: 1,
-  },
-  divider: {
+  sectionUnderline: {
     height: 1,
-    backgroundColor: '#004081',
-    marginBottom: 12,
+    backgroundColor: '#000000',
+    marginBottom: 6,
+  },
+  bodyText: {
+    fontSize: 10,
+    color: '#000000',
+    lineHeight: 1.35,
   },
   experienceItem: {
     marginBottom: 10,
   },
-  expHeader: {
+  expHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 2,
   },
   expTitle: {
-    fontSize: 11,
-    fontWeight: 700,
+    fontSize: 10,
+    fontWeight: 'bold',
+    color: '#000000',
   },
   expPeriod: {
-    fontSize: 11,
-    fontWeight: 700,
+    fontSize: 10,
+    color: '#000000',
   },
-  bullet: {
+  expCompany: {
+    fontSize: 10,
+    color: '#000000',
+    fontStyle: 'italic',
+    marginBottom: 2,
+  },
+  bulletRow: {
     flexDirection: 'row',
-    marginLeft: 12,
-    marginTop: 2,
+    marginBottom: 2,
   },
-  bulletPoint: {
-    width: 8,
-    fontSize: 11,
+  bulletChar: {
+    width: 12,
+    fontSize: 10,
+    color: '#000000',
   },
   bulletText: {
     flex: 1,
     fontSize: 10,
-  },
-  skillsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
-  skillItem: {
-    width: '50%',
-    flexDirection: 'row',
-    marginBottom: 2,
-  },
-  text: {
-    fontSize: 10,
-    lineHeight: 1.4,
+    color: '#000000',
+    lineHeight: 1.35,
   },
 });
 
 export function ClassicPDFTemplate({ data }: { data: ResumeData }) {
-  const sectionOrder = getSectionOrder(data);
-  const primaryColor = getPrimaryColor(data, 'classic');
-  
-  const renderSection = (sectionKey: SectionKey) => {
-    switch (sectionKey) {
-      case 'summary':
-        if (!data.summary || data.summary.trim().length === 0) return null;
-        return (
-          <>
-            <View style={classicStyles.sectionRow}>
-              <View style={classicStyles.sectionLabelContainer}>
-                <Text style={[classicStyles.sectionLabel, { color: primaryColor }]}>{getSectionLabel(data, 'summary', 'classic')}</Text>
-              </View>
-              <Text style={[classicStyles.sectionContent, classicStyles.text]}>{data.summary}</Text>
-            </View>
-            <View style={[classicStyles.divider, { backgroundColor: primaryColor }]} />
-          </>
-        );
-      
-      case 'experience':
-        if (!data.experience || data.experience.length === 0) return null;
-        return (
-          <>
-            <View style={classicStyles.sectionRow}>
-              <View style={classicStyles.sectionLabelContainer}>
-                {(() => {
-                  const label = getSectionLabel(data, 'experience', 'classic');
-                  if (label === 'Work Experience') {
-                    return (
-                      <>
-                        <Text style={classicStyles.sectionLabel}>Work</Text>
-                        <Text style={classicStyles.sectionLabel}>Experience</Text>
-                      </>
-                    );
-                  }
-                  return <Text style={classicStyles.sectionLabel}>{label}</Text>;
-                })()}
-              </View>
-              <View style={classicStyles.sectionContent}>
-                {data.experience.map((exp, idx) => (
-                  <View key={idx} style={classicStyles.experienceItem}>
-                    <View style={classicStyles.expHeader}>
-                      <Text style={classicStyles.expTitle}>{exp.title}, {exp.company}</Text>
-                      <Text style={classicStyles.expPeriod}>{exp.period}</Text>
-                    </View>
-                    {exp.bullets && exp.bullets.map((bullet, bIdx) => (
-                      <View key={bIdx} style={classicStyles.bullet}>
-                        <Text style={classicStyles.bulletPoint}>•</Text>
-                        <Text style={classicStyles.bulletText}>{bullet}</Text>
-                      </View>
-                    ))}
-                  </View>
-                ))}
-              </View>
-            </View>
-            <View style={[classicStyles.divider, { backgroundColor: primaryColor }]} />
-          </>
-        );
-      
-      case 'skills':
-        if (!data.skills || data.skills.length === 0) return null;
-        return (
-          <>
-            <View style={classicStyles.sectionRow}>
-              <View style={classicStyles.sectionLabelContainer}>
-                <Text style={[classicStyles.sectionLabel, { color: primaryColor }]}>{getSectionLabel(data, 'skills', 'classic')}</Text>
-              </View>
-              <View style={[classicStyles.sectionContent, classicStyles.skillsGrid]}>
-                {data.skills.map((skill, idx) => (
-                  <View key={idx} style={classicStyles.skillItem}>
-                    <Text style={classicStyles.bulletPoint}>•</Text>
-                    <Text style={classicStyles.text}>{skill}</Text>
-                  </View>
-                ))}
-              </View>
-            </View>
-            <View style={[classicStyles.divider, { backgroundColor: primaryColor }]} />
-          </>
-        );
-      
-      case 'education':
-        if (!data.education || data.education.length === 0) return null;
-        return (
-          <>
-            <View style={classicStyles.sectionRow}>
-              <View style={classicStyles.sectionLabelContainer}>
-                <Text style={[classicStyles.sectionLabel, { color: primaryColor }]}>{getSectionLabel(data, 'education', 'classic')}</Text>
-              </View>
-              <View style={classicStyles.sectionContent}>
-                {data.education.map((edu, idx) => (
-                  <View key={idx} style={classicStyles.experienceItem}>
-                    <View style={classicStyles.expHeader}>
-                      <Text style={classicStyles.expTitle}>{edu.degree}</Text>
-                      <Text style={classicStyles.expPeriod}>{edu.period}</Text>
-                    </View>
-                    <Text style={classicStyles.text}>{edu.institution}</Text>
-                    {edu.details && edu.details.map((detail, dIdx) => (
-                      <View key={dIdx} style={classicStyles.bullet}>
-                        <Text style={classicStyles.bulletPoint}>•</Text>
-                        <Text style={classicStyles.bulletText}>{detail}</Text>
-                      </View>
-                    ))}
-                  </View>
-                ))}
-              </View>
-            </View>
-            <View style={[classicStyles.divider, { backgroundColor: primaryColor }]} />
-          </>
-        );
-      
-      case 'projects':
-        if (!data.projects || data.projects.length === 0) return null;
-        return (
-          <>
-            <View style={classicStyles.sectionRow}>
-              <View style={classicStyles.sectionLabelContainer}>
-                <Text style={[classicStyles.sectionLabel, { color: primaryColor }]}>{getSectionLabel(data, 'projects', 'classic')}</Text>
-              </View>
-              <View style={classicStyles.sectionContent}>
-                {data.projects.map((project, idx) => (
-                  <View key={idx} style={classicStyles.experienceItem}>
-                    <View style={classicStyles.expHeader}>
-                      <Text style={classicStyles.expTitle}>{project.name}</Text>
-                      {project.period && <Text style={classicStyles.expPeriod}>{project.period}</Text>}
-                    </View>
-                    {project.organization && <Text style={classicStyles.text}>{project.organization}</Text>}
-                    {project.details && project.details.map((detail, dIdx) => (
-                      <View key={dIdx} style={classicStyles.bullet}>
-                        <Text style={classicStyles.bulletPoint}>•</Text>
-                        <Text style={classicStyles.bulletText}>{detail}</Text>
-                      </View>
-                    ))}
-                  </View>
-                ))}
-              </View>
-            </View>
-            <View style={[classicStyles.divider, { backgroundColor: primaryColor }]} />
-          </>
-        );
-      
-      case 'certifications':
-        if (!data.certifications || data.certifications.length === 0) return null;
-        return (
-          <>
-            <View style={classicStyles.sectionRow}>
-              <View style={classicStyles.sectionLabelContainer}>
-                <Text style={[classicStyles.sectionLabel, { color: primaryColor }]}>{getSectionLabel(data, 'certifications', 'classic')}</Text>
-              </View>
-              <View style={classicStyles.sectionContent}>
-                {data.certifications.map((cert, idx) => (
-                  <View key={idx} style={classicStyles.bullet}>
-                    <Text style={classicStyles.bulletPoint}>•</Text>
-                    <Text style={classicStyles.bulletText}>{cert}</Text>
-                  </View>
-                ))}
-              </View>
-            </View>
-            <View style={[classicStyles.divider, { backgroundColor: primaryColor }]} />
-          </>
-        );
-      
-      case 'languages':
-        if (!data.languages || data.languages.length === 0) return null;
-        return (
-          <View style={classicStyles.sectionRow}>
-            <View style={classicStyles.sectionLabelContainer}>
-              <Text style={[classicStyles.sectionLabel, { color: primaryColor }]}>{getSectionLabel(data, 'languages', 'classic')}</Text>
-            </View>
-            <Text style={[classicStyles.sectionContent, classicStyles.text]}>
-              {data.languages.join(', ')}
-            </Text>
-          </View>
-        );
-      
-      default:
-        return null;
-    }
-  };
+  const contactParts = [data.phone, data.email, data.location].filter(Boolean);
+  const extData = data as any;
 
   return (
     <Document>
       <Page size="A4" style={classicStyles.page}>
         {/* Header */}
-        <View style={classicStyles.header}>
-          <Text style={[classicStyles.name, { color: primaryColor }]}>{data.name || 'Your Name'}</Text>
-          <View style={classicStyles.contactRow}>
-            {data.email && <Text style={classicStyles.contactItem}>{data.email}</Text>}
-            {data.email && data.phone && <Text style={classicStyles.separator}>|</Text>}
-            {data.phone && <Text style={classicStyles.contactItem}>{data.phone}</Text>}
-            {(data.email || data.phone) && data.location && <Text style={classicStyles.separator}>|</Text>}
-            {data.location && <Text style={classicStyles.contactItem}>{data.location}</Text>}
-          </View>
+        <View style={classicStyles.headerSection}>
+          <Text style={classicStyles.name}>{(data.name || 'Your Name').toUpperCase()}</Text>
+          <Text style={classicStyles.contactLine}>{contactParts.join(' • ')}</Text>
         </View>
 
-        <View style={[classicStyles.headerLine, { backgroundColor: primaryColor }]} />
-
-        {/* All sections rendered in order */}
-        {sectionOrder.map((sectionKey) => (
-          <React.Fragment key={sectionKey}>
-            {renderSection(sectionKey)}
-          </React.Fragment>
-        ))}
-      </Page>
-    </Document>
-  );
-}
-
-// ============================================
-// MODERN TEMPLATE
-// ============================================
-const modernStyles = StyleSheet.create({
-  page: {
-    padding: 40,
-    fontFamily: FONT_FAMILY,
-    fontSize: 11,
-    color: '#1f2937',
-  },
-  header: {
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-  name: {
-    fontSize: 28,
-    fontWeight: 700,
-    color: '#111827',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-  },
-  contactRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: 6,
-    fontSize: 10,
-    color: '#4b5563',
-  },
-  contactItem: {
-    marginHorizontal: 4,
-  },
-  separator: {
-    marginHorizontal: 4,
-  },
-  headerLine: {
-    height: 3,
-    backgroundColor: '#111827',
-    marginVertical: 12,
-  },
-  section: {
-    marginBottom: 14,
-  },
-  sectionTitle: {
-    fontSize: 12,
-    fontWeight: 700,
-    color: '#111827',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: 6,
-    paddingBottom: 4,
-    borderBottomWidth: 1,
-    borderBottomColor: '#9ca3af',
-  },
-  experienceItem: {
-    marginBottom: 10,
-  },
-  expHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 2,
-  },
-  expTitle: {
-    fontSize: 11,
-    fontWeight: 700,
-  },
-  expPeriod: {
-    fontSize: 11,
-    fontWeight: 700,
-  },
-  bullet: {
-    flexDirection: 'row',
-    marginLeft: 8,
-    marginTop: 2,
-  },
-  bulletPoint: {
-    width: 10,
-    fontSize: 11,
-    color: '#374151',
-  },
-  bulletText: {
-    flex: 1,
-    fontSize: 10,
-    color: '#374151',
-  },
-  skillsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
-  skillItem: {
-    width: '33.33%',
-    fontSize: 10,
-    marginBottom: 3,
-    color: '#374151',
-  },
-  text: {
-    fontSize: 10,
-    lineHeight: 1.4,
-    color: '#374151',
-  },
-});
-
-export function ModernPDFTemplate({ data }: { data: ResumeData }) {
-  const sectionOrder = getSectionOrder(data);
-  const primaryColor = getPrimaryColor(data, 'modern');
-  
-  const renderSection = (sectionKey: SectionKey) => {
-    switch (sectionKey) {
-      case 'summary':
-        if (!data.summary || data.summary.trim().length === 0) return null;
-        return (
-          <View style={modernStyles.section}>
-            <Text style={[modernStyles.sectionTitle, { color: primaryColor, borderBottomColor: primaryColor }]}>{getSectionLabel(data, 'summary', 'modern')}</Text>
-            <Text style={modernStyles.text}>{data.summary}</Text>
+        {/* Summary */}
+        {data.summary && (
+          <View style={classicStyles.section}>
+            <Text style={classicStyles.sectionHeading}>SUMMARY</Text>
+            <View style={classicStyles.sectionUnderline} />
+            <Text style={classicStyles.bodyText}>{data.summary}</Text>
           </View>
-        );
-      
-      case 'experience':
-        if (!data.experience || data.experience.length === 0) return null;
-        return (
-          <View style={modernStyles.section}>
-            <Text style={[modernStyles.sectionTitle, { color: primaryColor, borderBottomColor: primaryColor }]}>{getSectionLabel(data, 'experience', 'modern')}</Text>
+        )}
+
+        {/* Experience */}
+        {data.experience && data.experience.length > 0 && (
+          <View style={classicStyles.section}>
+            <Text style={classicStyles.sectionHeading}>EXPERIENCE</Text>
+            <View style={classicStyles.sectionUnderline} />
             {data.experience.map((exp, idx) => (
-              <View key={idx} style={modernStyles.experienceItem}>
-                <View style={modernStyles.expHeader}>
-                  <Text style={modernStyles.expTitle}>{exp.title}, {exp.company}</Text>
-                  <Text style={modernStyles.expPeriod}>{exp.period}</Text>
+              <View key={idx} style={classicStyles.experienceItem}>
+                <View style={classicStyles.expHeaderRow}>
+                  <Text style={classicStyles.expTitle}>{exp.title}</Text>
+                  <Text style={classicStyles.expPeriod}>{exp.period || ''}</Text>
                 </View>
-                {exp.bullets && exp.bullets.map((bullet, bIdx) => (
-                  <View key={bIdx} style={modernStyles.bullet}>
-                    <Text style={modernStyles.bulletPoint}>•</Text>
-                    <Text style={modernStyles.bulletText}>{bullet}</Text>
+                <Text style={classicStyles.expCompany}>
+                  {exp.company}{(exp as any).location ? `, ${(exp as any).location}` : ''}
+                </Text>
+                {exp.bullets?.map((bullet, bIdx) => (
+                  <View key={bIdx} style={classicStyles.bulletRow}>
+                    <Text style={classicStyles.bulletChar}>•</Text>
+                    <Text style={classicStyles.bulletText}>{bullet}</Text>
                   </View>
                 ))}
               </View>
             ))}
-          </View>
-        );
-      
-      case 'skills':
-        if (!data.skills || data.skills.length === 0) return null;
-        return (
-          <View style={modernStyles.section}>
-            <Text style={[modernStyles.sectionTitle, { color: primaryColor, borderBottomColor: primaryColor }]}>{getSectionLabel(data, 'skills', 'modern')}</Text>
-            <View style={modernStyles.skillsGrid}>
-              {data.skills.map((skill, idx) => (
-                <Text key={idx} style={modernStyles.skillItem}>{skill}</Text>
-              ))}
-            </View>
-          </View>
-        );
-      
-      case 'education':
-        if (!data.education || data.education.length === 0) return null;
-        return (
-          <View style={modernStyles.section}>
-            <Text style={[modernStyles.sectionTitle, { color: primaryColor, borderBottomColor: primaryColor }]}>{getSectionLabel(data, 'education', 'modern')}</Text>
-            {data.education.map((edu, idx) => (
-              <View key={idx} style={modernStyles.experienceItem}>
-                <View style={modernStyles.expHeader}>
-                  <Text style={modernStyles.expTitle}>{edu.degree}</Text>
-                  <Text style={modernStyles.expPeriod}>{edu.period}</Text>
-                </View>
-                <Text style={modernStyles.text}>{edu.institution}</Text>
-                {edu.details && edu.details.map((detail, dIdx) => (
-                  <View key={dIdx} style={modernStyles.bullet}>
-                    <Text style={modernStyles.bulletPoint}>•</Text>
-                    <Text style={modernStyles.bulletText}>{detail}</Text>
-                  </View>
-                ))}
-              </View>
-            ))}
-          </View>
-        );
-      
-      case 'projects':
-        if (!data.projects || data.projects.length === 0) return null;
-        return (
-          <View style={modernStyles.section}>
-            <Text style={[modernStyles.sectionTitle, { color: primaryColor, borderBottomColor: primaryColor }]}>{getSectionLabel(data, 'projects', 'modern')}</Text>
-            {data.projects.map((project, idx) => (
-              <View key={idx} style={modernStyles.experienceItem}>
-                <View style={modernStyles.expHeader}>
-                  <Text style={modernStyles.expTitle}>{project.name}</Text>
-                  {project.period && <Text style={modernStyles.expPeriod}>{project.period}</Text>}
-                </View>
-                {project.organization && <Text style={modernStyles.text}>{project.organization}</Text>}
-                {project.details && project.details.map((detail, dIdx) => (
-                  <View key={dIdx} style={modernStyles.bullet}>
-                    <Text style={modernStyles.bulletPoint}>•</Text>
-                    <Text style={modernStyles.bulletText}>{detail}</Text>
-                  </View>
-                ))}
-              </View>
-            ))}
-          </View>
-        );
-      
-      case 'certifications':
-        if (!data.certifications || data.certifications.length === 0) return null;
-        return (
-          <View style={modernStyles.section}>
-            <Text style={[modernStyles.sectionTitle, { color: primaryColor, borderBottomColor: primaryColor }]}>{getSectionLabel(data, 'certifications', 'modern')}</Text>
-            {data.certifications.map((cert, idx) => (
-              <View key={idx} style={modernStyles.bullet}>
-                <Text style={modernStyles.bulletPoint}>•</Text>
-                <Text style={modernStyles.bulletText}>{cert}</Text>
-              </View>
-            ))}
-          </View>
-        );
-      
-      case 'languages':
-        if (!data.languages || data.languages.length === 0) return null;
-        return (
-          <View style={modernStyles.section}>
-            <Text style={[modernStyles.sectionTitle, { color: primaryColor, borderBottomColor: primaryColor }]}>{getSectionLabel(data, 'languages', 'modern')}</Text>
-            <Text style={modernStyles.text}>{data.languages.join(', ')}</Text>
-          </View>
-        );
-      
-      default:
-        return null;
-    }
-  };
-
-  return (
-    <Document>
-      <Page size="A4" style={modernStyles.page}>
-        {/* Header */}
-        <View style={modernStyles.header}>
-          <Text style={[modernStyles.name, { color: primaryColor }]}>{data.name || 'Your Name'}</Text>
-          <View style={modernStyles.contactRow}>
-            {data.email && <Text style={modernStyles.contactItem}>{data.email}</Text>}
-            {data.email && data.phone && <Text style={modernStyles.separator}>|</Text>}
-            {data.phone && <Text style={modernStyles.contactItem}>{data.phone}</Text>}
-            {(data.email || data.phone) && data.location && <Text style={modernStyles.separator}>|</Text>}
-            {data.location && <Text style={modernStyles.contactItem}>{data.location}</Text>}
-          </View>
-        </View>
-
-        <View style={[modernStyles.headerLine, { backgroundColor: primaryColor }]} />
-
-        {/* All sections rendered in order */}
-        {sectionOrder.map((sectionKey) => (
-          <React.Fragment key={sectionKey}>
-            {renderSection(sectionKey)}
-          </React.Fragment>
-        ))}
-      </Page>
-    </Document>
-  );
-}
-
-// ============================================
-// EXECUTIVE TEMPLATE
-// ============================================
-const executiveStyles = StyleSheet.create({
-  page: {
-    padding: 40,
-    fontFamily: FONT_FAMILY,
-    fontSize: 11,
-    color: '#1f2937',
-  },
-  header: {
-    marginBottom: 12,
-    textAlign: 'center',
-  },
-  name: {
-    fontSize: 32,
-    fontWeight: 700,
-    color: '#111827',
-    letterSpacing: 0.5,
-  },
-  title: {
-    fontSize: 16,
-    fontWeight: 600,
-    color: '#b45309',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-    marginTop: 4,
-  },
-  contactRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: 6,
-    fontSize: 10,
-    color: '#4b5563',
-  },
-  contactItem: {
-    marginRight: 8,
-  },
-  separator: {
-    marginRight: 8,
-  },
-  headerLine: {
-    height: 2,
-    backgroundColor: '#b45309',
-    marginVertical: 14,
-  },
-  section: {
-    marginBottom: 14,
-  },
-  sectionTitle: {
-    fontSize: 12,
-    fontWeight: 700,
-    color: '#111827',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: 8,
-    paddingBottom: 4,
-    borderBottomWidth: 1,
-    borderBottomColor: '#d4a574',
-  },
-  experienceItem: {
-    marginBottom: 12,
-  },
-  expHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 2,
-  },
-  expTitleContainer: {},
-  expTitle: {
-    fontSize: 12,
-    fontWeight: 600,
-    color: '#111827',
-  },
-  expCompany: {
-    fontSize: 10,
-    color: '#4b5563',
-  },
-  expPeriod: {
-    fontSize: 10,
-    color: '#6b7280',
-  },
-  bullet: {
-    flexDirection: 'row',
-    marginTop: 4,
-  },
-  bulletPoint: {
-    width: 10,
-    fontSize: 11,
-    color: '#9ca3af',
-  },
-  bulletText: {
-    flex: 1,
-    fontSize: 10,
-    color: '#374151',
-  },
-  text: {
-    fontSize: 10,
-    lineHeight: 1.4,
-    color: '#374151',
-  },
-});
-
-export function ExecutivePDFTemplate({ data }: { data: ResumeData }) {
-  const sectionOrder = getSectionOrder(data);
-  const primaryColor = getPrimaryColor(data, 'executive');
-  
-  const renderSection = (sectionKey: SectionKey) => {
-    switch (sectionKey) {
-      case 'summary':
-        if (!data.summary || data.summary.trim().length === 0) return null;
-        return (
-          <View style={executiveStyles.section}>
-            <Text style={[executiveStyles.sectionTitle, { borderBottomColor: primaryColor }]}>{getSectionLabel(data, 'summary', 'executive')}</Text>
-            <Text style={executiveStyles.text}>{data.summary}</Text>
-          </View>
-        );
-      
-      case 'experience':
-        if (!data.experience || data.experience.length === 0) return null;
-        return (
-          <View style={executiveStyles.section}>
-            <Text style={[executiveStyles.sectionTitle, { borderBottomColor: primaryColor }]}>{getSectionLabel(data, 'experience', 'executive')}</Text>
-            {data.experience.map((exp, idx) => (
-              <View key={idx} style={executiveStyles.experienceItem}>
-                <View style={executiveStyles.expHeader}>
-                  <View style={executiveStyles.expTitleContainer}>
-                    <Text style={executiveStyles.expTitle}>{exp.title}</Text>
-                    <Text style={executiveStyles.expCompany}>{exp.company}</Text>
-                  </View>
-                  <Text style={executiveStyles.expPeriod}>{exp.period}</Text>
-                </View>
-                {exp.bullets && exp.bullets.map((bullet, bIdx) => (
-                  <View key={bIdx} style={executiveStyles.bullet}>
-                    <Text style={executiveStyles.bulletPoint}>•</Text>
-                    <Text style={executiveStyles.bulletText}>{bullet}</Text>
-                  </View>
-                ))}
-              </View>
-            ))}
-          </View>
-        );
-      
-      case 'skills':
-        if (!data.skills || data.skills.length === 0) return null;
-        return (
-          <View style={executiveStyles.section}>
-            <Text style={[executiveStyles.sectionTitle, { borderBottomColor: primaryColor }]}>{getSectionLabel(data, 'skills', 'executive')}</Text>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
-              {data.skills.map((skill, idx) => (
-                <Text key={idx} style={[executiveStyles.text, { marginRight: 8, marginBottom: 3 }]}>{skill}</Text>
-              ))}
-            </View>
-          </View>
-        );
-      
-      case 'education':
-        if (!data.education || data.education.length === 0) return null;
-        return (
-          <View style={executiveStyles.section}>
-            <Text style={[executiveStyles.sectionTitle, { borderBottomColor: primaryColor }]}>{getSectionLabel(data, 'education', 'executive')}</Text>
-            {data.education.map((edu, idx) => (
-              <View key={idx} style={executiveStyles.experienceItem}>
-                <View style={executiveStyles.expHeader}>
-                  <View style={executiveStyles.expTitleContainer}>
-                    <Text style={executiveStyles.expTitle}>{edu.degree}</Text>
-                    <Text style={executiveStyles.expCompany}>{edu.institution}</Text>
-                  </View>
-                  <Text style={executiveStyles.expPeriod}>{edu.period}</Text>
-                </View>
-                {edu.details && edu.details.map((detail, dIdx) => (
-                  <View key={dIdx} style={executiveStyles.bullet}>
-                    <Text style={executiveStyles.bulletPoint}>•</Text>
-                    <Text style={executiveStyles.bulletText}>{detail}</Text>
-                  </View>
-                ))}
-              </View>
-            ))}
-          </View>
-        );
-      
-      case 'projects':
-        if (!data.projects || data.projects.length === 0) return null;
-        return (
-          <View style={executiveStyles.section}>
-            <Text style={[executiveStyles.sectionTitle, { borderBottomColor: primaryColor }]}>{getSectionLabel(data, 'projects', 'executive')}</Text>
-            {data.projects.map((project, idx) => (
-              <View key={idx} style={executiveStyles.experienceItem}>
-                <View style={executiveStyles.expHeader}>
-                  <View style={executiveStyles.expTitleContainer}>
-                    <Text style={executiveStyles.expTitle}>{project.name}</Text>
-                    {project.organization && <Text style={executiveStyles.expCompany}>{project.organization}</Text>}
-                  </View>
-                  {project.period && <Text style={executiveStyles.expPeriod}>{project.period}</Text>}
-                </View>
-                {project.details && project.details.map((detail, dIdx) => (
-                  <View key={dIdx} style={executiveStyles.bullet}>
-                    <Text style={executiveStyles.bulletPoint}>•</Text>
-                    <Text style={executiveStyles.bulletText}>{detail}</Text>
-                  </View>
-                ))}
-              </View>
-            ))}
-          </View>
-        );
-      
-      case 'certifications':
-        if (!data.certifications || data.certifications.length === 0) return null;
-        return (
-          <View style={executiveStyles.section}>
-            <Text style={[executiveStyles.sectionTitle, { borderBottomColor: primaryColor }]}>{getSectionLabel(data, 'certifications', 'executive')}</Text>
-            {data.certifications.map((cert, idx) => (
-              <View key={idx} style={executiveStyles.bullet}>
-                <Text style={executiveStyles.bulletPoint}>•</Text>
-                <Text style={executiveStyles.bulletText}>{cert}</Text>
-              </View>
-            ))}
-          </View>
-        );
-      
-      case 'languages':
-        if (!data.languages || data.languages.length === 0) return null;
-        return (
-          <View style={executiveStyles.section}>
-            <Text style={[executiveStyles.sectionTitle, { borderBottomColor: primaryColor }]}>{getSectionLabel(data, 'languages', 'executive')}</Text>
-            <Text style={executiveStyles.text}>{data.languages.join(', ')}</Text>
-          </View>
-        );
-      
-      default:
-        return null;
-    }
-  };
-
-  return (
-    <Document>
-      <Page size="A4" style={executiveStyles.page}>
-        {/* Header */}
-        <View style={executiveStyles.header}>
-          <Text style={executiveStyles.name}>{data.name || 'Your Name'}</Text>
-          {data.title && <Text style={executiveStyles.title}>{data.title}</Text>}
-          <View style={executiveStyles.contactRow}>
-            {data.location && <Text style={executiveStyles.contactItem}>{data.location}</Text>}
-            {data.location && data.email && <Text style={executiveStyles.separator}>|</Text>}
-            {data.email && <Text style={executiveStyles.contactItem}>{data.email}</Text>}
-            {data.email && data.website && <Text style={executiveStyles.separator}>|</Text>}
-            {data.website && <Text style={executiveStyles.contactItem}>{data.website}</Text>}
-          </View>
-        </View>
-
-        <View style={[executiveStyles.headerLine, { backgroundColor: primaryColor }]} />
-
-        {/* All sections rendered in order */}
-        {sectionOrder.map((sectionKey) => (
-          <React.Fragment key={sectionKey}>
-            {renderSection(sectionKey)}
-          </React.Fragment>
-        ))}
-      </Page>
-    </Document>
-  );
-}
-
-// ============================================
-// TECHNICAL TEMPLATE
-// ============================================
-const technicalStyles = StyleSheet.create({
-  page: {
-    padding: 40,
-    fontFamily: FONT_FAMILY,
-    fontSize: 11,
-    color: '#1f2937',
-  },
-  header: {
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-  name: {
-    fontSize: 30,
-    fontWeight: 700,
-    color: '#1D61CB',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-  },
-  contactRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: 6,
-    fontSize: 10,
-    color: '#4b5563',
-  },
-  contactItem: {
-    marginHorizontal: 4,
-  },
-  separator: {
-    marginHorizontal: 4,
-  },
-  headerLine: {
-    height: 1,
-    backgroundColor: '#d1d5db',
-    marginVertical: 12,
-  },
-  section: {
-    marginBottom: 14,
-  },
-  sectionTitle: {
-    fontSize: 12,
-    fontWeight: 700,
-    color: '#1D61CB',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: 6,
-    paddingTop: 4,
-    paddingBottom: 4,
-    borderTopWidth: 1,
-    borderTopColor: '#1D61CB',
-    borderBottomWidth: 1,
-    borderBottomColor: '#1D61CB',
-  },
-  experienceItem: {
-    marginBottom: 12,
-  },
-  expHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 2,
-  },
-  expTitleContainer: {},
-  expTitle: {
-    fontSize: 12,
-    fontWeight: 600,
-    color: '#111827',
-  },
-  expCompany: {
-    fontSize: 10,
-    color: '#4b5563',
-  },
-  expPeriod: {
-    fontSize: 10,
-    color: '#1D61CB',
-  },
-  bullet: {
-    flexDirection: 'row',
-    marginTop: 4,
-  },
-  bulletPoint: {
-    width: 10,
-    fontSize: 11,
-    color: '#9ca3af',
-  },
-  bulletText: {
-    flex: 1,
-    fontSize: 10,
-    color: '#374151',
-  },
-  skillsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
-  skillItem: {
-    width: '33.33%',
-    fontSize: 10,
-    marginBottom: 3,
-    color: '#374151',
-  },
-  text: {
-    fontSize: 10,
-    lineHeight: 1.4,
-    color: '#374151',
-  },
-});
-
-export function TechnicalPDFTemplate({ data }: { data: ResumeData }) {
-  const sectionOrder = getSectionOrder(data);
-  const primaryColor = getPrimaryColor(data, 'technical');
-  
-  const renderSection = (sectionKey: SectionKey) => {
-    switch (sectionKey) {
-      case 'summary':
-        if (!data.summary || data.summary.trim().length === 0) return null;
-        return (
-          <View style={technicalStyles.section}>
-            <Text style={[technicalStyles.sectionTitle, { color: primaryColor, borderTopColor: primaryColor, borderBottomColor: primaryColor }]}>{getSectionLabel(data, 'summary', 'technical')}</Text>
-            <Text style={technicalStyles.text}>{data.summary}</Text>
-          </View>
-        );
-      
-      case 'experience':
-        if (!data.experience || data.experience.length === 0) return null;
-        return (
-          <View style={technicalStyles.section}>
-            <Text style={[technicalStyles.sectionTitle, { color: primaryColor, borderTopColor: primaryColor, borderBottomColor: primaryColor }]}>{getSectionLabel(data, 'experience', 'technical')}</Text>
-            {data.experience.map((exp, idx) => (
-              <View key={idx} style={technicalStyles.experienceItem}>
-                <View style={technicalStyles.expHeader}>
-                  <View style={technicalStyles.expTitleContainer}>
-                    <Text style={technicalStyles.expTitle}>{exp.title}</Text>
-                    <Text style={technicalStyles.expCompany}>{exp.company}</Text>
-                  </View>
-                  <Text style={[technicalStyles.expPeriod, { color: primaryColor }]}>{exp.period}</Text>
-                </View>
-                {exp.bullets && exp.bullets.map((bullet, bIdx) => (
-                  <View key={bIdx} style={technicalStyles.bullet}>
-                    <Text style={technicalStyles.bulletPoint}>•</Text>
-                    <Text style={technicalStyles.bulletText}>{bullet}</Text>
-                  </View>
-                ))}
-              </View>
-            ))}
-          </View>
-        );
-      
-      case 'skills':
-        if (!data.skills || data.skills.length === 0) return null;
-        return (
-          <View style={technicalStyles.section}>
-            <Text style={[technicalStyles.sectionTitle, { color: primaryColor, borderTopColor: primaryColor, borderBottomColor: primaryColor }]}>{getSectionLabel(data, 'skills', 'technical')}</Text>
-            <View style={technicalStyles.skillsGrid}>
-              {data.skills.map((skill, idx) => (
-                <Text key={idx} style={technicalStyles.skillItem}>{skill}</Text>
-              ))}
-            </View>
-          </View>
-        );
-      
-      case 'education':
-        if (!data.education || data.education.length === 0) return null;
-        return (
-          <View style={technicalStyles.section}>
-            <Text style={[technicalStyles.sectionTitle, { color: primaryColor, borderTopColor: primaryColor, borderBottomColor: primaryColor }]}>{getSectionLabel(data, 'education', 'technical')}</Text>
-            {data.education.map((edu, idx) => (
-              <View key={idx} style={technicalStyles.experienceItem}>
-                <View style={technicalStyles.expHeader}>
-                  <View style={technicalStyles.expTitleContainer}>
-                    <Text style={technicalStyles.expTitle}>{edu.degree}</Text>
-                    <Text style={technicalStyles.expCompany}>{edu.institution}</Text>
-                  </View>
-                  <Text style={[technicalStyles.expPeriod, { color: primaryColor }]}>{edu.period}</Text>
-                </View>
-                {edu.details && edu.details.map((detail, dIdx) => (
-                  <View key={dIdx} style={technicalStyles.bullet}>
-                    <Text style={technicalStyles.bulletPoint}>•</Text>
-                    <Text style={technicalStyles.bulletText}>{detail}</Text>
-                  </View>
-                ))}
-              </View>
-            ))}
-          </View>
-        );
-      
-      case 'projects':
-        if (!data.projects || data.projects.length === 0) return null;
-        return (
-          <View style={technicalStyles.section}>
-            <Text style={[technicalStyles.sectionTitle, { color: primaryColor, borderTopColor: primaryColor, borderBottomColor: primaryColor }]}>{getSectionLabel(data, 'projects', 'technical')}</Text>
-            {data.projects.map((project, idx) => (
-              <View key={idx} style={technicalStyles.experienceItem}>
-                <View style={technicalStyles.expHeader}>
-                  <View style={technicalStyles.expTitleContainer}>
-                    <Text style={technicalStyles.expTitle}>{project.name}</Text>
-                    {project.organization && <Text style={technicalStyles.expCompany}>{project.organization}</Text>}
-                  </View>
-                  {project.period && <Text style={[technicalStyles.expPeriod, { color: primaryColor }]}>{project.period}</Text>}
-                </View>
-                {project.details && project.details.map((detail, dIdx) => (
-                  <View key={dIdx} style={technicalStyles.bullet}>
-                    <Text style={technicalStyles.bulletPoint}>•</Text>
-                    <Text style={technicalStyles.bulletText}>{detail}</Text>
-                  </View>
-                ))}
-              </View>
-            ))}
-          </View>
-        );
-      
-      case 'certifications':
-        if (!data.certifications || data.certifications.length === 0) return null;
-        return (
-          <View style={technicalStyles.section}>
-            <Text style={[technicalStyles.sectionTitle, { color: primaryColor, borderTopColor: primaryColor, borderBottomColor: primaryColor }]}>{getSectionLabel(data, 'certifications', 'technical')}</Text>
-            {data.certifications.map((cert, idx) => (
-              <View key={idx} style={technicalStyles.bullet}>
-                <Text style={technicalStyles.bulletPoint}>•</Text>
-                <Text style={technicalStyles.bulletText}>{cert}</Text>
-              </View>
-            ))}
-          </View>
-        );
-      
-      case 'languages':
-        if (!data.languages || data.languages.length === 0) return null;
-        return (
-          <View style={technicalStyles.section}>
-            <Text style={[technicalStyles.sectionTitle, { color: primaryColor, borderTopColor: primaryColor, borderBottomColor: primaryColor }]}>{getSectionLabel(data, 'languages', 'technical')}</Text>
-            <Text style={technicalStyles.text}>{data.languages.join(', ')}</Text>
-          </View>
-        );
-      
-      default:
-        return null;
-    }
-  };
-
-  return (
-    <Document>
-      <Page size="A4" style={technicalStyles.page}>
-        {/* Header */}
-        <View style={technicalStyles.header}>
-          <Text style={[technicalStyles.name, { color: primaryColor }]}>{data.name || 'Your Name'}</Text>
-          <View style={technicalStyles.contactRow}>
-            {data.email && <Text style={technicalStyles.contactItem}>{data.email}</Text>}
-            {data.email && data.phone && <Text style={technicalStyles.separator}>|</Text>}
-            {data.phone && <Text style={technicalStyles.contactItem}>{data.phone}</Text>}
-            {(data.email || data.phone) && data.location && <Text style={technicalStyles.separator}>|</Text>}
-            {data.location && <Text style={technicalStyles.contactItem}>{data.location}</Text>}
-          </View>
-        </View>
-
-        {/* All sections rendered in order */}
-        {sectionOrder.map((sectionKey) => (
-          <React.Fragment key={sectionKey}>
-            {renderSection(sectionKey)}
-          </React.Fragment>
-        ))}
-
-        {/* Additional Information */}
-        {((data.languages && data.languages.length > 0) || (data.certifications && data.certifications.length > 0)) && (
-          <View style={technicalStyles.section}>
-            <Text style={technicalStyles.sectionTitle}>Additional Information</Text>
-            {data.languages && data.languages.length > 0 && (
-              <View style={technicalStyles.bullet}>
-                <Text style={technicalStyles.bulletPoint}>•</Text>
-                <Text style={technicalStyles.bulletText}>
-                  <Text style={{ fontWeight: 600 }}>Languages: </Text>
-                  {data.languages.join(', ')}
+            {extData.priorExperience && (
+              <View style={{ marginTop: 4 }}>
+                <Text style={classicStyles.bodyText}>
+                  <Text style={{ fontWeight: 'bold' }}>Prior Experience: </Text>
+                  {extData.priorExperience}
                 </Text>
               </View>
             )}
-            {data.certifications && data.certifications.length > 0 && (
-              <View style={technicalStyles.bullet}>
-                <Text style={technicalStyles.bulletPoint}>•</Text>
-                <Text style={technicalStyles.bulletText}>
-                  <Text style={{ fontWeight: 600 }}>Certifications: </Text>
-                  {data.certifications.join(', ')}
+          </View>
+        )}
+
+        {/* Education */}
+        {data.education && data.education.length > 0 && (
+          <View style={classicStyles.section}>
+            <Text style={classicStyles.sectionHeading}>EDUCATION</Text>
+            <View style={classicStyles.sectionUnderline} />
+            {data.education.map((edu, idx) => (
+              <View key={idx} style={{ marginBottom: 8 }}>
+                <View style={classicStyles.expHeaderRow}>
+                  <Text style={classicStyles.expTitle}>
+                    {edu.institution}{(edu as any).location ? `, ${(edu as any).location}` : ''}
+                  </Text>
+                  <Text style={classicStyles.expPeriod}>{edu.period || ''}</Text>
+                </View>
+                <Text style={classicStyles.expCompany}>{edu.degree}</Text>
+                {(edu as any).honors && (
+                  <Text style={classicStyles.bodyText}>{(edu as any).honors}</Text>
+                )}
+              </View>
+            ))}
+            {extData.executiveEducation && (
+              <View style={{ marginTop: 8 }}>
+                <Text style={classicStyles.bodyText}>
+                  <Text style={{ fontWeight: 'bold' }}>Executive Education: </Text>
+                  {extData.executiveEducation}
+                </Text>
+              </View>
+            )}
+          </View>
+        )}
+
+        {/* Skills */}
+        {data.skills && data.skills.length > 0 && (
+          <View style={classicStyles.section}>
+            <Text style={classicStyles.sectionHeading}>SKILLS</Text>
+            <View style={classicStyles.sectionUnderline} />
+            <Text style={classicStyles.bodyText}>{data.skills.join(' • ')}</Text>
+          </View>
+        )}
+
+        {/* Certifications */}
+        {data.certifications && data.certifications.length > 0 && (
+          <View style={classicStyles.section}>
+            <Text style={classicStyles.sectionHeading}>CERTIFICATIONS</Text>
+            <View style={classicStyles.sectionUnderline} />
+            {data.certifications.map((cert, idx) => (
+              <View key={idx} style={classicStyles.bulletRow}>
+                <Text style={classicStyles.bulletChar}>•</Text>
+                <Text style={classicStyles.bulletText}>{cert}</Text>
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* Languages */}
+        {data.languages && data.languages.length > 0 && (
+          <View style={classicStyles.section}>
+            <Text style={classicStyles.sectionHeading}>LANGUAGES</Text>
+            <View style={classicStyles.sectionUnderline} />
+            <Text style={classicStyles.bodyText}>{data.languages.join(', ')}</Text>
+          </View>
+        )}
+
+        {/* Additional Information */}
+        {extData.additionalInfo && (
+          <View style={classicStyles.section}>
+            <Text style={classicStyles.sectionHeading}>ADDITIONAL INFORMATION</Text>
+            <View style={classicStyles.sectionUnderline} />
+            {extData.additionalInfo.certifications && (
+              <View style={{ marginBottom: 6 }}>
+                <Text style={classicStyles.bodyText}>
+                  <Text style={{ fontWeight: 'bold' }}>Certifications: </Text>
+                  {extData.additionalInfo.certifications}
+                </Text>
+              </View>
+            )}
+            {extData.additionalInfo.boardPositions && (
+              <View style={{ marginBottom: 6 }}>
+                <Text style={classicStyles.bodyText}>
+                  <Text style={{ fontWeight: 'bold' }}>Board Positions: </Text>
+                  {extData.additionalInfo.boardPositions}
+                </Text>
+              </View>
+            )}
+            {extData.additionalInfo.speaking && (
+              <View style={{ marginBottom: 6 }}>
+                <Text style={classicStyles.bodyText}>
+                  <Text style={{ fontWeight: 'bold' }}>Speaking: </Text>
+                  {extData.additionalInfo.speaking}
+                </Text>
+              </View>
+            )}
+            {extData.additionalInfo.languages && (
+              <View style={{ marginBottom: 6 }}>
+                <Text style={classicStyles.bodyText}>
+                  <Text style={{ fontWeight: 'bold' }}>Languages: </Text>
+                  {extData.additionalInfo.languages}
+                </Text>
+              </View>
+            )}
+            {extData.additionalInfo.technical && (
+              <View style={{ marginBottom: 6 }}>
+                <Text style={classicStyles.bodyText}>
+                  <Text style={{ fontWeight: 'bold' }}>Technical: </Text>
+                  {extData.additionalInfo.technical}
                 </Text>
               </View>
             )}
@@ -1234,10 +364,505 @@ export function TechnicalPDFTemplate({ data }: { data: ResumeData }) {
   );
 }
 
-// ============================================
+// ============================================================================
+// MODERN TEMPLATE - Serif font, section heading with gray line
+// ============================================================================
+
+const modernStyles = StyleSheet.create({
+  page: {
+    padding: 45,
+    fontFamily: 'Times-Roman',
+    fontSize: 10,
+    color: '#333333',
+    lineHeight: 1.35,
+  },
+  headerSection: {
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  name: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#000000',
+    marginBottom: 16,
+  },
+  contactLine: {
+    fontSize: 9,
+    color: '#666666',
+  },
+  section: {
+    marginBottom: 16,
+  },
+  sectionHeadingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  sectionHeadingText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#000000',
+    marginRight: 10,
+    letterSpacing: 0.5,
+  },
+  sectionHeadingLine: {
+    flex: 1,
+    height: 0.75,
+    backgroundColor: '#CCCCCC',
+  },
+  summaryText: {
+    fontSize: 10,
+    color: '#333333',
+    lineHeight: 1.4,
+    textAlign: 'justify',
+  },
+  experienceItem: {
+    marginBottom: 10,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+    marginBottom: 1,
+  },
+  titleText: {
+    fontSize: 11,
+    fontWeight: 'bold',
+    color: '#000000',
+  },
+  dateText: {
+    fontSize: 10,
+    color: '#666666',
+  },
+  companyLine: {
+    fontSize: 10,
+    fontStyle: 'italic',
+    color: '#000000',
+    marginBottom: 2,
+  },
+  bulletRow: {
+    flexDirection: 'row',
+    marginBottom: 2,
+    paddingLeft: 14,
+  },
+  bulletChar: {
+    width: 14,
+    fontSize: 8,
+    color: '#333333',
+  },
+  bulletText: {
+    flex: 1,
+    fontSize: 9,
+    color: '#333333',
+    lineHeight: 1.3,
+  },
+  educationItem: {
+    marginBottom: 4,
+  },
+  degreeRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+  },
+  degreeText: {
+    fontSize: 11,
+    fontWeight: 'bold',
+    color: '#000000',
+  },
+  yearText: {
+    fontSize: 10,
+    color: '#666666',
+  },
+  institutionLine: {
+    fontSize: 10,
+    fontStyle: 'italic',
+    color: '#000000',
+  },
+  additionalRow: {
+    flexDirection: 'row',
+    marginBottom: 2,
+  },
+  additionalLabel: {
+    fontSize: 10,
+    fontWeight: 'bold',
+    color: '#333333',
+  },
+  additionalValue: {
+    flex: 1,
+    fontSize: 10,
+    color: '#333333',
+  },
+});
+
+export function ModernPDFTemplate({ data }: { data: ResumeData }) {
+  const contactParts = [data.phone, data.email, data.location].filter(Boolean);
+  const extData = data as any;
+
+  const SectionHeading = ({ title }: { title: string }) => (
+    <View style={modernStyles.sectionHeadingRow}>
+      <Text style={modernStyles.sectionHeadingText}>{title}</Text>
+      <View style={modernStyles.sectionHeadingLine} />
+    </View>
+  );
+
+  return (
+    <Document>
+      <Page size="A4" style={modernStyles.page}>
+        {/* Header - NO divider after contact */}
+        <View style={modernStyles.headerSection}>
+          <Text style={modernStyles.name}>{data.name || 'Your Name'}</Text>
+          <Text style={modernStyles.contactLine}>{contactParts.join(' · ')}</Text>
+        </View>
+
+        {/* Summary */}
+        {data.summary && (
+          <View style={modernStyles.section}>
+            <SectionHeading title="Summary" />
+            <Text style={modernStyles.summaryText}>{data.summary}</Text>
+          </View>
+        )}
+
+        {/* Experience */}
+        {data.experience && data.experience.length > 0 && (
+          <View style={modernStyles.section}>
+            <SectionHeading title="Experience" />
+            {data.experience.map((exp, idx) => (
+              <View key={idx} style={modernStyles.experienceItem}>
+                <View style={modernStyles.titleRow}>
+                  <Text style={modernStyles.titleText}>{exp.title}</Text>
+                  <Text style={modernStyles.dateText}>{exp.period || ''}</Text>
+                </View>
+                <Text style={modernStyles.companyLine}>
+                  {exp.company}{(exp as any).location ? ` – ${(exp as any).location}` : ''}
+                </Text>
+                {exp.bullets?.map((bullet, bIdx) => (
+                  <View key={bIdx} style={modernStyles.bulletRow}>
+                    <Text style={modernStyles.bulletChar}>•</Text>
+                    <Text style={modernStyles.bulletText}>{bullet}</Text>
+                  </View>
+                ))}
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* Education */}
+        {data.education && data.education.length > 0 && (
+          <View style={modernStyles.section}>
+            <SectionHeading title="Education" />
+            {data.education.map((edu, idx) => (
+              <View key={idx} style={modernStyles.educationItem}>
+                <View style={modernStyles.degreeRow}>
+                  <Text style={modernStyles.degreeText}>{edu.degree}</Text>
+                  <Text style={modernStyles.yearText}>{edu.period || ''}</Text>
+                </View>
+                <Text style={modernStyles.institutionLine}>{edu.institution}</Text>
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* Additional */}
+        <View style={modernStyles.section}>
+          <SectionHeading title="Additional" />
+          {extData.boardRoles && extData.boardRoles.length > 0 && (
+            <View style={modernStyles.additionalRow}>
+              <Text style={modernStyles.additionalLabel}>Board Roles: </Text>
+              <Text style={modernStyles.additionalValue}>{extData.boardRoles.join(' · ')}</Text>
+            </View>
+          )}
+          {data.certifications && data.certifications.length > 0 && (
+            <View style={modernStyles.additionalRow}>
+              <Text style={modernStyles.additionalLabel}>Certifications: </Text>
+              <Text style={modernStyles.additionalValue}>{data.certifications.join(' · ')}</Text>
+            </View>
+          )}
+          {extData.speaking && extData.speaking.length > 0 && (
+            <View style={modernStyles.additionalRow}>
+              <Text style={modernStyles.additionalLabel}>Speaking: </Text>
+              <Text style={modernStyles.additionalValue}>{extData.speaking.join(' · ')}</Text>
+            </View>
+          )}
+          {data.languages && data.languages.length > 0 && (
+            <View style={modernStyles.additionalRow}>
+              <Text style={modernStyles.additionalLabel}>Languages: </Text>
+              <Text style={modernStyles.additionalValue}>{data.languages.join(' · ')}</Text>
+            </View>
+          )}
+        </View>
+      </Page>
+    </Document>
+  );
+}
+
+// ============================================================================
+// EXECUTIVE TEMPLATE - Navy blue, no title under name, no header divider
+// ============================================================================
+
+const EXEC_COLORS = {
+  navy: '#003366',
+  black: '#000000',
+  darkGray: '#444444',
+};
+
+const executiveStyles = StyleSheet.create({
+  page: {
+    padding: 40,
+    fontFamily: 'Times-Roman',
+    fontSize: 10,
+    color: EXEC_COLORS.black,
+    lineHeight: 1.25,
+  },
+  header: {
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  name: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: EXEC_COLORS.navy,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    marginBottom: 12,
+  },
+  contact: {
+    fontSize: 9,
+    color: EXEC_COLORS.darkGray,
+  },
+  section: {
+    marginBottom: 10,
+  },
+  sectionHeading: {
+    fontSize: 11,
+    fontWeight: 'bold',
+    color: EXEC_COLORS.navy,
+    textTransform: 'uppercase',
+    borderBottomWidth: 2,
+    borderBottomColor: EXEC_COLORS.navy,
+    paddingBottom: 1,
+    marginBottom: 5,
+  },
+  summaryText: {
+    fontSize: 9,
+    color: EXEC_COLORS.black,
+    lineHeight: 1.3,
+    textAlign: 'justify',
+  },
+  coreCompetencies: {
+    fontSize: 9,
+    color: EXEC_COLORS.black,
+    textAlign: 'left',
+  },
+  experienceItem: {
+    marginBottom: 8,
+  },
+  jobTitle: {
+    fontSize: 10,
+    fontWeight: 'bold',
+    color: EXEC_COLORS.black,
+    marginBottom: 1,
+  },
+  companyLine: {
+    fontSize: 9,
+    color: EXEC_COLORS.black,
+    marginBottom: 2,
+  },
+  companyName: {
+    fontWeight: 'bold',
+  },
+  bulletRow: {
+    flexDirection: 'row',
+    marginBottom: 1,
+  },
+  bulletChar: {
+    width: 12,
+    fontSize: 9,
+    color: EXEC_COLORS.black,
+  },
+  bulletText: {
+    flex: 1,
+    fontSize: 9,
+    color: EXEC_COLORS.black,
+    lineHeight: 1.25,
+  },
+  educationItem: {
+    marginBottom: 6,
+  },
+  degreeText: {
+    fontSize: 10,
+    fontWeight: 'bold',
+    color: EXEC_COLORS.black,
+  },
+  institutionText: {
+    fontSize: 9,
+    color: EXEC_COLORS.black,
+  },
+  skillsRow: {
+    marginBottom: 2,
+  },
+  skillsLabel: {
+    fontSize: 9,
+    fontWeight: 'bold',
+    color: EXEC_COLORS.black,
+  },
+  skillsValue: {
+    fontSize: 9,
+    color: EXEC_COLORS.black,
+    fontWeight: 'normal',
+  },
+});
+
+export function ExecutivePDFTemplate({ data }: { data: ResumeData }) {
+  const contactParts = [data.phone, data.email, data.location].filter(Boolean);
+  const extData = data as any;
+
+  return (
+    <Document>
+      <Page size="A4" style={executiveStyles.page}>
+        {/* Header - NO title, NO divider */}
+        <View style={executiveStyles.header}>
+          <Text style={executiveStyles.name}>{(data.name || 'Your Name').toUpperCase()}</Text>
+          <Text style={executiveStyles.contact}>{contactParts.join(' | ')}</Text>
+        </View>
+
+        {/* Professional Summary */}
+        {data.summary && (
+          <View style={executiveStyles.section}>
+            <Text style={executiveStyles.sectionHeading}>PROFESSIONAL SUMMARY</Text>
+            <Text style={executiveStyles.summaryText}>{data.summary}</Text>
+          </View>
+        )}
+
+        {/* Core Competencies */}
+        {data.skills && data.skills.length > 0 && (
+          <View style={executiveStyles.section}>
+            <Text style={executiveStyles.sectionHeading}>CORE COMPETENCIES</Text>
+            <Text style={executiveStyles.coreCompetencies}>{data.skills.join(' | ')}</Text>
+          </View>
+        )}
+
+        {/* Professional Experience */}
+        {data.experience && data.experience.length > 0 && (
+          <View style={executiveStyles.section}>
+            <Text style={executiveStyles.sectionHeading}>PROFESSIONAL EXPERIENCE</Text>
+            {data.experience.map((exp, idx) => (
+              <View key={idx} style={executiveStyles.experienceItem}>
+                <Text style={executiveStyles.jobTitle}>{exp.title}</Text>
+                <Text style={executiveStyles.companyLine}>
+                  <Text style={executiveStyles.companyName}>{exp.company}</Text>
+                  {(exp as any).location ? ` | ${(exp as any).location}` : ''}
+                  {exp.period ? ` | ${exp.period}` : ''}
+                </Text>
+                {exp.bullets?.map((bullet, bIdx) => (
+                  <View key={bIdx} style={executiveStyles.bulletRow}>
+                    <Text style={executiveStyles.bulletChar}>•</Text>
+                    <Text style={executiveStyles.bulletText}>{bullet}</Text>
+                  </View>
+                ))}
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* Key Project Achievements */}
+        {extData.keyProjectAchievements && extData.keyProjectAchievements.length > 0 && (
+          <View style={executiveStyles.section}>
+            <Text style={executiveStyles.sectionHeading}>KEY PROJECT ACHIEVEMENTS</Text>
+            {extData.keyProjectAchievements.map((achievement: string, idx: number) => (
+              <View key={idx} style={executiveStyles.bulletRow}>
+                <Text style={executiveStyles.bulletChar}>•</Text>
+                <Text style={executiveStyles.bulletText}>{achievement}</Text>
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* Education */}
+        {data.education && data.education.length > 0 && (
+          <View style={executiveStyles.section}>
+            <Text style={executiveStyles.sectionHeading}>EDUCATION</Text>
+            {data.education.map((edu, idx) => (
+              <View key={idx} style={executiveStyles.educationItem}>
+                <Text style={executiveStyles.degreeText}>{edu.degree}</Text>
+                <Text style={executiveStyles.institutionText}>
+                  {[edu.institution, edu.period].filter(Boolean).join(', ')}
+                </Text>
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* Professional Certifications */}
+        {data.certifications && data.certifications.length > 0 && (
+          <View style={executiveStyles.section}>
+            <Text style={executiveStyles.sectionHeading}>PROFESSIONAL CERTIFICATIONS</Text>
+            {data.certifications.map((cert, idx) => (
+              <View key={idx} style={executiveStyles.bulletRow}>
+                <Text style={executiveStyles.bulletChar}>•</Text>
+                <Text style={executiveStyles.bulletText}>{cert}</Text>
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* Professional Affiliations */}
+        {extData.affiliations && extData.affiliations.length > 0 && (
+          <View style={executiveStyles.section}>
+            <Text style={executiveStyles.sectionHeading}>PROFESSIONAL AFFILIATIONS</Text>
+            {extData.affiliations.map((affiliation: string, idx: number) => (
+              <View key={idx} style={executiveStyles.bulletRow}>
+                <Text style={executiveStyles.bulletChar}>•</Text>
+                <Text style={executiveStyles.bulletText}>{affiliation}</Text>
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* Languages & Technical Skills */}
+        {(extData.languages || extData.technicalSkills) && (
+          <View style={executiveStyles.section}>
+            <Text style={executiveStyles.sectionHeading}>LANGUAGES & TECHNICAL SKILLS</Text>
+            {extData.languages && (
+              <View style={executiveStyles.skillsRow}>
+                <Text style={executiveStyles.skillsLabel}>
+                  Languages: <Text style={executiveStyles.skillsValue}>
+                    {typeof extData.languages === 'string' ? extData.languages : extData.languages.join(' | ')}
+                  </Text>
+                </Text>
+              </View>
+            )}
+            {extData.technicalSkills?.projectSoftware && (
+              <View style={executiveStyles.skillsRow}>
+                <Text style={executiveStyles.skillsLabel}>
+                  Project Software: <Text style={executiveStyles.skillsValue}>{extData.technicalSkills.projectSoftware}</Text>
+                </Text>
+              </View>
+            )}
+            {extData.technicalSkills?.technical && (
+              <View style={executiveStyles.skillsRow}>
+                <Text style={executiveStyles.skillsLabel}>
+                  Technical: <Text style={executiveStyles.skillsValue}>{extData.technicalSkills.technical}</Text>
+                </Text>
+              </View>
+            )}
+            {extData.technicalSkills?.standards && (
+              <View style={executiveStyles.skillsRow}>
+                <Text style={executiveStyles.skillsLabel}>
+                  Standards: <Text style={executiveStyles.skillsValue}>{extData.technicalSkills.standards}</Text>
+                </Text>
+              </View>
+            )}
+          </View>
+        )}
+      </Page>
+    </Document>
+  );
+}
+
+// ============================================================================
 // TEMPLATE SELECTOR HELPER
-// ============================================
-export type PDFTemplate = 'classic' | 'modern' | 'executive' | 'technical';
+// ============================================================================
+export type PDFTemplate = 'classic' | 'modern' | 'executive';
 
 export function getPDFTemplate(template: PDFTemplate, data: ResumeData) {
   switch (template) {
@@ -1247,10 +872,7 @@ export function getPDFTemplate(template: PDFTemplate, data: ResumeData) {
       return <ModernPDFTemplate data={data} />;
     case 'executive':
       return <ExecutivePDFTemplate data={data} />;
-    case 'technical':
-      return <TechnicalPDFTemplate data={data} />;
     default:
       return <ClassicPDFTemplate data={data} />;
   }
 }
-

@@ -2,12 +2,12 @@
 
 import React from 'react';
 import Image from 'next/image';
-import { FileText, Sparkles, Crown, Code, Check, Lightbulb } from 'lucide-react';
+import { FileText, Sparkles, Crown, Check, Lightbulb } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useLanguage } from '@/contexts/LanguageContext';
 
-export type Template = 'classic' | 'modern' | 'executive' | 'technical';
+export type Template = 'classic' | 'modern' | 'executive';
 
 interface TemplateSelectorProps {
   selectedTemplate: Template;
@@ -18,27 +18,24 @@ const templateIcons = {
   classic: FileText,
   modern: Sparkles,
   executive: Crown,
-  technical: Code,
 };
 
 const templateColors = {
   classic: 'bg-blue-50 text-blue-600',
   modern: 'bg-purple-50 text-purple-600',
   executive: 'bg-amber-50 text-amber-600',
-  technical: 'bg-green-50 text-green-600',
 };
 
 export function TemplateSelector({ selectedTemplate, onTemplateChange }: TemplateSelectorProps) {
   const { t, language } = useLanguage();
   const isRTL = language === 'ar';
 
-  const templates: Template[] = ['classic', 'modern', 'executive', 'technical'];
+  const templates: Template[] = ['classic', 'modern', 'executive'];
 
   const templateTags: Record<Template, string[]> = {
     classic: [t('templateSelector.classic.tag1'), t('templateSelector.classic.tag2')],
     modern: [t('templateSelector.modern.tag1'), t('templateSelector.modern.tag2')],
     executive: [t('templateSelector.executive.tag1'), t('templateSelector.executive.tag2')],
-    technical: [t('templateSelector.technical.tag1'), t('templateSelector.technical.tag2')],
   };
 
   return (

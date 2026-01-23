@@ -1,0 +1,222 @@
+{
+  "templateName": "Modern",
+  "description": "Clean sans-serif resume with gray section dividers and hollow bullets",
+
+  "page": {
+    "size": "A4",
+    "widthPt": 595,
+    "heightPt": 842,
+    "margins": {
+      "top": { "pt": 40 },
+      "bottom": { "pt": 40 },
+      "left": { "pt": 40 },
+      "right": { "pt": 40 }
+    },
+    "contentWidthPt": 515,
+    "fontFamily": "Helvetica, Arial, sans-serif",
+    "pdfFontFamily": "Helvetica"
+  },
+
+  "colors": {
+    "black": "#222222",
+    "darkGray": "#333333",
+    "mediumGray": "#666666",
+    "lightGray": "#888888",
+    "dividerGray": "#AAAAAA"
+  },
+
+  "header": {
+    "name": {
+      "fontFamily": "Helvetica",
+      "fontSize": { "pt": 18 },
+      "fontWeight": "bold",
+      "color": "#222222",
+      "textAlign": "center",
+      "textTransform": "none",
+      "letterSpacing": 0,
+      "marginBottom": { "pt": 4 }
+    },
+    "contactLine": {
+      "fontFamily": "Helvetica",
+      "fontSize": { "pt": 9 },
+      "fontWeight": "normal",
+      "color": "#666666",
+      "textAlign": "center",
+      "separator": " | ",
+      "order": ["phone", "email", "location"],
+      "marginBottom": { "pt": 12 }
+    },
+    "divider": {
+      "height": { "pt": 1 },
+      "color": "#222222",
+      "style": "solid",
+      "marginBottom": { "pt": 12 }
+    }
+  },
+
+  "sectionHeading": {
+    "fontFamily": "Helvetica",
+    "fontSize": { "pt": 11 },
+    "fontWeight": "bold",
+    "color": "#222222",
+    "textTransform": "none",
+    "textAlign": "left",
+    "marginTop": { "pt": 14 },
+    "marginBottom": { "pt": 0 },
+    "dividerLine": {
+      "style": "dashes",
+      "dashPattern": "————————",
+      "color": "#AAAAAA",
+      "extends": "toEndOfLine",
+      "verticalAlign": "middle",
+      "gapFromText": { "pt": 8 }
+    },
+    "spacingAfterDivider": { "pt": 8 }
+  },
+
+  "summary": {
+    "fontFamily": "Helvetica",
+    "fontSize": { "pt": 9 },
+    "fontWeight": "normal",
+    "color": "#333333",
+    "textAlign": "left",
+    "lineHeight": 1.4,
+    "marginBottom": { "pt": 0 }
+  },
+
+  "experience": {
+    "itemSpacing": { "pt": 12 },
+
+    "titleRow": {
+      "layout": "titleWithDividerAndDate",
+      "title": {
+        "fontFamily": "Helvetica",
+        "fontSize": { "pt": 10 },
+        "fontWeight": "bold",
+        "fontStyle": "normal",
+        "color": "#222222"
+      },
+      "dividerLine": {
+        "style": "dashes",
+        "dashPattern": "————————",
+        "color": "#AAAAAA",
+        "extends": "fillSpace",
+        "marginLeft": { "pt": 6 },
+        "marginRight": { "pt": 6 }
+      },
+      "date": {
+        "fontFamily": "Helvetica",
+        "fontSize": { "pt": 10 },
+        "fontWeight": "normal",
+        "fontStyle": "italic",
+        "color": "#666666",
+        "textAlign": "right"
+      },
+      "marginBottom": { "pt": 2 }
+    },
+
+    "companyLine": {
+      "fontFamily": "Helvetica",
+      "fontSize": { "pt": 9 },
+      "fontWeight": "normal",
+      "fontStyle": "italic",
+      "color": "#666666",
+      "format": "{company} – {location}",
+      "separator": " – ",
+      "marginBottom": { "pt": 4 }
+    },
+
+    "bullets": {
+      "character": "◦",
+      "characterSize": { "pt": 9 },
+      "characterColor": "#666666",
+      "indent": { "pt": 10 },
+      "hangingIndent": { "pt": 8 },
+      "spacingBetween": { "pt": 2 },
+      "text": {
+        "fontFamily": "Helvetica",
+        "fontSize": { "pt": 9 },
+        "fontWeight": "normal",
+        "color": "#333333",
+        "lineHeight": 1.35
+      }
+    }
+  },
+
+  "education": {
+    "itemSpacing": { "pt": 8 },
+
+    "degreeRow": {
+      "layout": "titleWithDividerAndDate",
+      "degree": {
+        "fontFamily": "Helvetica",
+        "fontSize": { "pt": 10 },
+        "fontWeight": "bold",
+        "color": "#222222"
+      },
+      "dividerLine": {
+        "style": "dashes",
+        "dashPattern": "————————",
+        "color": "#AAAAAA",
+        "extends": "fillSpace",
+        "marginLeft": { "pt": 6 },
+        "marginRight": { "pt": 6 }
+      },
+      "year": {
+        "fontFamily": "Helvetica",
+        "fontSize": { "pt": 10 },
+        "fontWeight": "normal",
+        "fontStyle": "italic",
+        "color": "#666666"
+      },
+      "marginBottom": { "pt": 2 }
+    },
+
+    "institutionLine": {
+      "fontFamily": "Helvetica",
+      "fontSize": { "pt": 9 },
+      "fontWeight": "normal",
+      "fontStyle": "italic",
+      "color": "#666666",
+      "marginBottom": { "pt": 0 }
+    }
+  },
+
+  "skills": {
+    "display": "inline",
+    "separator": " | ",
+    "fontFamily": "Helvetica",
+    "fontSize": { "pt": 9 },
+    "fontWeight": "normal",
+    "color": "#333333",
+    "textAlign": "left"
+  },
+
+  "typography": {
+    "fontSizes": {
+      "name": 18,
+      "sectionHeading": 11,
+      "jobTitle": 10,
+      "body": 9,
+      "contact": 9
+    },
+    "lineHeights": {
+      "tight": 1.2,
+      "normal": 1.35,
+      "relaxed": 1.4
+    }
+  },
+
+  "spacing": {
+    "betweenNameAndContact": { "pt": 4 },
+    "betweenContactAndHeaderDivider": { "pt": 12 },
+    "betweenHeaderDividerAndContent": { "pt": 12 },
+    "betweenSections": { "pt": 14 },
+    "betweenHeadingAndContent": { "pt": 8 },
+    "betweenExperienceItems": { "pt": 12 },
+    "betweenEducationItems": { "pt": 8 },
+    "betweenBulletPoints": { "pt": 2 },
+    "bulletIndent": { "pt": 10 },
+    "bulletTextOffset": { "pt": 8 }
+  }
+}

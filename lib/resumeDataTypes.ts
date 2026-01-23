@@ -61,12 +61,12 @@ export const DEFAULT_SECTION_ORDER: SectionKey[] = [
 /**
  * Default section labels by template type
  */
-export type TemplateType = 'classic' | 'modern' | 'executive' | 'technical';
+export type TemplateType = 'classic' | 'modern' | 'executive';
 
 export const DEFAULT_SECTION_LABELS: Record<TemplateType, Record<SectionKey, string>> = {
   classic: {
     summary: 'Summary',
-    experience: 'Work Experience',
+    experience: 'Experience',
     skills: 'Key Skills',
     education: 'Education',
     projects: 'Projects',
@@ -75,7 +75,7 @@ export const DEFAULT_SECTION_LABELS: Record<TemplateType, Record<SectionKey, str
   },
   modern: {
     summary: 'Summary',
-    experience: 'Professional Experience',
+    experience: 'Experience',
     skills: 'Skills',
     education: 'Education',
     projects: 'Projects',
@@ -83,21 +83,12 @@ export const DEFAULT_SECTION_LABELS: Record<TemplateType, Record<SectionKey, str
     languages: 'Languages',
   },
   executive: {
-    summary: 'Summary',
+    summary: 'Professional Summary',
     experience: 'Professional Experience',
-    skills: 'Skills',
+    skills: 'Core Competencies',
     education: 'Education',
-    projects: 'Projects',
-    certifications: 'Certifications',
-    languages: 'Languages',
-  },
-  technical: {
-    summary: 'Summary',
-    experience: 'Professional Experience',
-    skills: 'Technical Skills',
-    education: 'Education',
-    projects: 'Projects',
-    certifications: 'Certifications',
+    projects: 'Key Projects',
+    certifications: 'Professional Certifications',
     languages: 'Languages',
   },
 };
@@ -123,10 +114,9 @@ export function getSectionLabel(
  * Default primary colors by template type
  */
 export const DEFAULT_PRIMARY_COLORS: Record<TemplateType, string> = {
-  classic: '#004081',
-  modern: '#111827', // gray-900
-  executive: '#d4a574',
-  technical: '#1D61CB',
+  classic: '#004080',
+  modern: '#222222',
+  executive: '#8B4513',
 };
 
 /**

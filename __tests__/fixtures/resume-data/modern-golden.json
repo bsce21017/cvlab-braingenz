@@ -1,0 +1,91 @@
+{
+  "name": "Khalid Abdullah Al-Rashid",
+  "title": "Chief Technology Officer",
+  "email": "khalid.rashid@email.com",
+  "phone": "Phone",
+  "location": "City",
+  "summary": "Technology executive with two decades of experience transforming enterprises across the GCC. Fluent in organizational leadership, digital transformation and M&A technology integration. Board member and advisor to several regional technology organizations.",
+  "experience": [
+    {
+      "title": "Chief Technology Officer",
+      "company": "Al Habib Industrial Company",
+      "location": "Dammam",
+      "period": "2022 - Present",
+      "bullets": [
+        "Led SAR 600M digital transformation across 12 business units—45% cost reduction, 99.99% uptime",
+        "Built AI Center of Excellence: 15 ML models in production, 60% process automation",
+        "Migrated 200+ apps to hybrid cloud (Azure/AWS), saving SAR 45M annually",
+        "Led tech due diligence for SAR 1.6B in acquisitions; unified 5 ERPs to S/4HANA in 18 months",
+        "Achieved ISO 27001 and SOC 2 certifications; zero data breaches over 4 years",
+        "Scaled team from 120 to 290 across four countries; 87% retention rate"
+      ]
+    },
+    {
+      "title": "Vice President, Technology & Digital",
+      "company": "Saudi National Petroleum Services",
+      "location": "Al-Khobar",
+      "period": "2018 - 2022",
+      "bullets": [
+        "Deployed IoT predictive maintenance across 2,400 pieces of equipment, reducing unplanned downtime by 52% and generating SAR 120M in savings annually",
+        "Directed SAR 180M SAP implementation across finance, HR, supply chain, and project management; completed on-time and 12% under budget with 98% user adoption",
+        "Established technology innovation lab in partnership with KFUPM; incubated 8 internal startups with 3 commercialized generating SAR 25M in new revenue",
+        "Architected real-time data integration platform with Saudi Aramco, enabling automated compliance reporting and reducing administrative overhead by 64%"
+      ]
+    },
+    {
+      "title": "Director, IT Infrastructure & Operations",
+      "company": "Gulf Investment Corporation",
+      "location": "Safat",
+      "period": "2009 - 2014",
+      "bullets": [
+        "Built Tier III data center (USD 18M investment), achieving 99.995% uptime and supporting 150% growth in trading system capacity",
+        "Pioneered VMware virtualization initiative reducing physical server footprint by 70% and cutting energy costs by USD 1.2M annually",
+        "Designed and implemented business continuity framework with RTO <4 hours; successfully executed during 2011 regional crisis with zero data loss"
+      ]
+    },
+    {
+      "title": "Senior Manager, Applications Development",
+      "company": "Al-Rajhi Bank",
+      "location": "Riyadh",
+      "period": "2004 - 2009",
+      "bullets": [
+        "Launched Saudi's first mobile banking app—500K downloads, 5M monthly transactions",
+        "Rolled out Temenos T24 across 500+ branches with zero service disruption",
+        "Built applications development team from 12 to 35 engineers; established agile practices reducing defect rates by 65%"
+      ]
+    }
+  ],
+  "education": [
+    {
+      "degree": "MBA, Technology Management",
+      "institution": "INSEAD, France",
+      "period": "2012"
+    },
+    {
+      "degree": "BS Computer Engineering",
+      "institution": "KFUPM, Saudi Arabia",
+      "period": "2001"
+    }
+  ],
+  "skills": [],
+  "certifications": [
+    "TOGAF 9.2",
+    "AWS Solutions Architect Professional",
+    "CISSP",
+    "PMP"
+  ],
+  "languages": [
+    "Arabic (native)",
+    "English (fluent)",
+    "French (business)"
+  ],
+  "boardRoles": [
+    "Saudi IT Company (Technology Committee)",
+    "KFUPM Advisory Board",
+    "Saudi CIO Council"
+  ],
+  "speaking": [
+    "GITEX Global Keynote (2024)",
+    "Saudi IT Summit Panelist (2023)"
+  ]
+}

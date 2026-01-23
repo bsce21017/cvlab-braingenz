@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Template } from './TemplateSelector';
-import { ClassicTemplate, ModernTemplate, ExecutiveTemplate, TechnicalTemplate } from './templates';
+import { ClassicTemplate, ModernTemplate, ExecutiveTemplate } from './templates';
 import { parseResumeText } from '@/lib/parseResumeText';
 import { convertToResumeData, convertStructuredToResumeData, ResumeData } from '@/lib/resumeDataTypes';
 import { PreviewResponse } from '@/lib/api';
@@ -341,8 +341,6 @@ export function ResumePreview({ optimizedText, template = 'classic', onResumeDat
         return <ModernTemplate key={`modern-${template}`} data={displayData} />;
       case 'executive':
         return <ExecutiveTemplate key={`executive-${template}`} data={displayData} />;
-      case 'technical':
-        return <TechnicalTemplate key={`technical-${template}`} data={displayData} />;
       default:
         return <ClassicTemplate key={`classic-default-${template}`} data={displayData} />;
     }

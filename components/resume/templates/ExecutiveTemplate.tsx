@@ -1,54 +1,120 @@
 'use client';
 
 import React from 'react';
-import { Inter } from 'next/font/google';
-import { ResumeData, getSectionOrder, getSectionLabel, getPrimaryColor, SectionKey } from '@/lib/resumeDataTypes';
-
-const inter = Inter({ 
-  subsets: ['latin'],
-  display: 'swap',
-});
+import { ResumeData, getSectionOrder, getSectionLabel, SectionKey } from '@/lib/resumeDataTypes';
+import { getTemplateStyle } from '@/lib/templateStyles';
+import { ptToPx } from '@/lib/templateConverters';
 
 interface ExecutiveTemplateProps {
   data: ResumeData;
 }
 
 export function ExecutiveTemplate({ data }: ExecutiveTemplateProps) {
+  const templateStyle = getTemplateStyle('executive');
   const sectionOrder = getSectionOrder(data);
-  const primaryColor = getPrimaryColor(data, 'executive');
-  
+
+  // Executive template: Serif font, thick navy underlines, CORE COMPETENCIES with pipes
+  // NO title under name, NO header divider
+  const sectionHeadingStyle: React.CSSProperties = {
+    fontSize: `${ptToPx(templateStyle.fontSize.sectionHeading)}px`,
+    fontWeight: 700,
+    color: templateStyle.colors.sectionHeading,
+    textTransform: 'uppercase',
+    borderBottom: `${templateStyle.layout.dividerWeight}px solid ${templateStyle.colors.divider}`,
+    paddingBottom: '3px',
+    marginBottom: `${ptToPx(templateStyle.spacing.itemGap)}px`,
+  };
+
+  const sectionStyle: React.CSSProperties = {
+    marginBottom: `${ptToPx(templateStyle.spacing.sectionGap)}px`,
+  };
+
+  const expTitleStyle: React.CSSProperties = {
+    fontWeight: 700,
+    fontSize: `${ptToPx(templateStyle.fontSize.jobTitle)}px`,
+    color: templateStyle.colors.bodyText,
+    marginBottom: '1px',
+  };
+
+  const companyLineStyle: React.CSSProperties = {
+    fontSize: `${ptToPx(templateStyle.fontSize.body)}px`,
+    color: templateStyle.colors.bodyText,
+    marginBottom: '2px',
+  };
+
+  const companyNameStyle: React.CSSProperties = {
+    fontWeight: 700,
+  };
+
+  const bulletListStyle: React.CSSProperties = {
+    marginTop: '2px',
+    listStyleType: 'none',
+    padding: 0,
+  };
+
+  const bulletItemStyle: React.CSSProperties = {
+    fontSize: `${ptToPx(templateStyle.fontSize.body)}px`,
+    color: templateStyle.colors.bodyText,
+    marginBottom: '2px',
+    lineHeight: templateStyle.spacing.lineHeight,
+    display: 'flex',
+    gap: '8px',
+  };
+
   const renderSection = (sectionKey: SectionKey) => {
     switch (sectionKey) {
       case 'summary':
         if (!data.summary || data.summary.trim().length === 0) return null;
         return (
-          <div>
-            <h2 className="text-base font-bold text-gray-900 uppercase tracking-wide mb-2 pb-1 border-b" style={{ borderColor: primaryColor }}>
-              {getSectionLabel(data, 'summary', 'executive')}
-            </h2>
-            <p className="text-sm text-gray-700 leading-relaxed text-justify">{data.summary}</p>
+          <div key={sectionKey} style={sectionStyle}>
+            <h2 style={sectionHeadingStyle}>{getSectionLabel(data, 'summary', 'executive')}</h2>
+            <p style={{
+              fontSize: `${ptToPx(templateStyle.fontSize.body)}px`,
+              color: templateStyle.colors.bodyText,
+              lineHeight: templateStyle.spacing.lineHeight,
+              textAlign: 'justify',
+            }}>
+              {data.summary}
+            </p>
           </div>
         );
-      
+
+      case 'skills':
+        if (!data.skills || data.skills.length === 0) return null;
+        // Executive template shows skills as pipe-separated in a CORE COMPETENCIES section
+        return (
+          <div key={sectionKey} style={sectionStyle}>
+            <h2 style={sectionHeadingStyle}>{getSectionLabel(data, 'skills', 'executive')}</h2>
+            <p style={{
+              fontSize: `${ptToPx(templateStyle.fontSize.body)}px`,
+              color: templateStyle.colors.bodyText,
+              textAlign: 'left',
+              lineHeight: 1.6,
+            }}>
+              {data.skills.join(` ${templateStyle.layout.skillsSeparator} `)}
+            </p>
+          </div>
+        );
+
       case 'experience':
         if (!data.experience || data.experience.length === 0) return null;
         return (
-          <div>
-            <h2 className="text-base font-bold text-gray-900 uppercase tracking-wide mb-2 pb-1 border-b" style={{ borderColor: primaryColor }}>
-              {getSectionLabel(data, 'experience', 'executive')}
-            </h2>
-            <div className="space-y-4">
+          <div key={sectionKey} style={sectionStyle}>
+            <h2 style={sectionHeadingStyle}>{getSectionLabel(data, 'experience', 'executive')}</h2>
+            <div>
               {data.experience.map((exp, idx) => (
-                <div key={idx}>
-                  <div className="flex justify-between items-start">
-                    <h3 className="font-bold text-sm">{exp.title}, {exp.company}</h3>
-                    <span className="font-bold text-sm flex-shrink-0 ml-4">{exp.period}</span>
+                <div key={idx} style={{ marginBottom: idx < data.experience!.length - 1 ? '8px' : 0 }}>
+                  <div style={expTitleStyle}>{exp.title}</div>
+                  <div style={companyLineStyle}>
+                    <span style={companyNameStyle}>{exp.company}</span>
+                    {(exp as any).location && ` | ${(exp as any).location}`}
+                    {exp.period && ` | ${exp.period}`}
                   </div>
                   {exp.bullets && exp.bullets.length > 0 && (
-                    <ul className="mt-1 ml-3 space-y-0.5">
+                    <ul style={bulletListStyle}>
                       {exp.bullets.map((bullet, bIdx) => (
-                        <li key={bIdx} className="text-sm text-gray-700 flex gap-2">
-                          <span className="text-gray-600">•</span>
+                        <li key={bIdx} style={bulletItemStyle}>
+                          <span style={{ color: templateStyle.colors.bodyText }}>{templateStyle.layout.bulletStyle}</span>
                           <span>{bullet}</span>
                         </li>
                       ))}
@@ -59,42 +125,33 @@ export function ExecutiveTemplate({ data }: ExecutiveTemplateProps) {
             </div>
           </div>
         );
-      
-      case 'skills':
-        if (!data.skills || data.skills.length === 0) return null;
-        return (
-          <div>
-            <h2 className="text-base font-bold text-gray-900 uppercase tracking-wide mb-2 pb-1 border-b" style={{ borderColor: primaryColor }}>
-              {getSectionLabel(data, 'skills', 'executive')}
-            </h2>
-            <div className="grid grid-cols-3 gap-x-4 gap-y-1">
-              {data.skills.map((skill, idx) => (
-                <span key={idx} className="text-sm text-gray-700">{skill}</span>
-              ))}
-            </div>
-          </div>
-        );
-      
+
       case 'education':
         if (!data.education || data.education.length === 0) return null;
         return (
-          <div>
-            <h2 className="text-base font-bold text-gray-900 uppercase tracking-wide mb-2 pb-1 border-b" style={{ borderColor: primaryColor }}>
-              {getSectionLabel(data, 'education', 'executive')}
-            </h2>
-            <div className="space-y-3">
+          <div key={sectionKey} style={sectionStyle}>
+            <h2 style={sectionHeadingStyle}>{getSectionLabel(data, 'education', 'executive')}</h2>
+            <div>
               {data.education.map((edu, idx) => (
-                <div key={idx}>
-                  <div className="flex justify-between items-start">
-                    <h3 className="font-bold text-sm">{edu.degree}</h3>
-                    <span className="font-bold text-sm flex-shrink-0 ml-4">{edu.period}</span>
+                <div key={idx} style={{ marginBottom: idx < data.education!.length - 1 ? '6px' : 0 }}>
+                  <div style={{
+                    fontSize: `${ptToPx(templateStyle.fontSize.jobTitle)}px`,
+                    fontWeight: 700,
+                    color: templateStyle.colors.bodyText,
+                  }}>
+                    {edu.degree}
                   </div>
-                  <p className="text-sm text-gray-700">{edu.institution}</p>
+                  <div style={{
+                    fontSize: `${ptToPx(templateStyle.fontSize.body)}px`,
+                    color: templateStyle.colors.bodyText,
+                  }}>
+                    {edu.institution}{edu.period ? `, ${edu.period}` : ''}
+                  </div>
                   {edu.details && edu.details.length > 0 && (
-                    <ul className="mt-1 ml-3">
+                    <ul style={bulletListStyle}>
                       {edu.details.map((detail, dIdx) => (
-                        <li key={dIdx} className="text-sm text-gray-700 flex gap-2">
-                          <span className="text-gray-600">•</span>
+                        <li key={dIdx} style={bulletItemStyle}>
+                          <span style={{ color: templateStyle.colors.bodyText }}>{templateStyle.layout.bulletStyle}</span>
                           <span>{detail}</span>
                         </li>
                       ))}
@@ -105,29 +162,27 @@ export function ExecutiveTemplate({ data }: ExecutiveTemplateProps) {
             </div>
           </div>
         );
-      
+
       case 'projects':
         if (!data.projects || data.projects.length === 0) return null;
         return (
-          <div>
-            <h2 className="text-base font-bold text-gray-900 uppercase tracking-wide mb-2 pb-1 border-b" style={{ borderColor: primaryColor }}>
-              {getSectionLabel(data, 'projects', 'executive')}
-            </h2>
-            <div className="space-y-3">
+          <div key={sectionKey} style={sectionStyle}>
+            <h2 style={sectionHeadingStyle}>{getSectionLabel(data, 'projects', 'executive')}</h2>
+            <div>
               {data.projects.map((project, idx) => (
-                <div key={idx}>
-                  <div className="flex justify-between items-start">
-                    <h3 className="font-bold text-sm">{project.name}</h3>
-                    {project.period && <span className="font-bold text-sm flex-shrink-0 ml-4">{project.period}</span>}
-                  </div>
+                <div key={idx} style={{ marginBottom: idx < data.projects!.length - 1 ? '8px' : 0 }}>
+                  <div style={expTitleStyle}>{project.name}</div>
                   {project.organization && (
-                    <p className="text-sm text-gray-700">{project.organization}</p>
+                    <div style={companyLineStyle}>
+                      <span style={companyNameStyle}>{project.organization}</span>
+                      {project.period && ` | ${project.period}`}
+                    </div>
                   )}
                   {project.details && project.details.length > 0 && (
-                    <ul className="mt-1 ml-3">
+                    <ul style={bulletListStyle}>
                       {project.details.map((detail, dIdx) => (
-                        <li key={dIdx} className="text-sm text-gray-700 flex gap-2">
-                          <span className="text-gray-600">•</span>
+                        <li key={dIdx} style={bulletItemStyle}>
+                          <span style={{ color: templateStyle.colors.bodyText }}>{templateStyle.layout.bulletStyle}</span>
                           <span>{detail}</span>
                         </li>
                       ))}
@@ -138,72 +193,83 @@ export function ExecutiveTemplate({ data }: ExecutiveTemplateProps) {
             </div>
           </div>
         );
-      
+
       case 'certifications':
         if (!data.certifications || data.certifications.length === 0) return null;
         return (
-          <div>
-            <h2 className="text-base font-bold text-gray-900 uppercase tracking-wide mb-2 pb-1 border-b" style={{ borderColor: primaryColor }}>
-              {getSectionLabel(data, 'certifications', 'executive')}
-            </h2>
-            <ul className="ml-3 space-y-0.5">
+          <div key={sectionKey} style={sectionStyle}>
+            <h2 style={sectionHeadingStyle}>{getSectionLabel(data, 'certifications', 'executive')}</h2>
+            <ul style={bulletListStyle}>
               {data.certifications.map((cert, idx) => (
-                <li key={idx} className="text-sm text-gray-700 flex gap-2">
-                  <span className="text-gray-600">•</span>
+                <li key={idx} style={bulletItemStyle}>
+                  <span style={{ color: templateStyle.colors.bodyText }}>{templateStyle.layout.bulletStyle}</span>
                   <span>{cert}</span>
                 </li>
               ))}
             </ul>
           </div>
         );
-      
+
       case 'languages':
         if (!data.languages || data.languages.length === 0) return null;
         return (
-          <div>
-            <h2 className="text-base font-bold text-gray-900 uppercase tracking-wide mb-2 pb-1 border-b" style={{ borderColor: primaryColor }}>
-              {getSectionLabel(data, 'languages', 'executive')}
-            </h2>
-            <p className="text-sm text-gray-700">{data.languages.join(', ')}</p>
+          <div key={sectionKey} style={sectionStyle}>
+            <h2 style={sectionHeadingStyle}>{getSectionLabel(data, 'languages', 'executive')}</h2>
+            <p style={{
+              fontSize: `${ptToPx(templateStyle.fontSize.body)}px`,
+              color: templateStyle.colors.bodyText,
+            }}>
+              {data.languages.join(', ')}
+            </p>
           </div>
         );
-      
+
       default:
         return null;
     }
   };
 
+  // Build contact parts
+  const contactParts: string[] = [];
+  if (data.phone) contactParts.push(data.phone);
+  if (data.email) contactParts.push(data.email);
+  if (data.location) contactParts.push(data.location);
+
   return (
-    <div className={`bg-white p-8 min-h-[1000px] text-gray-800 ${inter.className}`}>
-      {/* Header */}
-      <div className="mb-4 text-center">
-        <h1 className="text-4xl font-bold text-gray-900 tracking-tight uppercase">
+    <div style={{
+      backgroundColor: 'white',
+      padding: `${ptToPx(templateStyle.spacing.pageMargin)}px`,
+      minHeight: '1000px',
+      fontFamily: `${templateStyle.fonts.primary}, ${templateStyle.fonts.fallback.join(', ')}`,
+      color: templateStyle.colors.bodyText,
+      lineHeight: templateStyle.spacing.lineHeight,
+    }}>
+      {/* Header - Name only, NO title, NO header divider */}
+      <div style={{ textAlign: 'center', marginBottom: '8px' }}>
+        <h1 style={{
+          fontSize: `${ptToPx(templateStyle.fontSize.name)}px`,
+          fontWeight: 700,
+          color: templateStyle.colors.name,
+          textTransform: 'uppercase',
+          letterSpacing: '1px',
+          margin: 0,
+        }}>
           {data.name || 'Your Name'}
         </h1>
-        {data.title && (
-          <p className="text-xl font-semibold text-gray-900 uppercase tracking-wide mt-1">
-            {data.title}
-          </p>
-        )}
-        <div className="mt-2 text-sm text-gray-600 flex items-center justify-center gap-2">
-          {data.location && <span>{data.location}</span>}
-          {data.location && data.email && <span>|</span>}
-          {data.email && <span>{data.email}</span>}
-          {data.email && data.website && <span>|</span>}
-          {data.website && <span>{data.website}</span>}
+        {/* NO title displayed - Executive template doesn't show title under name */}
+        <div style={{
+          marginTop: '6px',
+          fontSize: `${ptToPx(templateStyle.fontSize.contact)}px`,
+          color: templateStyle.colors.subtleText,
+        }}>
+          {contactParts.join(` ${templateStyle.layout.contactSeparator} `)}
         </div>
       </div>
 
-      <div className="h-0.5 mb-5" style={{ backgroundColor: primaryColor }} />
+      {/* NO header divider - Executive template goes straight to first section */}
 
-      <div className="space-y-5">
-        {/* All sections rendered in order */}
-        {sectionOrder.map((sectionKey) => (
-          <React.Fragment key={sectionKey}>
-            {renderSection(sectionKey)}
-          </React.Fragment>
-        ))}
-      </div>
+      {/* Sections */}
+      {sectionOrder.map((sectionKey) => renderSection(sectionKey))}
     </div>
   );
 }

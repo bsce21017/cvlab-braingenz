@@ -15,7 +15,8 @@ export const config = {
      * - public folder files
      * - api routes (handled separately)
      * - auth/callback (handled by route handler directly)
+     * - template-test (test page, no auth needed)
      */
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$|api|auth/callback).*)',
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$|api|auth/callback|template-test).*)',
   ],
 }

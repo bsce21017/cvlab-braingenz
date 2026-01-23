@@ -7,7 +7,14 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:visual": "vitest run __tests__/visual/",
+    "test:visual:update": "UPDATE_GOLDENS=true vitest run __tests__/visual/",
+    "generate-goldens": "npx tsx __tests__/utils/generate-goldens.ts",
+    "generate-test-outputs": "npx tsx __tests__/utils/generate-test-outputs.ts",
+    "compare-outputs": "npx tsx __tests__/utils/compare-outputs.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.952.0",
@@ -71,12 +78,20 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@playwright/test": "^1.45.0",
     "@types/node": "^20.17.6",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@types/uuid": "^10.0.0",
+    "@vitest/ui": "^2.0.0",
+    "adm-zip": "^0.5.14",
     "eslint": "^8.57.1",
     "eslint-config-next": "14.2.35",
-    "typescript": "^5.6.3"
+    "mammoth": "^1.8.0",
+    "pdf-to-img": "^4.0.0",
+    "pixelmatch": "^6.0.0",
+    "pngjs": "^7.0.0",
+    "typescript": "^5.6.3",
+    "vitest": "^2.0.0"
   }
 }

@@ -1,0 +1,108 @@
+{
+  "name": "Sarah Mitchell Johnson",
+  "title": "Senior Product Manager",
+  "email": "sarah.johnson@email.com",
+  "phone": "(555) 987-6543",
+  "location": "San Francisco, CA",
+  "website": "www.sarahjohnson.com",
+  "linkedin": "linkedin.com/in/sarahjohnson",
+  "summary": "Results-driven Senior Product Manager with 8+ years of experience leading cross-functional teams to deliver innovative digital products. Proven track record of increasing user engagement by 40% and driving $10M+ in revenue growth through strategic product initiatives. Passionate about leveraging data-driven insights to create exceptional user experiences.",
+  "experience": [
+    {
+      "title": "Senior Product Manager",
+      "company": "TechVenture Inc.",
+      "period": "2021 - Present",
+      "bullets": [
+        "Led product strategy for flagship SaaS platform serving 500K+ users, resulting in 35% increase in user retention",
+        "Managed cross-functional team of 15 engineers, designers, and analysts to deliver quarterly roadmap milestones",
+        "Implemented A/B testing framework that improved conversion rates by 28% across key user journeys",
+        "Collaborated with C-suite executives to define 3-year product vision and secure $5M development budget"
+      ]
+    },
+    {
+      "title": "Product Manager",
+      "company": "Digital Solutions Corp",
+      "period": "2018 - 2021",
+      "bullets": [
+        "Owned end-to-end product lifecycle for mobile app with 2M+ downloads",
+        "Conducted user research and competitive analysis to identify market opportunities",
+        "Reduced customer support tickets by 45% through UX improvements and self-service features",
+        "Partnered with engineering to implement agile methodologies, improving sprint velocity by 30%"
+      ]
+    },
+    {
+      "title": "Associate Product Manager",
+      "company": "StartupXYZ",
+      "period": "2016 - 2018",
+      "bullets": [
+        "Launched MVP that acquired 10K users in first quarter",
+        "Created product documentation and trained sales team on new features",
+        "Analyzed user behavior data to prioritize feature development"
+      ]
+    }
+  ],
+  "education": [
+    {
+      "degree": "Master of Business Administration (MBA)",
+      "institution": "Stanford Graduate School of Business",
+      "period": "2014 - 2016",
+      "details": [
+        "Concentration in Technology and Innovation",
+        "Dean's List, GPA: 3.8/4.0"
+      ]
+    },
+    {
+      "degree": "Bachelor of Science in Computer Science",
+      "institution": "University of California, Berkeley",
+      "period": "2010 - 2014",
+      "details": [
+        "Minor in Business Administration",
+        "Graduated with Honors"
+      ]
+    }
+  ],
+  "skills": [
+    "Product Strategy",
+    "Agile/Scrum",
+    "User Research",
+    "Data Analytics",
+    "A/B Testing",
+    "Roadmap Planning",
+    "Stakeholder Management",
+    "SQL",
+    "Tableau",
+    "JIRA",
+    "Figma",
+    "Product-Led Growth"
+  ],
+  "certifications": [
+    "Certified Scrum Product Owner (CSPO)",
+    "Google Analytics Certified",
+    "AWS Cloud Practitioner"
+  ],
+  "languages": [
+    "English (Native)",
+    "Spanish (Professional)",
+    "Mandarin (Conversational)"
+  ],
+  "projects": [
+    {
+      "name": "AI-Powered Recommendation Engine",
+      "organization": "TechVenture Inc.",
+      "period": "2022",
+      "details": [
+        "Spearheaded development of ML-based recommendation system",
+        "Increased average order value by 25%"
+      ]
+    },
+    {
+      "name": "Mobile App Redesign",
+      "organization": "Digital Solutions Corp",
+      "period": "2020",
+      "details": [
+        "Led complete UX overhaul of flagship mobile application",
+        "Achieved 4.8 star rating on App Store post-launch"
+      ]
+    }
+  ]
+}

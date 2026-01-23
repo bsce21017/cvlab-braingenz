@@ -1,0 +1,105 @@
+{
+  "name": "Khalid Mohammed Al-Harbi",
+  "title": "Senior Project Manager",
+  "email": "khalid.alharbi@email.com",
+  "phone": "(555) 987-4543",
+  "location": "City",
+  "summary": "Results-driven Senior Project Manager with 12+ years of experience delivering complex infrastructure and construction projects in Saudi Arabia and the GCC. Fluent in organizational leadership, digital transformation and M&A technology integration. Board member and advisor to several regional technology organizations. Proven expertise in managing project portfolios valued at SAR 150M+, stakeholder management, contract negotiation (FIDIC/NEC), lean construction, value engineering, HSE excellence, and PMIS systems. Seeking to leverage program management expertise to deliver Saudi's national development objectives.",
+  "skills": [
+    "Project Portfolio Management",
+    "P&L Oversight (SAR 150M+)",
+    "Stakeholder Management",
+    "Contract Negotiation (FIDIC/NEC)",
+    "Lean Construction",
+    "Value Engineering",
+    "HSE Excellence",
+    "PMIS Systems (Primavera P6, MS Project)",
+    "Agile/Scrum",
+    "Contractor Management"
+  ],
+  "experience": [
+    {
+      "title": "Senior Project Manager",
+      "company": "Al-Rashid Trading & Contracting Company (RTCC)",
+      "location": "Riyadh, Saudi Arabia",
+      "period": "03/2020 – Present",
+      "bullets": [
+        "Spearheaded delivery of SAR 180M water transmission pipeline project for National Water Company (NWC), achieving completion 6 weeks ahead of schedule and SAR 2M under budget through strategic resource optimization and parallel work execution",
+        "Directed SAR 250M substation construction project for Saudi Electricity Company (SEC), coordinating 45 subcontractors and achieving 99.2% quality compliance score on first-time inspections",
+        "Implemented Lean Construction methodology across project portfolio, reducing waste by 28% and improving productivity by 32%, resulting in SAR 15M cost avoidance over 4 years",
+        "Achieved 4.2 million man-hours with zero Lost Time Injuries (LTI), earning SEC HSE Excellence Award (2023) and establishing new company safety benchmark",
+        "Developed and mentored team of 12 Saudi project engineers through structured development program, with 8 achieving PMP certification and 3 promoted to Project Manager roles (Saudization initiative)"
+      ]
+    },
+    {
+      "title": "Project Manager",
+      "company": "Saudi Binladin Group (SBG)",
+      "location": "Jeddah / Makkah, Saudi Arabia",
+      "period": "06/2016 – 02/2020",
+      "bullets": [
+        "Delivered SAR 280M Al-Safar hotel development in Makkah Central Zone, managing complex logistics within restricted holy area access windows and achieving handover 3 weeks ahead of Hajj season deadline",
+        "Managed SAR 98M commercial complex fit-out project, coordinating 28 specialist subcontractors and achieving 97% client satisfaction score through proactive communication and change management",
+        "Negotiated SAR 15M in favorable contract variations through detailed claims management and documentation, recovering 100% of legitimate cost escalations",
+        "Introduced digital project controls dashboard reducing reporting cycle time from 5 days to real-time, improving executive decision-making and stakeholder transparency"
+      ]
+    },
+    {
+      "title": "Assistant Project Manager",
+      "company": "Dar Al-Handasah Consultants",
+      "location": "Riyadh, Saudi Arabia",
+      "period": "08/2012 – 05/2016",
+      "bullets": [
+        "Led value engineering workshops identifying SAR 22M in cost optimization opportunities while maintaining design intent and quality specifications",
+        "Coordinated multi-disciplinary design teams across 5 concurrent projects, ensuring integrated delivery and clash-free construction documentation",
+        "Developed standardized project management templates adopted company-wide, reducing project setup time by 40% and improving consistency across portfolio"
+      ]
+    },
+    {
+      "title": "Project Engineer / Site Engineer",
+      "company": "Al-Khodari Sons Company",
+      "location": "Riyadh, Saudi Arabia",
+      "period": "07/2008 – 07/2012",
+      "bullets": [
+        "Managed site operations for SAR 48M road construction project, supervising crew of 35 workers and achieving 98% quality acceptance rate on asphalt works",
+        "Developed detailed construction schedules and progress tracking systems, improving schedule adherence from 82% to 96%"
+      ]
+    }
+  ],
+  "keyProjectAchievements": [
+    "Total project value delivered: SAR 1.2B+ across 25+ projects over 12-year career",
+    "On-time delivery rate: 96% vs. industry average of 72%",
+    "On-budget delivery rate: 94% with cumulative SAR 45M in documented cost savings",
+    "Safety record: 8+ million man-hours with zero fatalities; 2 HSE Excellence Awards"
+  ],
+  "education": [
+    {
+      "degree": "Master of Business Administration (MBA) - Project Management Concentration",
+      "institution": "King Fahd University of Petroleum and Minerals (KFUPM), Dhahran",
+      "period": "2015"
+    },
+    {
+      "degree": "Bachelor of Science in Civil Engineering",
+      "institution": "King Saud University (KSU), Riyadh",
+      "period": "2012"
+    }
+  ],
+  "certifications": [
+    "Program Management Professional (PgMP) - Project Management Institute (PMI)",
+    "Project Management Professional (PMP) - Project Management Institute (PMI)",
+    "PRINCE2 Practitioner - AXELOS",
+    "Lean Six Sigma Green Belt - ASQ",
+    "NEBOSH International General Certificate in Occupational Health and Safety",
+    "Saudi Council of Engineers - Registered Professional Engineer"
+  ],
+  "affiliations": [
+    "Project Management Institute (PMI) - Saudi Arabia Chapter, Board Member (2022-Present)",
+    "Saudi Council of Engineers - Active Member",
+    "Chartered Institute of Building (CIOB) - Member"
+  ],
+  "languages": "Arabic (Native) | English (Fluent - IELTS 7.5)",
+  "technicalSkills": {
+    "projectSoftware": "Primavera P6, MS Project, Procore, Aconex, SAP PS Module",
+    "technical": "AutoCAD, Revit (Basic), Power BI, Advanced Excel, SharePoint",
+    "standards": "Aramco Engineering Standards, FIDIC Contracts, NEC4, Saudi Building Code"
+  }
+}

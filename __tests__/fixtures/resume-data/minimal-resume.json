@@ -1,0 +1,28 @@
+{
+  "name": "John Doe",
+  "email": "john.doe@email.com",
+  "phone": "(555) 123-4567",
+  "location": "New York, NY",
+  "summary": "Experienced software engineer with 5 years of expertise in web development.",
+  "experience": [
+    {
+      "title": "Senior Software Engineer",
+      "company": "Tech Corp",
+      "period": "2020 - Present",
+      "bullets": [
+        "Led development of key features",
+        "Mentored junior developers"
+      ]
+    }
+  ],
+  "education": [
+    {
+      "degree": "Bachelor of Science in Computer Science",
+      "institution": "State University",
+      "period": "2015 - 2019"
+    }
+  ],
+  "skills": ["JavaScript", "React", "Node.js", "TypeScript"],
+  "certifications": [],
+  "languages": ["English"]
+}

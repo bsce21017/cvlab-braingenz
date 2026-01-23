@@ -1,0 +1,85 @@
+{
+  "name": "Khalid Al-Rashid",
+  "title": "Chief Technology Officer",
+  "email": "khalid.alrashid@email.com",
+  "phone": "+966 50 XXX XXXX",
+  "location": "Dammam, Saudi Arabia",
+  "summary": "Chief Technology Officer with 21 years of progressive experience driving digital transformation across energy, petrochemical, and financial services sectors in the GCC. Proven track record delivering SAR 1.2B+ in operational efficiencies, leading technology teams of 350+ professionals, and managing budgets exceeding SAR 500M. Expertise in AI/ML strategy, cloud architecture, cybersecurity, and M&A technology integration. Board member and advisor to leading Saudi technology organizations.",
+  "experience": [
+    {
+      "title": "Position",
+      "company": "Company",
+      "location": "City",
+      "period": "2019 – Present",
+      "bullets": [
+        "Architected and executed SAR 800M digital transformation program across 12 business units, achieving 45% reduction in operational costs and 99.99% system uptime",
+        "Established AI Center of Excellence and deployed 15 machine learning models, reducing manual processes by 60% and improving demand forecasting accuracy from 72% to 94%",
+        "Directed integration of 200+ applications to hybrid cloud architecture (Azure/AWS), reducing infrastructure costs by SAR 45M annually",
+        "Led technology due diligence and integration for acquisitions totaling SAR 1.6B, consolidating 5 ERP systems into SAP S/4HANA within 18 months",
+        "Built 24/7 Security Operations Center and achieved ISO 27001 and SOC 2 Type II certifications; zero data breaches over 4 years",
+        "Scaled technology organization from 120 to 290 professionals across Saudi Arabia, UAE, Egypt, and India; maintained 87% retention rate"
+      ]
+    },
+    {
+      "title": "Position",
+      "company": "Company",
+      "location": "City",
+      "period": "2014 – 2019",
+      "bullets": [
+        "Implemented IoT-enabled predictive maintenance system across 2,400 pieces of equipment, reducing unplanned downtime by 52% and generating SAR 120M in savings annually",
+        "Directed SAR 180M SAP implementation across finance, HR, supply chain, and project management; completed on-time and 12% under budget with 98% user adoption",
+        "Established technology innovation lab in partnership with KFUPM; incubated 8 internal startups with 3 commercialized generating SAR 25M in new revenue",
+        "Architected real-time data integration platform with Saudi Aramco, enabling automated compliance reporting and reducing administrative overhead by 64%"
+      ]
+    },
+    {
+      "title": "Position",
+      "company": "Company",
+      "location": "City",
+      "period": "2009 – 2014",
+      "bullets": [
+        "Led construction of Tier III certified data center (USD 18M investment), achieving 99.995% uptime and supporting 150% growth in trading system capacity",
+        "Pioneered VMware virtualization initiative reducing physical server footprint by 70% and cutting energy costs by USD 1.2M annually",
+        "Designed and implemented business continuity framework with RTO <4 hours; successfully executed during 2011 regional crisis with zero data loss"
+      ]
+    },
+    {
+      "title": "Position",
+      "company": "Company",
+      "location": "City",
+      "period": "2004 – 2009",
+      "bullets": [
+        "Led development of first mobile banking application in Saudi market, achieving 500,000+ downloads in first year and increasing 28% monthly transactions",
+        "Managed implementation of Temenos T24 core banking system across 500+ branches with zero service disruption",
+        "Built applications development team from 12 to 35 engineers; established agile practices reducing defect rates by 65%"
+      ]
+    }
+  ],
+  "priorExperience": "Systems Analyst, SABIC, Jubail (2003–2004); Software Developer, Accenture Middle East, Riyadh (2001–2003)",
+  "education": [
+    {
+      "institution": "INSEAD",
+      "location": "Fontainebleau, France",
+      "degree": "Master of Business Administration, Technology Management",
+      "period": "2012"
+    },
+    {
+      "institution": "King Fahd University of Petroleum & Minerals",
+      "location": "Dhahran, Saudi Arabia",
+      "degree": "Bachelor of Science in Computer Engineering",
+      "period": "2001",
+      "honors": "First Class Honors, Dean's List"
+    }
+  ],
+  "executiveEducation": "Digital Transformation Leadership, MIT Sloan (2023); AI for Business Leaders, Harvard Business School Online (2022)",
+  "additionalInfo": {
+    "certifications": "TOGAF 9.2 Certified Enterprise Architect; AWS Solutions Architect Professional; CISSP; PMP",
+    "boardPositions": "Board Member, Technology Committee, Saudi Information Technology Company (2022–Present); Advisory Board, KFUPM Computer Engineering Department (2020–Present); Member, Saudi CIO Council (2019–Present)",
+    "speaking": "Keynote, \"AI-Driven Industrial Transformation,\" GITEX Global, Dubai (2024); Panelist, \"Cloud Adoption in GCC,\" Saudi IT Summit (2023)",
+    "languages": "Arabic (Native), English (Fluent), French (Business Proficient)",
+    "technical": "Enterprise Architecture, AI/ML Strategy, Cloud (AWS/Azure), Cybersecurity, SAP S/4HANA, Agile/DevOps, Data Analytics"
+  },
+  "skills": [],
+  "certifications": [],
+  "languages": []
+}

@@ -11,6 +11,8 @@ import {
   Packer,
   Paragraph,
   TextRun,
+  Tab,
+  TabStopType,
   AlignmentType,
   Table,
   TableRow,
@@ -30,9 +32,14 @@ import { ResumeData } from "./resumeDataTypes";
 // FONT & SIZE CONFIGURATION
 // ============================================================================
 
-// Using Arial - it's truly cross-platform (available on Windows, Mac, Linux)
-// Calibri is Windows-only and causes issues on Mac
-const FONT_FAMILY = "Arial";
+// Font families for different templates
+const FONT_FAMILIES = {
+  serif: "Times New Roman",      // Classic template - matches golden reference
+  sansSerif: "Arial",            // Modern/Executive templates
+};
+
+// Default font (for backwards compatibility)
+const FONT_FAMILY = FONT_FAMILIES.sansSerif;
 
 // Tailwind to docx size conversion (docx uses half-points)
 // text-sm = 14px = 10.5pt = 21 half-points
@@ -46,6 +53,13 @@ const FONT_SIZES = {
   "text-xl": 30, // 20px - subtitle
   "text-3xl": 45, // 30px - name (most templates)
   "text-4xl": 54, // 36px - name (executive)
+};
+
+// Classic template sizes (matching golden reference - uses points × 2 for half-points)
+const CLASSIC_SIZES = {
+  name: 36,           // 18pt
+  sectionHeading: 22, // 11pt
+  body: 20,           // 10pt
 };
 
 // Spacing constants in twips (1 twip = 1/20 point)
@@ -62,10 +76,9 @@ const SPACING = {
 // Color constants matching Tailwind colors (without #)
 const COLORS = {
   // Primary colors for each template
-  classicBlue: "2563EB", // blue-600
-  modernBlack: "000000", // black
-  executiveAmber: "B45309", // amber-700
-  technicalBlue: "1D4ED8", // blue-700
+  classicBlue: "004080", // Navy blue
+  modernBlack: "222222", // Near black
+  executiveAmber: "8B4513", // Saddle brown
 
   // Gray scale
   gray900: "111827",
@@ -135,6 +148,25 @@ const createNumberingConfig = (): INumberingOptions => ({
         },
       ],
     },
+    {
+      reference: "resume-bullets-hollow",
+      levels: [
+        {
+          level: 0,
+          format: LevelFormat.BULLET,
+          text: "◦",
+          alignment: AlignmentType.LEFT,
+          style: {
+            paragraph: {
+              indent: {
+                left: convertInchesToTwip(0.25),
+                hanging: convertInchesToTwip(0.15),
+              },
+            },
+          },
+        },
+      ],
+    },
   ],
 });
 
@@ -166,14 +198,18 @@ function createBulletParagraph(
     size?: number;
     color?: string;
     spacingAfter?: number;
+    bulletStyle?: "solid" | "hollow";
+    font?: string;
   } = {},
 ): Paragraph {
+  const bulletRef = options.bulletStyle === "hollow" ? "resume-bullets-hollow" : "resume-bullets";
   return new Paragraph({
-    numbering: { reference: "resume-bullets", level: 0 },
+    numbering: { reference: bulletRef, level: 0 },
     children: [
       createTextRun(text, {
         size: options.size || FONT_SIZES["text-sm"],
         color: options.color || COLORS.gray700,
+        font: options.font,
       }),
     ],
     spacing: { after: options.spacingAfter ?? SPACING.xs },
@@ -206,89 +242,63 @@ function createLeftRightLine(
     leftSize?: number;
     rightSize?: number;
     spacingAfter?: number;
-    rightColPercent?: number; // default 35 when left exists
+    rightColPercent?: number; // unused, kept for API compatibility
+    font?: string; // Font family override
+    contentWidthTwips?: number; // Content width in twips
   } = {},
-): Table {
+): Paragraph {
   const leftText = (left ?? "").trim();
   const rightText = (right ?? "").trim();
+  const fontFamily = options.font ?? FONT_FAMILY;
 
   const after = options.spacingAfter ?? SPACING.xs;
 
-  const rightPara = new Paragraph({
-    children: [
-      createTextRun(rightText, {
-        bold: options.rightBold,
-        size: options.rightSize ?? FONT_SIZES["text-sm"],
-        color: options.rightColor ?? COLORS.black,
-      }),
-    ],
-    alignment: AlignmentType.RIGHT,
-    spacing: { after },
-    keepNext: true,
-  });
+  // Use tab stops for Google Docs compatibility
+  // Content width: 6.77" (A4 with 0.75" margins) = 9749 twips
+  const totalWidth = options.contentWidthTwips ?? convertInchesToTwip(6.77);
 
-  // ✅ If left is empty, use ONE full-width cell (no fake left column spacing)
+  // If left is empty, just right-align the text
   if (!leftText) {
-    return new Table({
-      width: { size: 100, type: WidthType.PERCENTAGE },
-      layout: TableLayoutType.FIXED,
-      borders: NO_BORDERS,
-      rows: [
-        new TableRow({
-          children: [
-            new TableCell({
-              width: { size: 100, type: WidthType.PERCENTAGE },
-              borders: NO_CELL_BORDERS,
-              margins: ZERO_CELL_MARGINS,
-              verticalAlign: VerticalAlign.TOP,
-              children: [rightPara],
-            }),
-          ],
+    return new Paragraph({
+      children: [
+        createTextRun(rightText, {
+          bold: options.rightBold,
+          size: options.rightSize ?? FONT_SIZES["text-sm"],
+          color: options.rightColor ?? COLORS.black,
+          font: fontFamily,
         }),
       ],
+      alignment: AlignmentType.RIGHT,
+      spacing: { after },
+      keepNext: true,
     });
   }
 
-  // Normal case: left + right in two columns
-  const rightPct = Math.min(45, Math.max(25, options.rightColPercent ?? 35));
-  const leftPct = 100 - rightPct;
-
-  const leftPara = new Paragraph({
+  // Use a right-aligned tab stop at the end of the content area
+  return new Paragraph({
+    tabStops: [
+      {
+        type: TabStopType.RIGHT,
+        position: totalWidth,
+      },
+    ],
     children: [
       createTextRun(leftText, {
         bold: options.leftBold,
         size: options.leftSize ?? FONT_SIZES["text-sm"],
         color: options.leftColor ?? COLORS.black,
+        font: fontFamily,
+      }),
+      new TextRun({ children: [new Tab()] }),
+      createTextRun(rightText, {
+        bold: options.rightBold,
+        size: options.rightSize ?? FONT_SIZES["text-sm"],
+        color: options.rightColor ?? COLORS.black,
+        font: fontFamily,
       }),
     ],
     spacing: { after },
     keepNext: true,
-  });
-
-  return new Table({
-    width: { size: 100, type: WidthType.PERCENTAGE },
-    layout: TableLayoutType.FIXED,
-    borders: NO_BORDERS,
-    rows: [
-      new TableRow({
-        children: [
-          new TableCell({
-            width: { size: leftPct, type: WidthType.PERCENTAGE },
-            borders: NO_CELL_BORDERS,
-            margins: ZERO_CELL_MARGINS,
-            verticalAlign: VerticalAlign.TOP,
-            children: [leftPara],
-          }),
-          new TableCell({
-            width: { size: rightPct, type: WidthType.PERCENTAGE },
-            borders: NO_CELL_BORDERS,
-            margins: ZERO_CELL_MARGINS,
-            verticalAlign: VerticalAlign.TOP,
-            children: [rightPara],
-          }),
-        ],
-      }),
-    ],
   });
 }
 
@@ -323,20 +333,35 @@ export async function downloadResumeAsWord(
       case "executive":
         generateExecutiveTemplate(data, children);
         break;
-      case "technical":
-        generateTechnicalTemplate(data, children);
-        break;
       default:
         generateClassicTemplate(data, children);
     }
+
+    // Page settings based on template
+    // Classic: A4, serif font, 0.75" margins
+    // Modern: A4, sans-serif font, 40pt (~0.56") margins (from spec)
+    // Executive: A4, serif font, 40pt margins
+    const isClassic = template === "classic";
+    const isModern = template === "modern";
+
+    // All templates use A4 size
+    const pageWidth = convertInchesToTwip(8.27);   // A4 width
+    const pageHeight = convertInchesToTwip(11.69); // A4 height
+
+    // Margins: Classic uses 0.75", Modern/Executive use 40pt (~0.56")
+    const pageMargin = isClassic ? convertInchesToTwip(0.75) : 40 * 20; // 40pt = 800 twips
+
+    // Font settings
+    const defaultFont = (isClassic || template === "executive") ? FONT_FAMILIES.serif : FONT_FAMILIES.sansSerif;
+    const defaultSize = isClassic ? CLASSIC_SIZES.body : FONT_SIZES["text-sm"];
 
     const doc = new Document({
       styles: {
         default: {
           document: {
             run: {
-              font: FONT_FAMILY,
-              size: FONT_SIZES["text-sm"],
+              font: defaultFont,
+              size: defaultSize,
             },
           },
         },
@@ -347,14 +372,14 @@ export async function downloadResumeAsWord(
           properties: {
             page: {
               size: {
-                width: convertInchesToTwip(8.5), // US Letter width
-                height: convertInchesToTwip(11), // US Letter height
+                width: pageWidth,
+                height: pageHeight,
               },
               margin: {
-                top: convertInchesToTwip(0.5),
-                right: convertInchesToTwip(0.5),
-                bottom: convertInchesToTwip(0.5),
-                left: convertInchesToTwip(0.5),
+                top: pageMargin,
+                right: pageMargin,
+                bottom: pageMargin,
+                left: pageMargin,
               },
             },
           },
@@ -382,132 +407,133 @@ export async function downloadResumeAsWord(
   }
 }
 
+/**
+ * Generate resume as Word document buffer (for Node.js/testing)
+ * Returns a Buffer instead of triggering browser download
+ */
+export async function generateResumeAsWordBuffer(
+  data: ResumeData,
+  template: string,
+): Promise<Buffer> {
+  const children: (Paragraph | Table)[] = [];
+
+  // Generate template-specific content
+  switch (template) {
+    case "classic":
+      generateClassicTemplate(data, children);
+      break;
+    case "modern":
+      generateModernTemplate(data, children);
+      break;
+    case "executive":
+      generateExecutiveTemplate(data, children);
+      break;
+    default:
+      generateClassicTemplate(data, children);
+  }
+
+  // Page settings based on template
+  // Classic: A4, serif font, 0.75" margins
+  // Modern: A4, sans-serif font, 40pt (~0.56") margins (from spec)
+  // Executive: A4, serif font, 40pt margins
+  const isClassic = template === "classic";
+
+  // All templates use A4 size
+  const pageWidth = convertInchesToTwip(8.27);   // A4 width
+  const pageHeight = convertInchesToTwip(11.69); // A4 height
+
+  // Margins: Classic uses 0.75", Modern/Executive use 40pt (~0.56")
+  const pageMargin = isClassic ? convertInchesToTwip(0.75) : 40 * 20; // 40pt = 800 twips
+
+  // Font settings
+  const defaultFont = (isClassic || template === "executive") ? FONT_FAMILIES.serif : FONT_FAMILIES.sansSerif;
+  const defaultSize = isClassic ? CLASSIC_SIZES.body : FONT_SIZES["text-sm"];
+
+  const doc = new Document({
+    styles: {
+      default: {
+        document: {
+          run: {
+            font: defaultFont,
+            size: defaultSize,
+          },
+        },
+      },
+    },
+    numbering: createNumberingConfig(),
+    sections: [
+      {
+        properties: {
+          page: {
+            size: {
+              width: pageWidth,
+              height: pageHeight,
+            },
+            margin: {
+              top: pageMargin,
+              right: pageMargin,
+              bottom: pageMargin,
+              left: pageMargin,
+            },
+          },
+        },
+        children: children,
+      },
+    ],
+  });
+
+  return await Packer.toBuffer(doc);
+}
+
 // ============================================================================
 // CLASSIC TEMPLATE
-// Two-column layout: Left column for section headers, right for content
-// Blue name header, blue dividers, blue section labels
+// Single-column layout matching golden reference:
+// - Times New Roman font
+// - All black colors
+// - Centered name with contact below
+// - Full-width underlined section headings
+// - A4 page size
 // ============================================================================
 
 function generateClassicTemplate(
   data: ResumeData,
   children: (Paragraph | Table)[],
 ): void {
-  const primaryColor = COLORS.classicBlue;
+  const BLACK = COLORS.black;
+  const FONT = FONT_FAMILIES.serif;
 
-  // ==================== HEADER ====================
-  // Name - centered, uppercase, blue, bold
-  children.push(
-    new Paragraph({
-      children: [
-        createTextRun((data.name || "Your Name").toUpperCase(), {
-          bold: true,
-          size: FONT_SIZES["text-3xl"],
-          color: primaryColor,
-        }),
-      ],
-      alignment: AlignmentType.CENTER,
-      spacing: { after: SPACING.md },
-    }),
-  );
-
-  // Contact info - centered, gray
-  const contactParts: string[] = [];
-  if (data.email) contactParts.push(data.email);
-  if (data.phone) contactParts.push(data.phone);
-  if (data.location) contactParts.push(data.location);
-
-  if (contactParts.length > 0) {
-    children.push(
-      new Paragraph({
-        children: [
-          createTextRun(contactParts.join(" | "), {
-            size: FONT_SIZES["text-sm"],
-            color: COLORS.gray600,
-          }),
-        ],
-        alignment: AlignmentType.CENTER,
-        spacing: { after: SPACING.lg },
-      }),
-    );
-  }
-
-  // Blue divider line
-  children.push(
-    new Paragraph({
-      spacing: { after: SPACING["2xl"] },
-      border: {
-        bottom: {
-          color: primaryColor,
-          size: 4, // thin line
-          style: BorderStyle.SINGLE,
-        },
-      },
-    }),
-  );
-
-  // ==================== TWO-COLUMN SECTION HELPER ====================
-  // Left column: ~1.75 inches for section label (increased for better spacing)
-  // Right column: remaining space for content
-  const LEFT_COL_WIDTH = 2520; // ~1.75 inches in twips
-  const RIGHT_COL_WIDTH = 8280; // Remaining width in twips (total ~10800 for 7.5" content area)
-
-  const createTwoColumnSection = (
-    heading: string | string[], // Can be multiline like "WORK\nEXPERIENCE"
-    contentBlocks: (Paragraph | Table)[],
-  ): Table => {
-    // Handle multiline headings
-    const headingLines = Array.isArray(heading) ? heading : heading.split("\n");
-    const headingParagraphs = headingLines.map(
-      (line, idx) =>
-        new Paragraph({
-          children: [
-            createTextRun(line.toUpperCase(), {
-              bold: true,
-              size: FONT_SIZES["text-base"],
-              color: primaryColor,
-            }),
-          ],
-          spacing: { after: idx < headingLines.length - 1 ? 0 : 0 },
-        }),
-    );
-
-    return new Table({
-      width: { size: 100, type: WidthType.PERCENTAGE },
-      layout: TableLayoutType.FIXED,
-      borders: NO_BORDERS,
-      rows: [
-        new TableRow({
-          children: [
-            // Left column - section heading
-            new TableCell({
-              width: { size: LEFT_COL_WIDTH, type: WidthType.DXA },
-              borders: NO_CELL_BORDERS,
-              verticalAlign: VerticalAlign.TOP,
-              children: headingParagraphs,
-            }),
-            // Right column - content
-            new TableCell({
-              width: { size: RIGHT_COL_WIDTH, type: WidthType.DXA },
-              borders: NO_CELL_BORDERS,
-              verticalAlign: VerticalAlign.TOP,
-              children:
-                contentBlocks.length > 0 ? contentBlocks : [new Paragraph({})],
-            }),
-          ],
-        }),
-      ],
+  // Helper to create text with classic styling
+  const classicText = (
+    text: string,
+    options: { bold?: boolean; italic?: boolean; size?: number } = {},
+  ): TextRun => {
+    return new TextRun({
+      text,
+      font: FONT,
+      size: options.size ?? CLASSIC_SIZES.body,
+      color: BLACK,
+      bold: options.bold,
+      italics: options.italic,
     });
   };
 
-  // Section divider - very thin blue line
-  const addSectionDivider = (): void => {
+  // Helper to create section with underlined heading
+  const createSection = (heading: string): void => {
     children.push(
       new Paragraph({
-        spacing: { before: SPACING.xl, after: SPACING.xl },
+        children: [classicText(heading.toUpperCase(), { bold: true, size: CLASSIC_SIZES.sectionHeading })],
+        spacing: { before: SPACING.lg, after: SPACING.xs },
+        keepNext: true,
+      }),
+    );
+    // Underline
+    children.push(
+      new Paragraph({
+        spacing: { after: SPACING.sm },
         border: {
           bottom: {
-            color: primaryColor,
-            size: 2, // very thin line
+            color: BLACK,
+            size: 1,
             style: BorderStyle.SINGLE,
           },
         },
@@ -515,1336 +541,315 @@ function generateClassicTemplate(
     );
   };
 
-  // ==================== SUMMARY SECTION ====================
-  if (data.summary && data.summary.trim().length > 0) {
-    const summaryContent: (Paragraph | Table)[] = [
+  // ==================== HEADER ====================
+  // Name - centered, uppercase, bold
+  children.push(
+    new Paragraph({
+      children: [
+        new TextRun({
+          text: (data.name || "Your Name").toUpperCase(),
+          font: FONT,
+          size: CLASSIC_SIZES.name,
+          bold: true,
+          color: BLACK,
+          characterSpacing: 40, // Letter spacing (in twips, ~2pt)
+        }),
+      ],
+      alignment: AlignmentType.CENTER,
+      spacing: { after: SPACING.lg }, // More space after name
+    }),
+  );
+
+  // Contact info - centered, bullet separator
+  const contactParts: string[] = [];
+  if (data.phone) contactParts.push(data.phone);
+  if (data.email) contactParts.push(data.email);
+  if (data.location) contactParts.push(data.location);
+
+  if (contactParts.length > 0) {
+    children.push(
       new Paragraph({
-        children: [
-          createTextRun(data.summary, {
-            size: FONT_SIZES["text-sm"],
-            color: COLORS.gray700,
-          }),
-        ],
-        alignment: AlignmentType.BOTH, // justified text
+        children: [classicText(contactParts.join(" • "))],
+        alignment: AlignmentType.CENTER,
+        spacing: { after: SPACING.xs }, // Less space before summary
       }),
-    ];
-    children.push(createTwoColumnSection("SUMMARY", summaryContent));
-    addSectionDivider();
+    );
   }
 
-  // ==================== WORK EXPERIENCE SECTION ====================
+  // ==================== SUMMARY SECTION ====================
+  if (data.summary && data.summary.trim().length > 0) {
+    createSection("SUMMARY");
+    children.push(
+      new Paragraph({
+        children: [classicText(data.summary)],
+        spacing: { after: SPACING.xs },
+      }),
+    );
+  }
+
+  // ==================== EXPERIENCE SECTION ====================
   if (data.experience && data.experience.length > 0) {
-    const expContent: (Paragraph | Table)[] = [];
+    createSection("EXPERIENCE");
 
     data.experience.forEach((exp, idx) => {
-      // Line 1: Job Title (bold)
-      expContent.push(
-        new Paragraph({
-          children: [
-            createTextRun(exp.title || "", {
-              bold: true,
-              size: FONT_SIZES["text-sm"],
-              color: COLORS.black,
-            }),
-          ],
-          spacing: { after: SPACING.xs },
-          keepNext: true, // Keep with next line to avoid orphans
+      // Position title (left) and period (right)
+      children.push(
+        createLeftRightLine(exp.title || "", exp.period || "", {
+          leftBold: true,
+          rightBold: false,
+          leftColor: BLACK,
+          rightColor: BLACK,
+          leftSize: CLASSIC_SIZES.body,
+          rightSize: CLASSIC_SIZES.body,
+          spacingAfter: 0,
+          font: FONT,
         }),
       );
 
-      // Line 2: Company | Location (left) AND Period (right) - FIXED (no wrap)
-      const companyParts: string[] = [];
-      if (exp.company) companyParts.push(exp.company);
-      if ((exp as any).location) companyParts.push((exp as any).location);
-
-      const left = companyParts.join(" | ");
-      const right = exp.period || "";
-
-      if (right) {
-        expContent.push(
-          createLeftRightLine(left, right, {
-            leftBold: true,
-            rightBold: true,
-            leftColor: COLORS.black,
-            rightColor: COLORS.black,
-            leftSize: FONT_SIZES["text-sm"],
-            rightSize: FONT_SIZES["text-sm"],
-            spacingAfter: SPACING.xs,
-            rightColPercent: 35, // give the date enough space so it never wraps
-          }),
-        );
-      } else {
-        // No period: just a normal paragraph
-        expContent.push(
+      // Company, Location (italic)
+      const companyLine = [exp.company, (exp as any).location].filter(Boolean).join(", ");
+      if (companyLine) {
+        children.push(
           new Paragraph({
-            children: [
-              createTextRun(left, {
-                bold: true,
-                size: FONT_SIZES["text-sm"],
-                color: COLORS.black,
-              }),
-            ],
+            children: [classicText(companyLine, { italic: true })],
             spacing: { after: SPACING.xs },
-            keepNext: true,
           }),
         );
       }
 
-      const isLastExp = idx === data.experience!.length - 1;
-      const gapAfterExp = isLastExp ? SPACING["2xl"] : SPACING.sm;
-
       // Bullets
       if (exp.bullets && exp.bullets.length > 0) {
-        exp.bullets.forEach((bullet, bIdx) => {
-          const isLastBullet = bIdx === exp.bullets!.length - 1;
-          expContent.push(
-            // ✅ FIX
-            createBulletParagraph(bullet, {
-              size: FONT_SIZES["text-sm"],
-              color: COLORS.gray700,
-              spacingAfter: isLastBullet ? gapAfterExp : SPACING.xs,
+        exp.bullets.forEach((bullet) => {
+          children.push(
+            new Paragraph({
+              children: [
+                classicText("•  "),
+                classicText(bullet),
+              ],
+              indent: { left: convertInchesToTwip(0.15), hanging: convertInchesToTwip(0.15) },
+              spacing: { after: SPACING.xs },
             }),
           );
         });
       }
 
-      // // Spacing between experiences
-      // if (idx < data.experience!.length - 1) {
-      //   const hasBullets = !!(exp.bullets && exp.bullets.length > 0);
-      //   expContent.push(createSpacer(hasBullets ? SPACING.lg : SPACING.sm));
-      // }
+      // Spacing between experience items
+      if (idx < data.experience!.length - 1) {
+        children.push(new Paragraph({ spacing: { after: SPACING.md } }));
+      }
     });
 
-    children.push(createTwoColumnSection(["WORK", "EXPERIENCE"], expContent));
-    addSectionDivider();
+    // Prior Experience (if present)
+    if ((data as any).priorExperience) {
+      children.push(
+        new Paragraph({
+          children: [
+            classicText("Prior Experience: ", { bold: true }),
+            classicText((data as any).priorExperience),
+          ],
+          spacing: { before: SPACING.sm, after: SPACING.xs },
+        }),
+      );
+    }
   }
 
   // ==================== EDUCATION SECTION ====================
   if (data.education && data.education.length > 0) {
-    const eduContent: (Paragraph | Table)[] = [];
+    createSection("EDUCATION");
 
     data.education.forEach((edu, idx) => {
-      // Degree (left) and period (right) - FIXED (no wrap)
-      const left = edu.degree || "";
-      const right = edu.period || "";
+      // Institution, Location (bold) with year on right
+      const institutionLine = [edu.institution, (edu as any).location].filter(Boolean).join(", ");
+      children.push(
+        createLeftRightLine(institutionLine, edu.period || "", {
+          leftBold: true,
+          rightBold: false,
+          leftColor: BLACK,
+          rightColor: BLACK,
+          leftSize: CLASSIC_SIZES.body,
+          rightSize: CLASSIC_SIZES.body,
+          spacingAfter: 0,
+          font: FONT,
+        }),
+      );
 
-      if (right) {
-        eduContent.push(
-          createLeftRightLine(left, right, {
-            leftBold: true,
-            rightBold: true,
-            leftColor: COLORS.black,
-            rightColor: COLORS.black,
-            spacingAfter: SPACING.xs,
-            rightColPercent: 35,
-          }),
-        );
-      } else {
-        eduContent.push(
+      // Degree (italic)
+      if (edu.degree) {
+        children.push(
           new Paragraph({
-            children: [
-              createTextRun(left, {
-                bold: true,
-                size: FONT_SIZES["text-sm"],
-                color: COLORS.black,
-              }),
-            ],
+            children: [classicText(edu.degree, { italic: true })],
             spacing: { after: SPACING.xs },
-            keepNext: true,
           }),
         );
       }
 
-      // Institution
-      if (edu.institution) {
-        eduContent.push(
+      // Honors
+      if ((edu as any).honors) {
+        children.push(
           new Paragraph({
-            children: [
-              createTextRun(edu.institution, {
-                size: FONT_SIZES["text-sm"],
-                color: COLORS.gray700,
-              }),
-            ],
-            spacing: { after: SPACING.xs }, // Reduced from SPACING.sm
+            children: [classicText((edu as any).honors)],
+            spacing: { after: SPACING.xs },
           }),
         );
       }
 
-      // Details (if any)
-      if (edu.details && edu.details.length > 0) {
-        edu.details.forEach((detail) => {
-          eduContent.push(
-            createBulletParagraph(detail, {
-              size: FONT_SIZES["text-sm"],
-              color: COLORS.gray700,
-              spacingAfter: SPACING.xs,
-            }),
-          );
-        });
-      }
-
+      // Spacing between education items
       if (idx < data.education!.length - 1) {
-        eduContent.push(createSpacer(SPACING.md)); // Reduced from SPACING.lg
+        children.push(new Paragraph({ spacing: { after: SPACING.sm } }));
       }
     });
 
-    children.push(createTwoColumnSection("EDUCATION", eduContent));
-    addSectionDivider();
+    // Executive Education (if present)
+    if ((data as any).executiveEducation) {
+      children.push(
+        new Paragraph({
+          children: [
+            classicText("Executive Education: ", { bold: true }),
+            classicText((data as any).executiveEducation),
+          ],
+          spacing: { before: SPACING.sm, after: SPACING.xs },
+        }),
+      );
+    }
   }
 
-  // ==================== SKILLS SECTION (2-column grid) ====================
-  if (data.skills && data.skills.length > 0) {
-    // Create a nested 2-column table for skills
-    const skillsPerColumn = Math.ceil(data.skills.length / 2);
-    const leftSkills = data.skills.slice(0, skillsPerColumn);
-    const rightSkills = data.skills.slice(skillsPerColumn);
+  // ==================== ADDITIONAL INFORMATION SECTION ====================
+  const additionalInfo = (data as any).additionalInfo;
+  if (additionalInfo) {
+    createSection("ADDITIONAL INFORMATION");
 
-    const skillsTable = new Table({
-      width: { size: 100, type: WidthType.PERCENTAGE },
-      layout: TableLayoutType.FIXED,
-      borders: NO_BORDERS,
-      rows: [
-        new TableRow({
-          children: [
-            new TableCell({
-              width: { size: 50, type: WidthType.PERCENTAGE },
-              borders: NO_CELL_BORDERS,
-              children: leftSkills.map((skill) =>
-                createBulletParagraph(skill, {
-                  size: FONT_SIZES["text-sm"],
-                  color: COLORS.gray700,
-                  spacingAfter: SPACING.xs,
-                }),
-              ),
-            }),
-            new TableCell({
-              width: { size: 50, type: WidthType.PERCENTAGE },
-              borders: NO_CELL_BORDERS,
-              children:
-                rightSkills.length > 0
-                  ? rightSkills.map((skill) =>
-                      createBulletParagraph(skill, {
-                        size: FONT_SIZES["text-sm"],
-                        color: COLORS.gray700,
-                        spacingAfter: SPACING.xs,
-                      }),
-                    )
-                  : [new Paragraph({})],
-            }),
-          ],
-        }),
-      ],
-    });
+    const infoItems = [
+      { label: "Certifications", value: additionalInfo.certifications },
+      { label: "Board Positions", value: additionalInfo.boardPositions },
+      { label: "Speaking", value: additionalInfo.speaking },
+      { label: "Languages", value: additionalInfo.languages },
+      { label: "Technical", value: additionalInfo.technical },
+    ];
 
-    // Create a proper two-column section with the skills table embedded
-    const skillsSectionTable = new Table({
-      width: { size: 100, type: WidthType.PERCENTAGE },
-      layout: TableLayoutType.FIXED,
-      borders: NO_BORDERS,
-      rows: [
-        new TableRow({
-          children: [
-            new TableCell({
-              width: { size: LEFT_COL_WIDTH, type: WidthType.DXA },
-              borders: NO_CELL_BORDERS,
-              verticalAlign: VerticalAlign.TOP,
-              children: [
-                new Paragraph({
-                  children: [
-                    createTextRun("KEY SKILLS", {
-                      bold: true,
-                      size: FONT_SIZES["text-base"],
-                      color: primaryColor,
-                    }),
-                  ],
-                }),
-              ],
-            }),
-            new TableCell({
-              width: { size: RIGHT_COL_WIDTH, type: WidthType.DXA },
-              borders: NO_CELL_BORDERS,
-              verticalAlign: VerticalAlign.TOP,
-              children: [skillsTable],
-            }),
-          ],
-        }),
-      ],
-    });
-
-    children.push(skillsSectionTable);
-    addSectionDivider();
-  }
-
-  // ==================== PROJECTS SECTION ====================
-  if (data.projects && data.projects.length > 0) {
-    const projectContent: (Paragraph | Table)[] = [];
-
-    data.projects.forEach((project, idx) => {
-      const left = project.name || "";
-      const right = project.period || "";
-
-      // Project name (left) and period (right) - FIXED (no wrap)
-      if (right) {
-        projectContent.push(
-          createLeftRightLine(left, right, {
-            leftBold: true,
-            rightBold: true,
-            leftColor: COLORS.black,
-            rightColor: COLORS.black,
-            spacingAfter: SPACING.xs,
-            rightColPercent: 35,
-          }),
-        );
-      } else {
-        projectContent.push(
+    infoItems.forEach((item) => {
+      if (item.value) {
+        children.push(
           new Paragraph({
             children: [
-              createTextRun(left, {
-                bold: true,
-                size: FONT_SIZES["text-sm"],
-                color: COLORS.black,
-              }),
-            ],
-            spacing: { after: SPACING.xs },
-          }),
-        );
-      }
-
-      // Organization (if any)
-      if (project.organization) {
-        projectContent.push(
-          new Paragraph({
-            children: [
-              createTextRun(project.organization, {
-                size: FONT_SIZES["text-sm"],
-                color: COLORS.gray700,
-              }),
+              classicText(`${item.label}: `, { bold: true }),
+              classicText(item.value),
             ],
             spacing: { after: SPACING.sm },
           }),
         );
       }
-
-      // Details
-      if (project.details && project.details.length > 0) {
-        project.details.forEach((detail) => {
-          projectContent.push(
-            createBulletParagraph(detail, {
-              size: FONT_SIZES["text-sm"],
-              color: COLORS.gray700,
-              spacingAfter: SPACING.xs,
-            }),
-          );
-        });
-      }
-
-      if (idx < data.projects!.length - 1) {
-        projectContent.push(createSpacer(SPACING.lg));
-      }
     });
-
-    children.push(createTwoColumnSection("PROJECTS", projectContent));
-    addSectionDivider();
   }
 
-  // ==================== CERTIFICATIONS SECTION ====================
-  if (data.certifications && data.certifications.length > 0) {
-    const certContent: (Paragraph | Table)[] = data.certifications.map((cert) =>
-      createBulletParagraph(cert, {
-        size: FONT_SIZES["text-sm"],
-        color: COLORS.gray700,
-        spacingAfter: SPACING.xs,
-      }),
-    );
-    children.push(createTwoColumnSection("CERTIFICATIONS", certContent));
-    addSectionDivider();
-  }
+  // Fallback: If no additionalInfo object but has old-style arrays
+  if (!additionalInfo) {
+    // Skills section
+    if (data.skills && data.skills.length > 0) {
+      createSection("SKILLS");
+      children.push(
+        new Paragraph({
+          children: [classicText(data.skills.join("; "))],
+          spacing: { after: SPACING.xs },
+        }),
+      );
+    }
 
-  // ==================== LANGUAGES SECTION ====================
-  if (data.languages && data.languages.length > 0) {
-    const langContent: (Paragraph | Table)[] = [
-      new Paragraph({
-        children: [
-          createTextRun(data.languages.join(", "), {
-            size: FONT_SIZES["text-sm"],
-            color: COLORS.gray700,
-          }),
-        ],
-      }),
-    ];
-    children.push(createTwoColumnSection("LANGUAGES", langContent));
-    // No divider after last section
+    // Certifications section
+    if (data.certifications && data.certifications.length > 0) {
+      createSection("CERTIFICATIONS");
+      children.push(
+        new Paragraph({
+          children: [classicText(data.certifications.join("; "))],
+          spacing: { after: SPACING.xs },
+        }),
+      );
+    }
+
+    // Languages section - handle both string and array formats
+    if (data.languages && data.languages.length > 0) {
+      createSection("LANGUAGES");
+      const languagesText = Array.isArray(data.languages) ? data.languages.join(", ") : String(data.languages);
+      children.push(
+        new Paragraph({
+          children: [classicText(languagesText)],
+          spacing: { after: SPACING.xs },
+        }),
+      );
+    }
   }
 }
 
 // ============================================================================
 // MODERN TEMPLATE
-// Clean minimal with black name, gray borders, 3-column skills
+// Sans-serif with solid line dividers and hollow bullets
+// Based on golden reference comparison
 // ============================================================================
 
 function generateModernTemplate(
   data: ResumeData,
   children: (Paragraph | Table)[],
 ): void {
-  const primaryColor = COLORS.modernBlack;
-
-  // Header - Name
-  children.push(
-    new Paragraph({
-      children: [
-        createTextRun((data.name || "Your Name").toUpperCase(), {
-          bold: true,
-          size: FONT_SIZES["text-3xl"],
-          color: primaryColor,
-        }),
-      ],
-      alignment: AlignmentType.CENTER,
-      spacing: { after: SPACING.md },
-    }),
-  );
-
-  // Contact info
-  const contactParts: string[] = [];
-  if (data.email) contactParts.push(data.email);
-  if (data.phone) contactParts.push(data.phone);
-  if (data.location) contactParts.push(data.location);
-
-  if (contactParts.length > 0) {
-    children.push(
-      new Paragraph({
-        children: [
-          createTextRun(contactParts.join(" | "), {
-            size: FONT_SIZES["text-sm"],
-            color: COLORS.gray600,
-          }),
-        ],
-        alignment: AlignmentType.CENTER,
-        spacing: { after: SPACING.lg },
-      }),
-    );
-  }
-
-  // Black divider
-  children.push(
-    new Paragraph({
-      spacing: { after: SPACING.xl },
-      border: {
-        bottom: {
-          color: primaryColor,
-          size: 4, // thin line
-          style: BorderStyle.SINGLE,
-        },
-      },
-    }),
-  );
-
-  // Section heading helper with gray bottom border
-  const createSectionHeading = (title: string): void => {
-    children.push(
-      new Paragraph({
-        children: [
-          createTextRun(title.toUpperCase(), {
-            bold: true,
-            size: FONT_SIZES["text-base"],
-            color: COLORS.gray900,
-          }),
-        ],
-        spacing: { after: SPACING.md },
-        border: {
-          bottom: {
-            color: COLORS.gray400,
-            size: 2, // very thin line
-            style: BorderStyle.SINGLE,
-          },
-        },
-        keepNext: true, // Keep with next paragraph
-      }),
-    );
+  // Colors matching golden reference
+  const MODERN_COLORS = {
+    black: "000000",      // Pure black for name and headings
+    darkGray: "333333",   // Body text
+    mediumGray: "666666", // Secondary text (dates, company)
+    dividerGray: "CCCCCC", // Light gray for divider lines
   };
 
-  // Summary
-  if (data.summary && data.summary.trim().length > 0) {
-    createSectionHeading("Summary");
-    children.push(
-      new Paragraph({
-        children: [
-          createTextRun(data.summary, {
-            size: FONT_SIZES["text-sm"],
-            color: COLORS.gray700,
-          }),
-        ],
-        alignment: AlignmentType.BOTH,
-        spacing: { after: SPACING["2xl"] },
-      }),
-    );
-  }
-
-  // Experience
-  if (data.experience && data.experience.length > 0) {
-    createSectionHeading("Professional Experience");
-
-    data.experience.forEach((exp, idx) => {
-      // Title
-      children.push(
-        new Paragraph({
-          children: [
-            createTextRun(exp.title || "", {
-              bold: true,
-              size: FONT_SIZES["text-sm"],
-              color: COLORS.black,
-            }),
-          ],
-          spacing: { after: SPACING.xs },
-          keepNext: true, // Keep with next line
-        }),
-      );
-
-      // Company | Location (left) and Period (right) - FIXED (no wrap)
-      const leftParts: string[] = [];
-      if (exp.company) leftParts.push(exp.company);
-      if ((exp as any).location) leftParts.push((exp as any).location);
-
-      const left = leftParts.join(" | ");
-      const right = exp.period || "";
-
-      if (right) {
-        children.push(
-          createLeftRightLine(left, right, {
-            leftBold: true,
-            rightBold: true,
-            leftColor: COLORS.black,
-            rightColor: COLORS.black,
-            spacingAfter: SPACING.xs,
-            rightColPercent: 35,
-          }),
-        );
-      } else if (left) {
-        children.push(
-          new Paragraph({
-            children: [
-              createTextRun(left, {
-                bold: true,
-                size: FONT_SIZES["text-sm"],
-                color: COLORS.black,
-              }),
-            ],
-            spacing: { after: SPACING.xs },
-            keepNext: true,
-          }),
-        );
-      }
-
-      const isLastExp = idx === data.experience!.length - 1;
-      const gapAfterExp = isLastExp ? SPACING["2xl"] : SPACING.sm;
-
-      // Bullets
-      if (exp.bullets && exp.bullets.length > 0) {
-        exp.bullets.forEach((bullet, bIdx) => {
-          const isLastBullet = bIdx === exp.bullets!.length - 1;
-          children.push(
-            createBulletParagraph(bullet, {
-              size: FONT_SIZES["text-sm"],
-              color: COLORS.gray700,
-              spacingAfter: isLastBullet ? gapAfterExp : SPACING.xs,
-            }),
-          );
-        });
-      } else {
-        // No bullets: put the spacing on the company/date line instead
-        // (make sure your createLeftRightLine call uses spacingAfter: gapAfterExp)
-      }
-
-      // children.push(
-      //   createSpacer(
-      //     idx < data.experience!.length - 1 ? SPACING.lg : SPACING["2xl"],
-      //   ),
-      // );
-    });
-  }
-
-  // Skills (3-column grid, no bullets)
-  if (data.skills && data.skills.length > 0) {
-    createSectionHeading("Skills");
-
-    const skillsPerColumn = Math.ceil(data.skills.length / 3);
-    const col1 = data.skills.slice(0, skillsPerColumn);
-    const col2 = data.skills.slice(skillsPerColumn, skillsPerColumn * 2);
-    const col3 = data.skills.slice(skillsPerColumn * 2);
-
-    const skillsTable = new Table({
-      width: { size: 100, type: WidthType.PERCENTAGE },
-      layout: TableLayoutType.FIXED,
-      borders: NO_BORDERS,
-      rows: [
-        new TableRow({
-          children: [
-            new TableCell({
-              width: { size: 33, type: WidthType.PERCENTAGE },
-              borders: NO_CELL_BORDERS,
-              children: col1.map(
-                (skill) =>
-                  new Paragraph({
-                    children: [
-                      createTextRun(skill, {
-                        size: FONT_SIZES["text-sm"],
-                        color: COLORS.gray700,
-                      }),
-                    ],
-                    spacing: { after: SPACING.sm },
-                  }),
-              ),
-            }),
-            new TableCell({
-              width: { size: 33, type: WidthType.PERCENTAGE },
-              borders: NO_CELL_BORDERS,
-              children:
-                col2.length > 0
-                  ? col2.map(
-                      (skill) =>
-                        new Paragraph({
-                          children: [
-                            createTextRun(skill, {
-                              size: FONT_SIZES["text-sm"],
-                              color: COLORS.gray700,
-                            }),
-                          ],
-                          spacing: { after: SPACING.sm },
-                        }),
-                    )
-                  : [new Paragraph({})],
-            }),
-            new TableCell({
-              width: { size: 34, type: WidthType.PERCENTAGE },
-              borders: NO_CELL_BORDERS,
-              children:
-                col3.length > 0
-                  ? col3.map(
-                      (skill) =>
-                        new Paragraph({
-                          children: [
-                            createTextRun(skill, {
-                              size: FONT_SIZES["text-sm"],
-                              color: COLORS.gray700,
-                            }),
-                          ],
-                          spacing: { after: SPACING.sm },
-                        }),
-                    )
-                  : [new Paragraph({})],
-            }),
-          ],
-        }),
-      ],
-    });
-
-    children.push(skillsTable);
-    children.push(createSpacer(SPACING["2xl"]));
-  }
-
-  // Education
-  if (data.education && data.education.length > 0) {
-    createSectionHeading("Education");
-
-    data.education.forEach((edu, idx) => {
-      // Degree (left) and period (right) - FIXED (no wrap)
-      const left = edu.degree || "";
-      const right = edu.period || "";
-      if (right) {
-        children.push(
-          createLeftRightLine(left, right, {
-            leftBold: true,
-            rightBold: true,
-            leftColor: COLORS.black,
-            rightColor: COLORS.black,
-            spacingAfter: SPACING.xs,
-            rightColPercent: 35,
-          }),
-        );
-      } else {
-        children.push(
-          new Paragraph({
-            children: [
-              createTextRun(left, {
-                bold: true,
-                size: FONT_SIZES["text-sm"],
-                color: COLORS.black,
-              }),
-            ],
-            spacing: { after: SPACING.xs },
-            keepNext: true,
-          }),
-        );
-      }
-
-      if (edu.institution) {
-        children.push(
-          new Paragraph({
-            children: [
-              createTextRun(edu.institution, {
-                size: FONT_SIZES["text-sm"],
-                color: COLORS.gray700,
-              }),
-            ],
-            spacing: { after: SPACING.xs }, // Reduced from SPACING.sm
-          }),
-        );
-      }
-
-      if (edu.details && edu.details.length > 0) {
-        edu.details.forEach((detail) => {
-          children.push(
-            createBulletParagraph(detail, {
-              size: FONT_SIZES["text-sm"],
-              color: COLORS.gray700,
-              spacingAfter: SPACING.xs,
-            }),
-          );
-        });
-      }
-
-      children.push(
-        createSpacer(
-          idx < data.education!.length - 1 ? SPACING.md : SPACING["2xl"], // Reduced from SPACING.lg
-        ),
-      );
-    });
-  }
-
-  // Projects
-  if (data.projects && data.projects.length > 0) {
-    createSectionHeading("Projects");
-
-    data.projects.forEach((project, idx) => {
-      const left = project.name || "";
-      const right = project.period || "";
-
-      // Project name (left) and period (right) - FIXED (no wrap)
-      if (right) {
-        children.push(
-          createLeftRightLine(left, right, {
-            leftBold: true,
-            rightBold: true,
-            leftColor: COLORS.black,
-            rightColor: COLORS.black,
-            spacingAfter: SPACING.xs,
-            rightColPercent: 35,
-          }),
-        );
-      } else {
-        children.push(
-          new Paragraph({
-            children: [
-              createTextRun(left, {
-                bold: true,
-                size: FONT_SIZES["text-sm"],
-                color: COLORS.black,
-              }),
-            ],
-            spacing: { after: SPACING.xs },
-          }),
-        );
-      }
-
-      if (project.organization) {
-        children.push(
-          new Paragraph({
-            children: [
-              createTextRun(project.organization, {
-                size: FONT_SIZES["text-sm"],
-                color: COLORS.gray700,
-              }),
-            ],
-            spacing: { after: SPACING.sm },
-          }),
-        );
-      }
-
-      if (project.details && project.details.length > 0) {
-        project.details.forEach((detail) => {
-          children.push(
-            createBulletParagraph(detail, {
-              size: FONT_SIZES["text-sm"],
-              color: COLORS.gray700,
-              spacingAfter: SPACING.xs,
-            }),
-          );
-        });
-      }
-
-      children.push(
-        createSpacer(
-          idx < data.projects!.length - 1 ? SPACING.lg : SPACING["2xl"],
-        ),
-      );
-    });
-  }
-
-  // Additional Information
-  if (
-    (data.languages && data.languages.length > 0) ||
-    (data.certifications && data.certifications.length > 0)
-  ) {
-    createSectionHeading("Additional Information");
-
-    if (data.languages && data.languages.length > 0) {
-      children.push(
-        new Paragraph({
-          children: [
-            createTextRun("Languages: ", {
-              bold: true,
-              size: FONT_SIZES["text-sm"],
-              color: COLORS.gray700,
-            }),
-            createTextRun(data.languages.join(", "), {
-              size: FONT_SIZES["text-sm"],
-              color: COLORS.gray700,
-            }),
-          ],
-          spacing: { after: SPACING.sm },
-        }),
-      );
-    }
-
-    if (data.certifications && data.certifications.length > 0) {
-      children.push(
-        new Paragraph({
-          children: [
-            createTextRun("Certifications: ", {
-              bold: true,
-              size: FONT_SIZES["text-sm"],
-              color: COLORS.gray700,
-            }),
-            createTextRun(data.certifications.join(", "), {
-              size: FONT_SIZES["text-sm"],
-              color: COLORS.gray700,
-            }),
-          ],
-          spacing: { after: SPACING.sm },
-        }),
-      );
-    }
-  }
-}
-
-// ============================================================================
-// EXECUTIVE TEMPLATE
-// Large name, amber/gold accents, centered header with title
-// ============================================================================
-
-function generateExecutiveTemplate(
-  data: ResumeData,
-  children: (Paragraph | Table)[],
-): void {
-  const primaryColor = COLORS.executiveAmber;
-
-  // Header - Large Name
-  children.push(
-    new Paragraph({
-      children: [
-        createTextRun((data.name || "Your Name").toUpperCase(), {
-          bold: true,
-          size: FONT_SIZES["text-4xl"],
-          color: COLORS.gray900,
-        }),
-      ],
-      alignment: AlignmentType.CENTER,
-      spacing: { after: SPACING.sm },
-    }),
-  );
-
-  // Title
-  if (data.title) {
-    children.push(
-      new Paragraph({
-        children: [
-          createTextRun(data.title.toUpperCase(), {
-            bold: true,
-            size: FONT_SIZES["text-xl"],
-            color: COLORS.gray900,
-          }),
-        ],
-        alignment: AlignmentType.CENTER,
-        spacing: { after: SPACING.md },
-      }),
-    );
-  }
-
-  // Contact info
-  const contactParts: string[] = [];
-  if (data.location) contactParts.push(data.location);
-  if (data.email) contactParts.push(data.email);
-  if (data.website) contactParts.push(data.website);
-
-  if (contactParts.length > 0) {
-    children.push(
-      new Paragraph({
-        children: [
-          createTextRun(contactParts.join(" | "), {
-            size: FONT_SIZES["text-sm"],
-            color: COLORS.gray600,
-          }),
-        ],
-        alignment: AlignmentType.CENTER,
-        spacing: { after: SPACING.lg },
-      }),
-    );
-  }
-
-  // Gold divider
-  children.push(
-    new Paragraph({
-      spacing: { after: SPACING["2xl"] },
-      border: {
-        bottom: {
-          color: primaryColor,
-          size: 4, // thin line
-          style: BorderStyle.SINGLE,
-        },
-      },
-    }),
-  );
-
-  // Section heading with gold bottom border
-  const createSectionHeading = (title: string): void => {
-    children.push(
-      new Paragraph({
-        children: [
-          createTextRun(title.toUpperCase(), {
-            bold: true,
-            size: FONT_SIZES["text-base"],
-            color: COLORS.gray900,
-          }),
-        ],
-        spacing: { after: SPACING.md },
-        border: {
-          bottom: {
-            color: primaryColor,
-            size: 2, // very thin line
-            style: BorderStyle.SINGLE,
-          },
-        },
-        keepNext: true, // Keep with next paragraph
-      }),
-    );
+  // Font sizes in half-points (multiply pt by 2)
+  const MODERN_SIZES = {
+    name: 44,           // 22pt (larger to match golden)
+    sectionHeading: 32, // 16pt - bold section headings
+    title: 22,          // 11pt
+    body: 18,           // 9pt
+    contact: 18,        // 9pt
   };
 
-  // Summary
-  if (data.summary && data.summary.trim().length > 0) {
-    createSectionHeading("Summary");
+  // Spacing in twips (20 twips = 1pt)
+  const MODERN_SPACING = {
+    betweenNameAndContact: 320,    // 16pt - more space after name
+    betweenContactAndDivider: 160, // 8pt
+    afterHeaderDivider: 400,       // 20pt
+    betweenSections: 320,          // 16pt
+    betweenHeadingAndContent: 240, // 12pt - more space after section headings
+    betweenExperienceItems: 200,   // 10pt
+    betweenEducationItems: 80,     // 4pt
+    betweenBulletPoints: 40,       // 2pt
+    titleRowMarginBottom: 40,      // 2pt
+    companyMarginBottom: 40,       // 2pt
+  };
+
+  const FONT = FONT_FAMILIES.serif; // Times New Roman to match PDF
+
+  // Helper to create text run with modern styling
+  const modernText = (
+    text: string,
+    options: { bold?: boolean; italic?: boolean; size?: number; color?: string } = {},
+  ): TextRun => {
+    return new TextRun({
+      text,
+      font: FONT,
+      size: options.size ?? MODERN_SIZES.body,
+      color: options.color ?? MODERN_COLORS.darkGray,
+      bold: options.bold,
+      italics: options.italic,
+    });
+  };
+
+  // Helper to create section heading with solid line
+  // In DOCX, we can't easily do inline lines, so we use a bottom border
+  const createSectionHeadingWithLine = (title: string): void => {
     children.push(
       new Paragraph({
         children: [
-          createTextRun(data.summary, {
-            size: FONT_SIZES["text-sm"],
-            color: COLORS.gray700,
-          }),
+          modernText(title, { bold: true, size: MODERN_SIZES.sectionHeading, color: MODERN_COLORS.black }),
         ],
-        alignment: AlignmentType.BOTH,
-        spacing: { after: SPACING["2xl"] },
-      }),
-    );
-  }
-
-  // Experience
-  if (data.experience && data.experience.length > 0) {
-    createSectionHeading("Professional Experience");
-
-    data.experience.forEach((exp, idx) => {
-      children.push(
-        new Paragraph({
-          children: [
-            createTextRun(exp.title || "", {
-              bold: true,
-              size: FONT_SIZES["text-sm"],
-              color: COLORS.black,
-            }),
-          ],
-          spacing: { after: SPACING.xs },
-          keepNext: true, // Keep with next line
-        }),
-      );
-
-      // Company | Location (left) and Period (right) - FIXED (no wrap)
-      const leftParts: string[] = [];
-      if (exp.company) leftParts.push(exp.company);
-      if ((exp as any).location) leftParts.push((exp as any).location);
-
-      const left = leftParts.join(" | ");
-      const right = exp.period || "";
-
-      if (right) {
-        children.push(
-          createLeftRightLine(left, right, {
-            leftBold: true,
-            rightBold: true,
-            leftColor: COLORS.black,
-            rightColor: COLORS.black,
-            spacingAfter: SPACING.xs,
-            rightColPercent: 35,
-          }),
-        );
-      } else if (left) {
-        children.push(
-          new Paragraph({
-            children: [
-              createTextRun(left, {
-                bold: true,
-                size: FONT_SIZES["text-sm"],
-                color: COLORS.black,
-              }),
-            ],
-            spacing: { after: SPACING.xs },
-            keepNext: true,
-          }),
-        );
-      }
-
-      const isLastExp = idx === data.experience!.length - 1;
-      const gapAfterExp = isLastExp ? SPACING["2xl"] : SPACING.sm;
-
-      // Bullets
-      if (exp.bullets && exp.bullets.length > 0) {
-        exp.bullets.forEach((bullet, bIdx) => {
-          const isLastBullet = bIdx === exp.bullets!.length - 1;
-          children.push(
-            createBulletParagraph(bullet, {
-              size: FONT_SIZES["text-sm"],
-              color: COLORS.gray700,
-              spacingAfter: isLastBullet ? gapAfterExp : SPACING.xs,
-            }),
-          );
-        });
-      } else {
-        // No bullets: put the spacing on the company/date line instead
-        // (make sure your createLeftRightLine call uses spacingAfter: gapAfterExp)
-      }
-
-      // children.push(
-      //   createSpacer(
-      //     idx < data.experience!.length - 1 ? SPACING.lg : SPACING["2xl"],
-      //   ),
-      // );
-    });
-  }
-
-  // Skills (3-column grid)
-  if (data.skills && data.skills.length > 0) {
-    createSectionHeading("Core Competencies");
-
-    const skillsPerColumn = Math.ceil(data.skills.length / 3);
-    const col1 = data.skills.slice(0, skillsPerColumn);
-    const col2 = data.skills.slice(skillsPerColumn, skillsPerColumn * 2);
-    const col3 = data.skills.slice(skillsPerColumn * 2);
-
-    const skillsTable = new Table({
-      width: { size: 100, type: WidthType.PERCENTAGE },
-      layout: TableLayoutType.FIXED,
-      borders: NO_BORDERS,
-      rows: [
-        new TableRow({
-          children: [
-            new TableCell({
-              width: { size: 33, type: WidthType.PERCENTAGE },
-              borders: NO_CELL_BORDERS,
-              children: col1.map(
-                (skill) =>
-                  new Paragraph({
-                    children: [
-                      createTextRun(skill, {
-                        size: FONT_SIZES["text-sm"],
-                        color: COLORS.gray700,
-                      }),
-                    ],
-                    spacing: { after: SPACING.sm },
-                  }),
-              ),
-            }),
-            new TableCell({
-              width: { size: 33, type: WidthType.PERCENTAGE },
-              borders: NO_CELL_BORDERS,
-              children:
-                col2.length > 0
-                  ? col2.map(
-                      (skill) =>
-                        new Paragraph({
-                          children: [
-                            createTextRun(skill, {
-                              size: FONT_SIZES["text-sm"],
-                              color: COLORS.gray700,
-                            }),
-                          ],
-                          spacing: { after: SPACING.sm },
-                        }),
-                    )
-                  : [new Paragraph({})],
-            }),
-            new TableCell({
-              width: { size: 34, type: WidthType.PERCENTAGE },
-              borders: NO_CELL_BORDERS,
-              children:
-                col3.length > 0
-                  ? col3.map(
-                      (skill) =>
-                        new Paragraph({
-                          children: [
-                            createTextRun(skill, {
-                              size: FONT_SIZES["text-sm"],
-                              color: COLORS.gray700,
-                            }),
-                          ],
-                          spacing: { after: SPACING.sm },
-                        }),
-                    )
-                  : [new Paragraph({})],
-            }),
-          ],
-        }),
-      ],
-    });
-
-    children.push(skillsTable);
-    children.push(createSpacer(SPACING["2xl"]));
-  }
-
-  // Education
-  if (data.education && data.education.length > 0) {
-    createSectionHeading("Education");
-
-    data.education.forEach((edu, idx) => {
-      const left = edu.degree || "";
-      const right = edu.period || "";
-
-      // Degree (left) and period (right) - FIXED (no wrap)
-      if (right) {
-        children.push(
-          createLeftRightLine(left, right, {
-            leftBold: true,
-            rightBold: true,
-            leftColor: COLORS.black,
-            rightColor: COLORS.black,
-            spacingAfter: SPACING.xs,
-            rightColPercent: 35,
-          }),
-        );
-      } else {
-        children.push(
-          new Paragraph({
-            children: [
-              createTextRun(left, {
-                bold: true,
-                size: FONT_SIZES["text-sm"],
-                color: COLORS.black,
-              }),
-            ],
-            spacing: { after: SPACING.xs },
-            keepNext: true,
-          }),
-        );
-      }
-
-      if (edu.institution) {
-        children.push(
-          new Paragraph({
-            children: [
-              createTextRun(edu.institution, {
-                size: FONT_SIZES["text-sm"],
-                color: COLORS.gray700,
-              }),
-            ],
-            spacing: { after: SPACING.xs }, // Reduced from SPACING.sm
-          }),
-        );
-      }
-
-      if (edu.details && edu.details.length > 0) {
-        edu.details.forEach((detail) => {
-          children.push(
-            createBulletParagraph(detail, {
-              size: FONT_SIZES["text-sm"],
-              color: COLORS.gray700,
-              spacingAfter: SPACING.xs,
-            }),
-          );
-        });
-      }
-
-      children.push(
-        createSpacer(
-          idx < data.education!.length - 1 ? SPACING.md : SPACING["2xl"], // Reduced from SPACING.lg
-        ),
-      );
-    });
-  }
-
-  // Projects
-  if (data.projects && data.projects.length > 0) {
-    createSectionHeading("Key Projects");
-
-    data.projects.forEach((project, idx) => {
-      const left = project.name || "";
-      const right = project.period || "";
-
-      // Project name (left) and period (right) - FIXED (no wrap)
-      if (right) {
-        children.push(
-          createLeftRightLine(left, right, {
-            leftBold: true,
-            rightBold: true,
-            leftColor: COLORS.black,
-            rightColor: COLORS.black,
-            spacingAfter: SPACING.xs,
-            rightColPercent: 35,
-          }),
-        );
-      } else {
-        children.push(
-          new Paragraph({
-            children: [
-              createTextRun(left, {
-                bold: true,
-                size: FONT_SIZES["text-sm"],
-                color: COLORS.black,
-              }),
-            ],
-            spacing: { after: SPACING.xs },
-          }),
-        );
-      }
-
-      if (project.organization) {
-        children.push(
-          new Paragraph({
-            children: [
-              createTextRun(project.organization, {
-                size: FONT_SIZES["text-sm"],
-                color: COLORS.gray700,
-              }),
-            ],
-            spacing: { after: SPACING.sm },
-          }),
-        );
-      }
-
-      if (project.details && project.details.length > 0) {
-        project.details.forEach((detail) => {
-          children.push(
-            createBulletParagraph(detail, {
-              size: FONT_SIZES["text-sm"],
-              color: COLORS.gray700,
-              spacingAfter: SPACING.xs,
-            }),
-          );
-        });
-      }
-
-      children.push(
-        createSpacer(
-          idx < data.projects!.length - 1 ? SPACING.lg : SPACING["2xl"],
-        ),
-      );
-    });
-  }
-
-  // Certifications
-  if (data.certifications && data.certifications.length > 0) {
-    createSectionHeading("Certifications");
-    data.certifications.forEach((cert) => {
-      children.push(
-        createBulletParagraph(cert, {
-          size: FONT_SIZES["text-sm"],
-          color: COLORS.gray700,
-          spacingAfter: SPACING.xs,
-        }),
-      );
-    });
-    children.push(createSpacer(SPACING["2xl"]));
-  }
-
-  // Languages
-  if (data.languages && data.languages.length > 0) {
-    createSectionHeading("Languages");
-    children.push(
-      new Paragraph({
-        children: [
-          createTextRun(data.languages.join(", "), {
-            size: FONT_SIZES["text-sm"],
-            color: COLORS.gray700,
-          }),
-        ],
-      }),
-    );
-  }
-}
-
-// ============================================================================
-// TECHNICAL TEMPLATE
-// Blue name, top+bottom borders on headings, period in blue
-// ============================================================================
-
-function generateTechnicalTemplate(
-  data: ResumeData,
-  children: (Paragraph | Table)[],
-): void {
-  const primaryColor = COLORS.technicalBlue;
-
-  // Header - Name (blue)
-  children.push(
-    new Paragraph({
-      children: [
-        createTextRun((data.name || "Your Name").toUpperCase(), {
-          bold: true,
-          size: FONT_SIZES["text-3xl"],
-          color: primaryColor,
-        }),
-      ],
-      alignment: AlignmentType.CENTER,
-      spacing: { after: SPACING.md },
-    }),
-  );
-
-  // Contact info
-  const contactParts: string[] = [];
-  if (data.email) contactParts.push(data.email);
-  if (data.phone) contactParts.push(data.phone);
-  if (data.location) contactParts.push(data.location);
-
-  if (contactParts.length > 0) {
-    children.push(
-      new Paragraph({
-        children: [
-          createTextRun(contactParts.join(" | "), {
-            size: FONT_SIZES["text-sm"],
-            color: COLORS.gray600,
-          }),
-        ],
-        alignment: AlignmentType.CENTER,
-        spacing: { after: SPACING["2xl"] },
-      }),
-    );
-  }
-
-  // Section heading with TOP and BOTTOM blue borders
-  const createSectionHeading = (title: string): void => {
-    children.push(
-      new Paragraph({
-        children: [
-          createTextRun(title.toUpperCase(), {
-            bold: true,
-            size: FONT_SIZES["text-base"],
-            color: primaryColor,
-          }),
-        ],
-        // ✅ control spacing here instead of using createSpacer()
-        spacing: { before: SPACING.sm, after: SPACING.md },
+        spacing: { before: MODERN_SPACING.betweenSections, after: MODERN_SPACING.betweenHeadingAndContent },
         border: {
-          top: {
-            color: primaryColor,
-            size: 2,
-            style: BorderStyle.SINGLE,
-          },
           bottom: {
-            color: primaryColor,
-            size: 2,
+            color: MODERN_COLORS.dividerGray,
+            size: 2, // thin line
             style: BorderStyle.SINGLE,
           },
         },
@@ -1853,349 +858,654 @@ function generateTechnicalTemplate(
     );
   };
 
-  // Summary
-  if (data.summary && data.summary.trim().length > 0) {
-    createSectionHeading("Summary");
+  // Helper to create title row: Title (left) ... Date (right) - NO underline
+  const createTitleRowWithDate = (title: string, date: string): void => {
+    const contentWidth = convertInchesToTwip(7.27); // A4 content width with 40pt margins
+
+    children.push(
+      new Paragraph({
+        tabStops: [
+          {
+            type: TabStopType.RIGHT,
+            position: contentWidth,
+          },
+        ],
+        children: [
+          modernText(title, { bold: true, size: MODERN_SIZES.title, color: MODERN_COLORS.black }),
+          new TextRun({ children: [new Tab()] }),
+          modernText(date, { size: MODERN_SIZES.title, color: MODERN_COLORS.mediumGray }),
+        ],
+        spacing: { after: MODERN_SPACING.titleRowMarginBottom },
+        keepNext: true,
+      }),
+    );
+  };
+
+  // ==================== HEADER ====================
+  // Name - centered, mixed case (not uppercase), bold
+  children.push(
+    new Paragraph({
+      children: [
+        modernText(data.name || "Your Name", { bold: true, size: MODERN_SIZES.name, color: MODERN_COLORS.black }),
+      ],
+      alignment: AlignmentType.CENTER,
+      spacing: { after: MODERN_SPACING.betweenNameAndContact },
+    }),
+  );
+
+  // Contact info - centered, pipe separator
+  const contactParts: string[] = [];
+  if (data.phone) contactParts.push(data.phone);
+  if (data.email) contactParts.push(data.email);
+  if (data.location) contactParts.push(data.location);
+
+  if (contactParts.length > 0) {
     children.push(
       new Paragraph({
         children: [
-          createTextRun(data.summary, {
-            size: FONT_SIZES["text-sm"],
-            color: COLORS.gray700,
-          }),
+          modernText(contactParts.join(" · "), { size: MODERN_SIZES.contact, color: MODERN_COLORS.mediumGray }),
         ],
-        alignment: AlignmentType.BOTH,
-        spacing: { after: SPACING["2xl"] },
+        alignment: AlignmentType.CENTER,
+        spacing: { after: MODERN_SPACING.betweenContactAndDivider },
       }),
     );
   }
 
-  // Technical Skills (BEFORE experience) - 3-column grid
-  if (data.skills && data.skills.length > 0) {
-    createSectionHeading("Technical Skills");
+  // No header divider - matching PDF which has no line after contact
+  // Just add spacing before first section
+  children.push(
+    new Paragraph({
+      spacing: { after: MODERN_SPACING.afterHeaderDivider },
+    }),
+  );
 
-    const skillsPerColumn = Math.ceil(data.skills.length / 3);
-    const col1 = data.skills.slice(0, skillsPerColumn);
-    const col2 = data.skills.slice(skillsPerColumn, skillsPerColumn * 2);
-    const col3 = data.skills.slice(skillsPerColumn * 2);
-
-    const skillsTable = new Table({
-      width: { size: 100, type: WidthType.PERCENTAGE },
-      layout: TableLayoutType.FIXED,
-      borders: NO_BORDERS,
-      rows: [
-        new TableRow({
-          children: [
-            new TableCell({
-              width: { size: 33, type: WidthType.PERCENTAGE },
-              borders: NO_CELL_BORDERS,
-              children: col1.map(
-                (skill) =>
-                  new Paragraph({
-                    children: [
-                      createTextRun(skill, {
-                        size: FONT_SIZES["text-sm"],
-                        color: COLORS.gray700,
-                      }),
-                    ],
-                    spacing: { after: SPACING.sm },
-                  }),
-              ),
-            }),
-            new TableCell({
-              width: { size: 33, type: WidthType.PERCENTAGE },
-              borders: NO_CELL_BORDERS,
-              children:
-                col2.length > 0
-                  ? col2.map(
-                      (skill) =>
-                        new Paragraph({
-                          children: [
-                            createTextRun(skill, {
-                              size: FONT_SIZES["text-sm"],
-                              color: COLORS.gray700,
-                            }),
-                          ],
-                          spacing: { after: SPACING.sm },
-                        }),
-                    )
-                  : [new Paragraph({})],
-            }),
-            new TableCell({
-              width: { size: 34, type: WidthType.PERCENTAGE },
-              borders: NO_CELL_BORDERS,
-              children:
-                col3.length > 0
-                  ? col3.map(
-                      (skill) =>
-                        new Paragraph({
-                          children: [
-                            createTextRun(skill, {
-                              size: FONT_SIZES["text-sm"],
-                              color: COLORS.gray700,
-                            }),
-                          ],
-                          spacing: { after: SPACING.sm },
-                        }),
-                    )
-                  : [new Paragraph({})],
-            }),
-          ],
-        }),
-      ],
-    });
-
-    children.push(skillsTable);
-    children.push(createSpacer(SPACING["2xl"]));
+  // ==================== SUMMARY SECTION ====================
+  if (data.summary && data.summary.trim().length > 0) {
+    createSectionHeadingWithLine("Summary");
+    children.push(
+      new Paragraph({
+        children: [
+          modernText(data.summary, { size: MODERN_SIZES.body, color: MODERN_COLORS.darkGray }),
+        ],
+        spacing: { after: 0 },
+      }),
+    );
   }
 
-  // Professional Experience (period in BLUE) - FIXED (no wrap)
+  // ==================== EXPERIENCE SECTION ====================
+  if (data.experience && data.experience.length > 0) {
+    createSectionHeadingWithLine("Experience");
+
+    data.experience.forEach((exp, idx) => {
+      // Title row: "Job Title ... Date"
+      createTitleRowWithDate(exp.title || "", exp.period || "");
+
+      // Company line - italic, black, with em-dash separator for location
+      const companyLine = [exp.company, (exp as any).location].filter(Boolean).join(" – ");
+      if (companyLine) {
+        children.push(
+          new Paragraph({
+            children: [
+              modernText(companyLine, { italic: true, size: MODERN_SIZES.body, color: MODERN_COLORS.black }),
+            ],
+            spacing: { after: MODERN_SPACING.companyMarginBottom },
+          }),
+        );
+      }
+
+      // Bullets - solid style (•) to match PDF
+      if (exp.bullets && exp.bullets.length > 0) {
+        exp.bullets.forEach((bullet, bIdx) => {
+          const isLastBullet = bIdx === exp.bullets!.length - 1;
+          const isLastExp = idx === data.experience!.length - 1;
+          children.push(
+            new Paragraph({
+              children: [
+                modernText("•  ", { size: MODERN_SIZES.body, color: MODERN_COLORS.darkGray }),
+                modernText(bullet, { size: MODERN_SIZES.body, color: MODERN_COLORS.darkGray }),
+              ],
+              indent: { left: convertInchesToTwip(0.18), hanging: convertInchesToTwip(0.18) },
+              spacing: { after: isLastBullet && !isLastExp ? MODERN_SPACING.betweenExperienceItems : MODERN_SPACING.betweenBulletPoints },
+            }),
+          );
+        });
+      }
+    });
+  }
+
+  // ==================== EDUCATION SECTION ====================
+  if (data.education && data.education.length > 0) {
+    createSectionHeadingWithLine("Education");
+
+    const contentWidth = convertInchesToTwip(7.27); // A4 content width with 40pt margins
+
+    data.education.forEach((edu, idx) => {
+      const isLastEdu = idx === data.education!.length - 1;
+      // Degree and institution on same line, year on right
+      children.push(
+        new Paragraph({
+          tabStops: [
+            {
+              type: TabStopType.RIGHT,
+              position: contentWidth,
+            },
+          ],
+          children: [
+            modernText(edu.degree || "", { bold: true, size: MODERN_SIZES.title, color: MODERN_COLORS.black }),
+            modernText(`, ${edu.institution}`, { italic: true, size: MODERN_SIZES.title, color: MODERN_COLORS.black }),
+            new TextRun({ children: [new Tab()] }),
+            modernText(edu.period || "", { size: MODERN_SIZES.title, color: MODERN_COLORS.mediumGray }),
+          ],
+          spacing: { after: isLastEdu ? 0 : MODERN_SPACING.betweenEducationItems },
+          keepNext: true,
+        }),
+      );
+    });
+  }
+
+  // ==================== ADDITIONAL SECTION ====================
+  createSectionHeadingWithLine("Additional");
+
+  // Board Roles
+  if ((data as any).boardRoles && (data as any).boardRoles.length > 0) {
+    children.push(
+      new Paragraph({
+        children: [
+          modernText("Board Roles: ", { bold: true, size: MODERN_SIZES.body, color: MODERN_COLORS.darkGray }),
+          modernText((data as any).boardRoles.join(" · "), { size: MODERN_SIZES.body, color: MODERN_COLORS.darkGray }),
+        ],
+        spacing: { after: 60 },
+      }),
+    );
+  }
+
+  // Certifications
+  if (data.certifications && data.certifications.length > 0) {
+    children.push(
+      new Paragraph({
+        children: [
+          modernText("Certifications: ", { bold: true, size: MODERN_SIZES.body, color: MODERN_COLORS.darkGray }),
+          modernText(data.certifications.join(" · "), { size: MODERN_SIZES.body, color: MODERN_COLORS.darkGray }),
+        ],
+        spacing: { after: 60 },
+      }),
+    );
+  }
+
+  // Speaking
+  if ((data as any).speaking && (data as any).speaking.length > 0) {
+    children.push(
+      new Paragraph({
+        children: [
+          modernText("Speaking: ", { bold: true, size: MODERN_SIZES.body, color: MODERN_COLORS.darkGray }),
+          modernText((data as any).speaking.join(" · "), { size: MODERN_SIZES.body, color: MODERN_COLORS.darkGray }),
+        ],
+        spacing: { after: 60 },
+      }),
+    );
+  }
+
+  // Languages
+  if (data.languages && data.languages.length > 0) {
+    children.push(
+      new Paragraph({
+        children: [
+          modernText("Languages: ", { bold: true, size: MODERN_SIZES.body, color: MODERN_COLORS.darkGray }),
+          modernText(Array.isArray(data.languages) ? data.languages.join(" · ") : data.languages, { size: MODERN_SIZES.body, color: MODERN_COLORS.darkGray }),
+        ],
+        spacing: { after: 60 },
+      }),
+    );
+  }
+}
+
+// ============================================================================
+// EXECUTIVE TEMPLATE
+// Navy blue accents, centered header, serif font, formal structure
+// Matches PDF golden reference spec
+// ============================================================================
+
+function generateExecutiveTemplate(
+  data: ResumeData,
+  children: (Paragraph | Table)[],
+): void {
+  // Executive colors matching PDF spec
+  const EXEC_COLORS = {
+    navy: "003366",      // Name, section headings, dividers
+    black: "000000",     // Body text, job titles, bullets, company line
+    darkGray: "444444",  // Contact info, dates
+  };
+
+  // Font sizes in half-points (multiply pt by 2)
+  const EXEC_SIZES = {
+    name: 40,         // 20pt
+    title: 20,        // 10pt (smaller than before)
+    sectionHeading: 22, // 11pt
+    body: 18,         // 9pt
+    jobTitle: 20,     // 10pt
+  };
+
+  // Executive uses serif font (Times New Roman) to match PDF
+  const EXEC_FONT = FONT_FAMILIES.serif;
+
+  // Header - Large Name in Navy (no title underneath, no header divider)
+  children.push(
+    new Paragraph({
+      children: [
+        createTextRun((data.name || "Your Name").toUpperCase(), {
+          bold: true,
+          size: EXEC_SIZES.name,
+          color: EXEC_COLORS.navy,
+          font: EXEC_FONT,
+        }),
+      ],
+      alignment: AlignmentType.CENTER,
+      spacing: { after: 240 },  // 12pt after - larger gap between name and contact
+    }),
+  );
+
+  // Contact info - phone | email | location (dark gray) - no header divider after
+  const contactParts: string[] = [];
+  if (data.phone) contactParts.push(data.phone);
+  if (data.email) contactParts.push(data.email);
+  if (data.location) contactParts.push(data.location);
+
+  if (contactParts.length > 0) {
+    children.push(
+      new Paragraph({
+        children: [
+          createTextRun(contactParts.join(" | "), {
+            size: EXEC_SIZES.body,
+            color: EXEC_COLORS.darkGray,
+            font: EXEC_FONT,
+          }),
+        ],
+        alignment: AlignmentType.CENTER,
+        spacing: { after: 200 },  // 10pt after, goes straight to first section
+      }),
+    );
+  }
+
+  // Track if we've rendered the first section yet (to remove space before first section)
+  let isFirstSectionRendered = false;
+
+  // Section heading with navy bottom border (divider closer to title)
+  const createSectionHeading = (title: string): void => {
+    children.push(
+      new Paragraph({
+        children: [
+          createTextRun(title.toUpperCase(), {
+            bold: true,
+            size: EXEC_SIZES.sectionHeading,
+            color: EXEC_COLORS.navy,
+            font: EXEC_FONT,
+          }),
+        ],
+        spacing: { before: isFirstSectionRendered ? 100 : 0, after: 40 },  // No space before first section
+        border: {
+          bottom: {
+            color: EXEC_COLORS.navy,
+            size: 16,  // 2pt line
+            style: BorderStyle.SINGLE,
+          },
+        },
+        keepNext: true,
+      }),
+    );
+    isFirstSectionRendered = true;
+  };
+
+  // PROFESSIONAL SUMMARY
+  if (data.summary && data.summary.trim().length > 0) {
+    createSectionHeading("Professional Summary");
+    children.push(
+      new Paragraph({
+        children: [
+          createTextRun(data.summary, {
+            size: EXEC_SIZES.body,
+            color: EXEC_COLORS.black,
+            font: EXEC_FONT,
+          }),
+        ],
+        alignment: AlignmentType.BOTH,  // Justified
+        spacing: { after: 200 },  // 10pt after
+      }),
+    );
+  }
+
+  // CORE COMPETENCIES (left-aligned, pipe separated, no hanging indent on wrap)
+  if (data.skills && data.skills.length > 0) {
+    createSectionHeading("Core Competencies");
+    children.push(
+      new Paragraph({
+        children: [
+          createTextRun(data.skills.join(" | "), {
+            size: EXEC_SIZES.body,
+            color: EXEC_COLORS.black,
+            font: EXEC_FONT,
+          }),
+        ],
+        alignment: AlignmentType.LEFT,  // Left aligned per spec
+        spacing: { after: 200 },
+        indent: { left: 0, hanging: 0 },  // No indent on wrapped lines
+      }),
+    );
+  }
+
+  // PROFESSIONAL EXPERIENCE
   if (data.experience && data.experience.length > 0) {
     createSectionHeading("Professional Experience");
 
     data.experience.forEach((exp, idx) => {
+      // Job title (bold, black)
       children.push(
         new Paragraph({
           children: [
             createTextRun(exp.title || "", {
               bold: true,
-              size: FONT_SIZES["text-sm"],
-              color: COLORS.black,
+              size: EXEC_SIZES.jobTitle,
+              color: EXEC_COLORS.black,
+              font: EXEC_FONT,
             }),
           ],
-          spacing: { after: SPACING.xs },
+          spacing: { after: 20 },  // 1pt after
           keepNext: true,
         }),
       );
 
-      const leftParts: string[] = [];
-      if (exp.company) leftParts.push(exp.company);
-      if ((exp as any).location) leftParts.push((exp as any).location);
-
-      const left = leftParts.join(" | ");
-      const right = exp.period || "";
-
-      if (right) {
-        children.push(
-          createLeftRightLine(left, right, {
-            leftBold: true,
-            rightBold: true,
-            leftColor: COLORS.black,
-            rightColor: primaryColor, // BLUE period
-            spacingAfter: SPACING.xs,
-            rightColPercent: 35,
-          }),
+      // Company (bold) | Location | Date on same line - only company is bold
+      const companyLineChildren: any[] = [];
+      if (exp.company) {
+        companyLineChildren.push(
+          createTextRun(exp.company, {
+            bold: true,
+            size: EXEC_SIZES.body,
+            color: EXEC_COLORS.black,
+            font: EXEC_FONT,
+          })
         );
-      } else if (left) {
+      }
+      const locationDateParts: string[] = [];
+      if ((exp as any).location) locationDateParts.push((exp as any).location);
+      if (exp.period) locationDateParts.push(exp.period);
+      if (locationDateParts.length > 0) {
+        companyLineChildren.push(
+          createTextRun(" | " + locationDateParts.join(" | "), {
+            size: EXEC_SIZES.body,
+            color: EXEC_COLORS.black,
+            font: EXEC_FONT,
+          })
+        );
+      }
+
+      if (companyLineChildren.length > 0) {
         children.push(
           new Paragraph({
-            children: [
-              createTextRun(left, {
-                bold: true,
-                size: FONT_SIZES["text-sm"],
-                color: COLORS.black,
-              }),
-            ],
-            spacing: { after: SPACING.xs },
+            children: companyLineChildren,
+            spacing: { after: 40 },  // 2pt after
             keepNext: true,
           }),
         );
       }
 
       const isLastExp = idx === data.experience!.length - 1;
-      const gapAfterExp = isLastExp ? SPACING["2xl"] : SPACING.sm;
+      const gapAfterExp = isLastExp ? 200 : 160;  // 10pt or 8pt
 
-      // Bullets
+      // Bullets (black text)
       if (exp.bullets && exp.bullets.length > 0) {
         exp.bullets.forEach((bullet, bIdx) => {
           const isLastBullet = bIdx === exp.bullets!.length - 1;
           children.push(
             createBulletParagraph(bullet, {
-              size: FONT_SIZES["text-sm"],
-              color: COLORS.gray700,
-              spacingAfter: isLastBullet ? gapAfterExp : SPACING.xs,
+              size: EXEC_SIZES.body,
+              color: EXEC_COLORS.black,
+              spacingAfter: isLastBullet ? gapAfterExp : 20,
+              font: EXEC_FONT,
             }),
           );
         });
-      } else {
-        // No bullets: put the spacing on the company/date line instead
-        // (make sure your createLeftRightLine call uses spacingAfter: gapAfterExp)
       }
-
-      // children.push(
-      //   createSpacer(
-      //     idx < data.experience!.length - 1 ? SPACING.lg : SPACING["2xl"],
-      //   ),
-      // );
     });
   }
 
-  // Education (period in blue) - FIXED (no wrap)
-  if (data.education && data.education.length > 0) {
-    createSectionHeading("Education");
-
-    data.education.forEach((edu, idx) => {
-      const left = edu.degree || "";
-      const right = edu.period || "";
-
-      if (right) {
-        children.push(
-          createLeftRightLine(left, right, {
-            leftBold: true,
-            rightBold: true,
-            leftColor: COLORS.black,
-            rightColor: primaryColor, // BLUE period
-            spacingAfter: SPACING.xs,
-            rightColPercent: 35,
-          }),
-        );
-      } else {
-        children.push(
-          new Paragraph({
-            children: [
-              createTextRun(left, {
-                bold: true,
-                size: FONT_SIZES["text-sm"],
-                color: COLORS.black,
-              }),
-            ],
-            spacing: { after: SPACING.xs },
-            keepNext: true,
-          }),
-        );
-      }
-
-      if (edu.institution) {
-        children.push(
-          new Paragraph({
-            children: [
-              createTextRun(edu.institution, {
-                size: FONT_SIZES["text-sm"],
-                color: COLORS.gray700,
-              }),
-            ],
-            spacing: { after: SPACING.xs },
-          }),
-        );
-      }
-
-      if (edu.details && edu.details.length > 0) {
-        edu.details.forEach((detail) => {
-          children.push(
-            createBulletParagraph(detail, {
-              size: FONT_SIZES["text-sm"],
-              color: COLORS.gray700,
-              spacingAfter: SPACING.xs,
-            }),
-          );
-        });
-      }
-
+  // KEY PROJECT ACHIEVEMENTS (Executive specific)
+  const extData = data as any;
+  if (extData.keyProjectAchievements && extData.keyProjectAchievements.length > 0) {
+    createSectionHeading("Key Project Achievements");
+    extData.keyProjectAchievements.forEach((achievement: string, idx: number) => {
+      const isLast = idx === extData.keyProjectAchievements.length - 1;
       children.push(
-        createSpacer(
-          idx < data.education!.length - 1 ? SPACING.md : SPACING["2xl"],
-        ),
+        createBulletParagraph(achievement, {
+          size: EXEC_SIZES.body,
+          color: EXEC_COLORS.black,
+          spacingAfter: isLast ? 200 : 20,
+          font: EXEC_FONT,
+        }),
       );
     });
   }
 
-  // Projects (period in blue) - FIXED (no wrap)
-  if (data.projects && data.projects.length > 0) {
-    createSectionHeading("Projects");
+  // EDUCATION
+  if (data.education && data.education.length > 0) {
+    createSectionHeading("Education");
 
-    data.projects.forEach((project, idx) => {
-      const left = project.name || "";
-      const right = project.period || "";
+    data.education.forEach((edu, idx) => {
+      // Degree (bold, black)
+      children.push(
+        new Paragraph({
+          children: [
+            createTextRun(edu.degree || "", {
+              bold: true,
+              size: EXEC_SIZES.jobTitle,
+              color: EXEC_COLORS.black,
+              font: EXEC_FONT,
+            }),
+          ],
+          spacing: { after: 20 },
+          keepNext: true,
+        }),
+      );
 
-      if (right) {
-        children.push(
-          createLeftRightLine(left, right, {
-            leftBold: true,
-            rightBold: true,
-            leftColor: COLORS.black,
-            rightColor: primaryColor, // BLUE period
-            spacingAfter: SPACING.xs,
-            rightColPercent: 35,
-          }),
-        );
-      } else {
+      // Institution, Location, Year on same line (black, not italic)
+      const instParts: string[] = [];
+      if (edu.institution) instParts.push(edu.institution);
+      if (edu.period) instParts.push(edu.period);
+
+      if (instParts.length > 0) {
         children.push(
           new Paragraph({
             children: [
-              createTextRun(left, {
-                bold: true,
-                size: FONT_SIZES["text-sm"],
-                color: COLORS.black,
+              createTextRun(instParts.join(", "), {
+                size: EXEC_SIZES.body,
+                color: EXEC_COLORS.black,
+                font: EXEC_FONT,
               }),
             ],
-            spacing: { after: SPACING.xs },
+            spacing: { after: idx < data.education!.length - 1 ? 120 : 200 },
           }),
         );
       }
+    });
+  }
+
+  // PROFESSIONAL CERTIFICATIONS
+  if (data.certifications && data.certifications.length > 0) {
+    createSectionHeading("Professional Certifications");
+    data.certifications.forEach((cert, idx) => {
+      const isLast = idx === data.certifications!.length - 1;
+      children.push(
+        createBulletParagraph(cert, {
+          size: EXEC_SIZES.body,
+          color: EXEC_COLORS.black,
+          spacingAfter: isLast ? 200 : 20,
+          font: EXEC_FONT,
+        }),
+      );
+    });
+  }
+
+  // PROFESSIONAL AFFILIATIONS
+  if (extData.affiliations && extData.affiliations.length > 0) {
+    createSectionHeading("Professional Affiliations");
+    extData.affiliations.forEach((affiliation: string, idx: number) => {
+      const isLast = idx === extData.affiliations.length - 1;
+      children.push(
+        createBulletParagraph(affiliation, {
+          size: EXEC_SIZES.body,
+          color: EXEC_COLORS.black,
+          spacingAfter: isLast ? 200 : 20,
+          font: EXEC_FONT,
+        }),
+      );
+    });
+  }
+
+  // LANGUAGES & TECHNICAL SKILLS
+  if (data.languages || extData.technicalSkills) {
+    createSectionHeading("Languages & Technical Skills");
+
+    // Languages
+    if (data.languages) {
+      const languagesText = Array.isArray(data.languages) ? data.languages.join(" | ") : data.languages;
+      children.push(
+        new Paragraph({
+          children: [
+            createTextRun("Languages: ", {
+              bold: true,
+              size: EXEC_SIZES.body,
+              color: EXEC_COLORS.black,
+              font: EXEC_FONT,
+            }),
+            createTextRun(languagesText, {
+              size: EXEC_SIZES.body,
+              color: EXEC_COLORS.black,
+              font: EXEC_FONT,
+            }),
+          ],
+          spacing: { after: 40 },
+        }),
+      );
+    }
+
+    // Technical Skills categories
+    if (extData.technicalSkills) {
+      if (extData.technicalSkills.projectSoftware) {
+        children.push(
+          new Paragraph({
+            children: [
+              createTextRun("Project Software: ", {
+                bold: true,
+                size: EXEC_SIZES.body,
+                color: EXEC_COLORS.black,
+                font: EXEC_FONT,
+              }),
+              createTextRun(extData.technicalSkills.projectSoftware, {
+                size: EXEC_SIZES.body,
+                color: EXEC_COLORS.black,
+                font: EXEC_FONT,
+              }),
+            ],
+            spacing: { after: 40 },
+          }),
+        );
+      }
+      if (extData.technicalSkills.technical) {
+        children.push(
+          new Paragraph({
+            children: [
+              createTextRun("Technical: ", {
+                bold: true,
+                size: EXEC_SIZES.body,
+                color: EXEC_COLORS.black,
+                font: EXEC_FONT,
+              }),
+              createTextRun(extData.technicalSkills.technical, {
+                size: EXEC_SIZES.body,
+                color: EXEC_COLORS.black,
+                font: EXEC_FONT,
+              }),
+            ],
+            spacing: { after: 40 },
+          }),
+        );
+      }
+      if (extData.technicalSkills.standards) {
+        children.push(
+          new Paragraph({
+            children: [
+              createTextRun("Standards: ", {
+                bold: true,
+                size: EXEC_SIZES.body,
+                color: EXEC_COLORS.black,
+                font: EXEC_FONT,
+              }),
+              createTextRun(extData.technicalSkills.standards, {
+                size: EXEC_SIZES.body,
+                color: EXEC_COLORS.black,
+                font: EXEC_FONT,
+              }),
+            ],
+            spacing: { after: 40 },
+          }),
+        );
+      }
+    }
+  }
+
+  // Legacy Projects section (if no keyProjectAchievements)
+  if (!extData.keyProjectAchievements && data.projects && data.projects.length > 0) {
+    createSectionHeading("Key Projects");
+
+    data.projects.forEach((project, idx) => {
+      children.push(
+        new Paragraph({
+          children: [
+            createTextRun(project.name || "", {
+              bold: true,
+              size: EXEC_SIZES.jobTitle,
+              color: EXEC_COLORS.black,
+              font: EXEC_FONT,
+            }),
+          ],
+          spacing: { after: 20 },
+          keepNext: true,
+        }),
+      );
 
       if (project.organization) {
         children.push(
           new Paragraph({
             children: [
               createTextRun(project.organization, {
-                size: FONT_SIZES["text-sm"],
-                color: COLORS.gray700,
+                size: EXEC_SIZES.body,
+                color: EXEC_COLORS.black,
+                font: EXEC_FONT,
               }),
             ],
-            spacing: { after: SPACING.sm },
+            spacing: { after: 40 },
           }),
         );
       }
 
       if (project.details && project.details.length > 0) {
-        project.details.forEach((detail) => {
+        project.details.forEach((detail, dIdx) => {
+          const isLastDetail = dIdx === project.details!.length - 1;
+          const isLastProject = idx === data.projects!.length - 1;
           children.push(
             createBulletParagraph(detail, {
-              size: FONT_SIZES["text-sm"],
-              color: COLORS.gray700,
-              spacingAfter: SPACING.xs,
+              size: EXEC_SIZES.body,
+              color: EXEC_COLORS.black,
+              font: EXEC_FONT,
+              spacingAfter: isLastDetail && isLastProject ? 200 : 20,
             }),
           );
         });
       }
 
       children.push(
-        createSpacer(
-          idx < data.projects!.length - 1 ? SPACING.lg : SPACING["2xl"],
-        ),
+        createSpacer(idx < data.projects!.length - 1 ? 160 : 200),
       );
     });
-  }
-
-  // Additional Information
-  if (
-    (data.languages && data.languages.length > 0) ||
-    (data.certifications && data.certifications.length > 0)
-  ) {
-    createSectionHeading("Additional Information");
-
-    if (data.languages && data.languages.length > 0) {
-      children.push(
-        createBulletParagraph(`Languages: ${data.languages.join(", ")}.`, {
-          size: FONT_SIZES["text-sm"],
-          color: COLORS.gray700,
-          spacingAfter: SPACING.xs,
-        }),
-      );
-    }
-
-    if (data.certifications && data.certifications.length > 0) {
-      children.push(
-        createBulletParagraph(
-          `Certifications: ${data.certifications.join(", ")}.`,
-          {
-            size: FONT_SIZES["text-sm"],
-            color: COLORS.gray700,
-            spacingAfter: SPACING.xs,
-          },
-        ),
-      );
-    }
   }
 }
 

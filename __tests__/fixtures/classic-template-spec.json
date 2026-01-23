@@ -1,0 +1,305 @@
+{
+  "templateName": "Classic",
+  "description": "Professional resume with full-width section underlines and all-black color scheme",
+
+  "page": {
+    "size": "A4",
+    "widthMm": 210,
+    "heightMm": 297,
+    "widthPt": 595,
+    "heightPt": 842,
+    "margins": {
+      "top": { "inches": 1, "pt": 72, "px": 96 },
+      "bottom": { "inches": 0.75, "pt": 54, "px": 72 },
+      "left": { "inches": 1, "pt": 72, "px": 96 },
+      "right": { "inches": 1, "pt": 72, "px": 96 }
+    },
+    "contentWidth": { "pt": 451, "px": 601 },
+    "fontFamily": "Times New Roman, Times, serif",
+    "pdfFontFamily": "Times-Roman",
+    "baseFontSize": { "pt": 10 },
+    "baseColor": "#000000",
+    "baseLineHeight": 1.3
+  },
+
+  "spacing": {
+    "betweenNameAndContact": { "pt": 4 },
+    "betweenContactAndFirstSection": { "pt": 12 },
+    "betweenSections": { "pt": 12 },
+    "betweenHeadingAndUnderline": { "pt": 2 },
+    "betweenUnderlineAndContent": { "pt": 6 },
+    "betweenExperienceItems": { "pt": 10 },
+    "betweenEducationItems": { "pt": 8 },
+    "betweenBulletPoints": { "pt": 2 },
+    "betweenTitleAndCompany": { "pt": 0 },
+    "betweenCompanyAndBullets": { "pt": 2 },
+    "bulletIndentFromLeft": { "pt": 12 },
+    "bulletTextOffsetFromBullet": { "pt": 6 }
+  },
+
+  "header": {
+    "name": {
+      "fontFamily": "Times New Roman, Times, serif",
+      "fontSize": "18pt",
+      "fontWeight": "bold",
+      "textTransform": "uppercase",
+      "letterSpacing": "2px",
+      "textAlign": "center",
+      "color": "#000000",
+      "marginBottom": "4pt"
+    },
+    "contactLine": {
+      "fontFamily": "Times New Roman, Times, serif",
+      "fontSize": "10pt",
+      "fontWeight": "normal",
+      "textAlign": "center",
+      "color": "#000000",
+      "separator": " • ",
+      "separatorCharacter": "•",
+      "marginBottom": "12pt"
+    }
+  },
+
+  "sectionHeading": {
+    "fontFamily": "Times New Roman, Times, serif",
+    "fontSize": "11pt",
+    "fontWeight": "bold",
+    "textTransform": "uppercase",
+    "textAlign": "left",
+    "color": "#000000",
+    "marginTop": "12pt",
+    "marginBottom": "2pt",
+    "underline": {
+      "style": "solid",
+      "width": "1px",
+      "color": "#000000",
+      "extends": "fullWidth"
+    },
+    "paddingBottom": "2pt"
+  },
+
+  "summary": {
+    "fontFamily": "Times New Roman, Times, serif",
+    "fontSize": "10pt",
+    "fontWeight": "normal",
+    "fontStyle": "normal",
+    "textAlign": "left",
+    "color": "#000000",
+    "lineHeight": 1.35,
+    "marginTop": "6pt",
+    "marginBottom": "0pt"
+  },
+
+  "experience": {
+    "itemSpacing": "10pt",
+
+    "positionRow": {
+      "display": "flex",
+      "justifyContent": "space-between",
+      "marginBottom": "0pt"
+    },
+
+    "positionTitle": {
+      "fontFamily": "Times New Roman, Times, serif",
+      "fontSize": "10pt",
+      "fontWeight": "bold",
+      "fontStyle": "normal",
+      "color": "#000000",
+      "textAlign": "left"
+    },
+
+    "dateRange": {
+      "fontFamily": "Times New Roman, Times, serif",
+      "fontSize": "10pt",
+      "fontWeight": "normal",
+      "fontStyle": "normal",
+      "color": "#000000",
+      "textAlign": "right",
+      "dateSeparator": " – "
+    },
+
+    "companyLine": {
+      "fontFamily": "Times New Roman, Times, serif",
+      "fontSize": "10pt",
+      "fontWeight": "normal",
+      "fontStyle": "italic",
+      "color": "#000000",
+      "marginBottom": "2pt",
+      "format": "{company}, {city}"
+    },
+
+    "bullets": {
+      "bulletCharacter": "•",
+      "bulletColor": "#000000",
+      "bulletSize": "10pt",
+      "bulletIndent": "12pt",
+      "textIndent": "6pt",
+      "hangingIndent": true,
+      "lineSpacing": "2pt",
+
+      "text": {
+        "fontFamily": "Times New Roman, Times, serif",
+        "fontSize": "10pt",
+        "fontWeight": "normal",
+        "fontStyle": "normal",
+        "color": "#000000",
+        "lineHeight": 1.3
+      }
+    },
+
+    "priorExperience": {
+      "labelStyle": {
+        "fontWeight": "bold",
+        "fontStyle": "normal"
+      },
+      "contentStyle": {
+        "fontWeight": "normal",
+        "fontStyle": "normal"
+      },
+      "format": "{label}: {content}",
+      "itemSeparator": "; "
+    }
+  },
+
+  "education": {
+    "itemSpacing": "8pt",
+
+    "institutionRow": {
+      "display": "flex",
+      "justifyContent": "space-between",
+      "marginBottom": "0pt"
+    },
+
+    "institutionName": {
+      "fontFamily": "Times New Roman, Times, serif",
+      "fontSize": "10pt",
+      "fontWeight": "bold",
+      "fontStyle": "normal",
+      "color": "#000000",
+      "format": "{institution}, {location}"
+    },
+
+    "year": {
+      "fontFamily": "Times New Roman, Times, serif",
+      "fontSize": "10pt",
+      "fontWeight": "normal",
+      "fontStyle": "normal",
+      "color": "#000000",
+      "textAlign": "right"
+    },
+
+    "degree": {
+      "fontFamily": "Times New Roman, Times, serif",
+      "fontSize": "10pt",
+      "fontWeight": "normal",
+      "fontStyle": "italic",
+      "color": "#000000",
+      "marginBottom": "0pt"
+    },
+
+    "honors": {
+      "fontFamily": "Times New Roman, Times, serif",
+      "fontSize": "10pt",
+      "fontWeight": "normal",
+      "fontStyle": "normal",
+      "color": "#000000"
+    },
+
+    "executiveEducation": {
+      "labelStyle": {
+        "fontWeight": "bold"
+      },
+      "contentStyle": {
+        "fontWeight": "normal"
+      },
+      "itemSeparator": "; "
+    }
+  },
+
+  "additionalInformation": {
+    "lineSpacing": "6pt",
+
+    "labeledItem": {
+      "label": {
+        "fontFamily": "Times New Roman, Times, serif",
+        "fontSize": "10pt",
+        "fontWeight": "bold",
+        "fontStyle": "normal",
+        "color": "#000000"
+      },
+      "content": {
+        "fontFamily": "Times New Roman, Times, serif",
+        "fontSize": "10pt",
+        "fontWeight": "normal",
+        "fontStyle": "normal",
+        "color": "#000000"
+      },
+      "format": "{label}: {content}",
+      "itemSeparator": "; "
+    },
+
+    "categories": [
+      "Certifications",
+      "Board Positions",
+      "Speaking",
+      "Languages",
+      "Technical"
+    ]
+  },
+
+  "measurements": {
+    "notes": "All measurements derived from visual analysis of golden reference PDF",
+    "pointsPerInch": 72,
+    "mmPerInch": 25.4,
+
+    "convertedValues": {
+      "pageMarginTop": "72pt",
+      "pageMarginBottom": "54pt",
+      "pageMarginLeft": "72pt",
+      "pageMarginRight": "72pt",
+      "contentWidth": "468pt"
+    }
+  },
+
+  "typography": {
+    "fontStack": {
+      "serif": "'Times New Roman', Times, 'Liberation Serif', serif",
+      "pdfSerif": "Times-Roman"
+    },
+
+    "fontSizes": {
+      "name": "18pt",
+      "contact": "10pt",
+      "sectionHeading": "11pt",
+      "bodyText": "10pt",
+      "small": "9pt"
+    },
+
+    "fontWeights": {
+      "normal": 400,
+      "bold": 700
+    },
+
+    "lineHeights": {
+      "tight": 1.2,
+      "normal": 1.3,
+      "relaxed": 1.4
+    }
+  },
+
+  "colors": {
+    "primary": "#000000",
+    "text": "#000000",
+    "headings": "#000000",
+    "dividers": "#000000"
+  },
+
+  "dividers": {
+    "sectionUnderline": {
+      "height": "1px",
+      "color": "#000000",
+      "style": "solid",
+      "width": "100%"
+    }
+  }
+}
