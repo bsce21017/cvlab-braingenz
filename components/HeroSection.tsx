@@ -44,12 +44,11 @@ export default function HeroSection() {
   const handleFileSelect = async (selectedFile: File | null) => {
     if (!selectedFile) return;
 
-    // Check if user is authenticated
-    if (!user) {
-      // Show signup modal instead of redirecting
-      setShowSignUpModal(true);
-      return;
-    }
+    // AUTH_GATE_DISABLED: Keep original auth wall for easy restore.
+    // if (!user) {
+    //   setShowSignUpModal(true);
+    //   return;
+    // }
 
     // Validate file type
     const validTypes = ['.pdf', '.doc', '.docx'];
@@ -87,15 +86,27 @@ export default function HeroSection() {
     }, 200);
 
     try {
+      const uploadHeaders = new Headers();
+      if (session?.access_token) {
+        uploadHeaders.set('Authorization', `Bearer ${session.access_token}`);
+      }
+
+      const backendHeaders = new Headers({ 'Content-Type': 'application/json' });
+      if (session?.access_token) {
+        backendHeaders.set('Authorization', `Bearer ${session.access_token}`);
+      }
+
       // Step 1: Upload to S3
       const formData = new FormData();
       formData.append('file', file);
 
       const s3Response = await fetch('/api/upload', {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${session?.access_token}`,
-        },
+        // AUTH_GATE_DISABLED: Old behavior sent Authorization unconditionally.
+        // headers: {
+        //   'Authorization': `Bearer ${session?.access_token}`,
+        // },
+        headers: uploadHeaders,
         body: formData,
       });
 
@@ -106,13 +117,20 @@ export default function HeroSection() {
 
       const s3Data: S3UploadResponse = await s3Response.json();
 
+      const apiBaseUrl = (
+        process.env.NEXT_PUBLIC_API_BASE_URL ||
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'}/v1`
+      ).replace(/\/$/, '');
+
       // Step 2: Register with backend (send S3 URL)
-      const backendResponse = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api.cvlab.sa/api/v1'}/upload-s3`, {
+      const backendResponse = await fetch(`${apiBaseUrl}/upload-s3`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token}`,
-        },
+        // AUTH_GATE_DISABLED: Old behavior sent Authorization unconditionally.
+        // headers: {
+        //   'Content-Type': 'application/json',
+        //   'Authorization': `Bearer ${session?.access_token}`,
+        // },
+        headers: backendHeaders,
         body: JSON.stringify({
           s3_key: s3Data.key,
           s3_url: s3Data.fileUrl,
@@ -142,10 +160,14 @@ export default function HeroSection() {
       sessionStorage.setItem('s3Url', s3Data.fileUrl);
       if (user?.id) sessionStorage.setItem('userId', user.id);
 
-      // Navigate to payment after 5 seconds
+      // PAYMENT_GATE_DISABLED: Skip payment page in local/dev bypass mode.
+      // Original:
+      // setTimeout(() => {
+      //   router.push('/payment');
+      // }, 5000);
       setTimeout(() => {
-        router.push('/payment');
-      }, 5000);
+        router.push('/processing?mode=analysis');
+      }, 1500);
 
     } catch (error) {
       clearInterval(progressInterval);
@@ -171,22 +193,22 @@ export default function HeroSection() {
     e.preventDefault();
     setIsDragging(false);
 
-    // Check if user is authenticated before allowing upload
-    if (!user) {
-      setShowSignUpModal(true);
-      return;
-    }
+    // AUTH_GATE_DISABLED: Keep original auth wall for easy restore.
+    // if (!user) {
+    //   setShowSignUpModal(true);
+    //   return;
+    // }
 
     const droppedFile = e.dataTransfer.files[0];
     handleFileSelect(droppedFile);
   };
 
   const handleButtonClick = () => {
-    // Check if user is authenticated before allowing upload
-    if (!user) {
-      setShowSignUpModal(true);
-      return;
-    }
+    // AUTH_GATE_DISABLED: Keep original auth wall for easy restore.
+    // if (!user) {
+    //   setShowSignUpModal(true);
+    //   return;
+    // }
     fileInputRef.current?.click();
   };
 
@@ -351,7 +373,8 @@ export default function HeroSection() {
               </div>
               <h3 className="text-2xl font-semibold text-slate-900">File Uploaded!</h3>
               <p className="text-slate-600 text-center">
-                Your resume has been uploaded successfully. Redirecting to payment...
+                {/* PAYMENT_GATE_DISABLED: previous text was "Redirecting to payment..." */}
+                Your resume has been uploaded successfully. Starting processing...
               </p>
               <div className="w-full bg-slate-200 rounded-full h-1 overflow-hidden">
                 <div className="h-full bg-black rounded-full animate-progress-bar" style={{ animationDuration: '3s' }} />

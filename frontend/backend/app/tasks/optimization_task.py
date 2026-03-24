@@ -16,7 +16,7 @@ from app.models.answer import Answer
 from app.models.optimized_resume import OptimizedResume
 from app.agents.prompt3_craftsman import craftsman_agent
 from app.services.file_service import file_service
-from app.services.s3_service import upload_content_to_s3
+from app.services.azure_blob_service import upload_content_to_s3
 from app.services.notification_service import notification_service
 
 logger = logging.getLogger(__name__)

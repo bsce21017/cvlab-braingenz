@@ -5,6 +5,8 @@ Handles resume file uploads (both local and S3)
 import logging
 import os
 import tempfile
+from typing import Optional
+from uuid import uuid4
 from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
@@ -13,9 +15,9 @@ from app.db.database import get_db
 from app.models.resume import Resume, ResumeStatus
 from app.schemas.resume import ResumeUploadResponse
 from app.services.file_service import file_service
-from app.services.s3_service import download_file_from_s3, get_file_content_from_s3
+from app.services.azure_blob_service import download_file_from_s3, get_file_content_from_s3
 from app.tasks.analysis_task import analyze_resume_task
-from app.auth.middleware import get_current_user, AuthUser
+from app.auth.middleware import get_optional_user, AuthUser
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +37,9 @@ class S3UploadRequest(BaseModel):
 async def upload_resume(
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
-    current_user: AuthUser = Depends(get_current_user)
+    # AUTH_GATE_DISABLED: Original gate required authenticated user.
+    # current_user: AuthUser = Depends(get_current_user)
+    current_user: Optional[AuthUser] = Depends(get_optional_user)
 ):
     """
     Upload a resume file
@@ -55,7 +59,8 @@ async def upload_resume(
         ResumeUploadResponse with resume details
     """
     try:
-        logger.info(f"Uploading resume: {file.filename} for user: {current_user.id}")
+        user_id = current_user.id if current_user else f"guest-{uuid4()}"
+        logger.info(f"Uploading resume: {file.filename} for user: {user_id}")
 
         # Save file to storage
         file_path, file_type, file_size = await file_service.save_upload(file)
@@ -67,7 +72,9 @@ async def upload_resume(
             file_type=file_type,
             file_size=file_size,
             status=ResumeStatus.UPLOADED,
-            user_id=current_user.id  # Use authenticated user ID
+            # AUTH_GATE_DISABLED: Original mapping.
+            # user_id=current_user.id
+            user_id=user_id
         )
 
         db.add(resume)
@@ -102,7 +109,9 @@ async def upload_resume(
 async def upload_resume_from_s3(
     request: S3UploadRequest,
     db: Session = Depends(get_db),
-    current_user: AuthUser = Depends(get_current_user)
+    # AUTH_GATE_DISABLED: Original gate required authenticated user.
+    # current_user: AuthUser = Depends(get_current_user)
+    current_user: Optional[AuthUser] = Depends(get_optional_user)
 ):
     """
     Register a resume that was uploaded to S3
@@ -121,7 +130,8 @@ async def upload_resume_from_s3(
         ResumeUploadResponse with resume details
     """
     try:
-        logger.info(f"Registering S3 resume: {request.original_filename}, key={request.s3_key} for user: {current_user.id}")
+        user_id = current_user.id if current_user else f"guest-{uuid4()}"
+        logger.info(f"Registering S3 resume: {request.original_filename}, key={request.s3_key} for user: {user_id}")
 
         # Download file from S3 to temp location for processing
         temp_dir = tempfile.mkdtemp()
@@ -143,7 +153,9 @@ async def upload_resume_from_s3(
             file_type=file_type,
             file_size=request.file_size,
             status=ResumeStatus.UPLOADED,
-            user_id=current_user.id,  # Use authenticated user ID
+            # AUTH_GATE_DISABLED: Original mapping.
+            # user_id=current_user.id,
+            user_id=user_id,
             s3_key=request.s3_key,  # Store S3 key
             s3_url=request.s3_url   # Store S3 URL
         )

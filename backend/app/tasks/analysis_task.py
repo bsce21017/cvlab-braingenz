@@ -14,7 +14,7 @@ from app.models.resume import Resume, ResumeStatus
 from app.models.analysis import Analysis
 from app.models.question import Question
 from app.services.ocr_service import ocr_service
-from app.services.s3_service import download_file_from_s3
+from app.services.azure_blob_service import download_file_from_s3
 from app.agents.prompt1_analyst import analyst_agent
 from app.agents.prompt2_gatherer import gatherer_agent
 

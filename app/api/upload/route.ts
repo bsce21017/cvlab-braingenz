@@ -1,21 +1,46 @@
 // app/api/upload/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import {
+  BlobServiceClient,
+  StorageSharedKeyCredential,
+  generateBlobSASQueryParameters,
+  BlobSASPermissions,
+} from '@azure/storage-blob';
 import { v4 as uuidv4 } from 'uuid';
 import { createClient } from '@supabase/supabase-js';
 
 // Force dynamic rendering for this API route
 export const dynamic = 'force-dynamic';
 
-// Configure S3 Client
-const s3Client = new S3Client({
-  region: process.env.AWS_REGION!,
-  credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
-  },
-});
+// Validate required environment variables
+const requiredEnvVars = [
+  'AZURE_STORAGE_CONNECTION_STRING',
+  'AZURE_STORAGE_ACCOUNT_NAME',
+  'AZURE_STORAGE_ACCOUNT_KEY',
+  'AZURE_CONTAINER_NAME',
+];
+
+const validateEnvironment = () => {
+  const missing = requiredEnvVars.filter(varName => !process.env[varName]);
+  if (missing.length > 0) {
+    throw new Error(
+      `Missing required environment variables: ${missing.join(', ')}. ` +
+      'Please set these in your environment file and restart the Next.js dev server.'
+    );
+  }
+};
+
+// Configure Azure Blob Storage Client
+let blobServiceClient: BlobServiceClient;
+
+try {
+  validateEnvironment();
+  blobServiceClient = BlobServiceClient.fromConnectionString(
+    process.env.AZURE_STORAGE_CONNECTION_STRING!
+  );
+} catch (error) {
+  console.error('Failed to initialize Azure Blob Storage client:', error);
+}
 
 // Verify Supabase token
 async function verifyAuth(req: NextRequest): Promise<{ userId: string } | null> {
@@ -42,11 +67,22 @@ async function verifyAuth(req: NextRequest): Promise<{ userId: string } | null> 
 
 export async function POST(req: NextRequest) {
   try {
+    try {
+      validateEnvironment();
+    } catch (envError: any) {
+      return NextResponse.json(
+        { error: 'Server configuration error', details: envError.message },
+        { status: 500 }
+      );
+    }
+
     // Verify authentication
     const auth = await verifyAuth(req);
-    if (!auth) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // AUTH_GATE_DISABLED: Keep original unauthorized block for easy restore.
+    // if (!auth) {
+    //   return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    // }
+    const userId = auth?.userId || `guest-${uuidv4()}`;
 
     // Parse form data
     const formData = await req.formData();
@@ -81,26 +117,36 @@ export async function POST(req: NextRequest) {
     // Convert File to Buffer
     const buffer = Buffer.from(await file.arrayBuffer());
     const fileExtension = file.name.split('.').pop();
-    const key = `resumes/${auth.userId}/${uuidv4()}.${fileExtension}`;
+    const blobName = `${userId}/${uuidv4()}.${fileExtension}`;
 
-    // Upload to S3
-    const command = new PutObjectCommand({
-      Bucket: process.env.S3_BUCKET!,
-      Key: key,
-      Body: buffer,
-      ContentType: file.type,
+    // Upload to Azure Blob Storage
+    const containerClient = blobServiceClient.getContainerClient(
+      process.env.AZURE_CONTAINER_NAME || 'resumes'
+    );
+    const blockBlobClient = containerClient.getBlockBlobClient(blobName);
+
+    await blockBlobClient.upload(buffer, buffer.length, {
+      blobHTTPHeaders: { blobContentType: file.type },
     });
 
-    await s3Client.send(command);
+    // Generate a SAS URL (valid for 1 hour)
+    const sharedKeyCredential = new StorageSharedKeyCredential(
+      process.env.AZURE_STORAGE_ACCOUNT_NAME!,
+      process.env.AZURE_STORAGE_ACCOUNT_KEY!
+    );
 
-    // Generate a presigned URL (valid for 1 hour)
-    const getCommand = new GetObjectCommand({
-      Bucket: process.env.S3_BUCKET!,
-      Key: key,
-    });
-    const presignedUrl = await getSignedUrl(s3Client, getCommand, { expiresIn: 3600 });
+    const sasToken = generateBlobSASQueryParameters(
+      {
+        containerName: process.env.AZURE_CONTAINER_NAME || 'resumes',
+        blobName,
+        permissions: BlobSASPermissions.parse('r'),
+        expiresOn: new Date(Date.now() + 3600 * 1000),
+      },
+      sharedKeyCredential
+    );
 
-    const fileUrl = `https://${process.env.S3_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;
+    const fileUrl = blockBlobClient.url;
+    const presignedUrl = `${fileUrl}?${sasToken}`;
 
     // Debug: Log the uploaded file URL
     console.log('File uploaded successfully!');
@@ -111,8 +157,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       success: true,
       fileUrl,
-      presignedUrl, // Use this URL to access the file
-      key,
+      presignedUrl,
+      key: blobName,
       originalName: file.name,
     });
   } catch (error: any) {

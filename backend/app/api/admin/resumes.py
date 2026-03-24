@@ -38,7 +38,7 @@ from app.schemas.admin import (
 )
 from app.services.supabase_service import SupabaseService
 from app.services import s3_service
-from app.services.s3_service import get_presigned_url, get_file_content_from_s3
+from app.services.azure_blob_service import get_sas_url, get_file_content_from_s3
 from app.config import settings
 from pathlib import Path
 
@@ -405,20 +405,19 @@ async def download_original_resume(
     original_filename = resume.original_filename or f"resume_{resume_id}.{resume.file_type}"
     download_filename = f"resume_{resume_id}_original.{resume.file_type}"
 
-    # If S3 key exists, generate presigned URL or return file content
+    # If S3 key exists, generate SAS URL or return file content
     if resume.s3_key:
         try:
-            # Try to get presigned URL first (for direct download)
-            presigned_url = get_presigned_url(
+            # Try to get SAS URL first (for direct download)
+            sas_url = get_sas_url(
                 resume.s3_key,
-                expiration=3600,
-                filename=download_filename,
-                force_download=True
+                expiration_hours=1,
+                filename=download_filename
             )
-            if presigned_url:
-                logger.info(f"Returning S3 presigned URL for original resume {resume_id}")
-                # Return JSON with presigned URL so frontend can handle it
-                return JSONResponse(content={"download_url": presigned_url})
+            if sas_url:
+                logger.info(f"Returning Azure SAS URL for original resume {resume_id}")
+                # Return JSON with SAS URL so frontend can handle it
+                return JSONResponse(content={"download_url": sas_url})
             
             # Fallback: get file content from S3 and stream it
             file_content = get_file_content_from_s3(resume.s3_key)

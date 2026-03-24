@@ -16,8 +16,8 @@ from app.db.database import get_db
 from app.models.resume import Resume, ResumeStatus
 from app.models.optimized_resume import OptimizedResume
 from app.models.cv_info_store import CVInfoStore
-from app.services.s3_service import get_presigned_url, upload_content_to_s3
-from app.auth.middleware import get_current_user, AuthUser
+from app.services.azure_blob_service import get_sas_url, upload_content_to_s3
+from app.auth.middleware import get_optional_user, AuthUser
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +28,9 @@ router = APIRouter()
 async def download_optimized_resume(
     resume_id: int,
     db: Session = Depends(get_db),
-    current_user: AuthUser = Depends(get_current_user)
+    # AUTH_GATE_DISABLED: Original required auth dependency.
+    # current_user: AuthUser = Depends(get_current_user)
+    current_user: Optional[AuthUser] = Depends(get_optional_user)
 ):
     """
     Download optimized resume
@@ -50,8 +52,10 @@ async def download_optimized_resume(
         if not resume:
             raise HTTPException(status_code=404, detail="Resume not found")
 
-        # Verify ownership
-        if resume.user_id != current_user.id:
+        # AUTH_GATE_DISABLED: Original strict ownership check.
+        # if resume.user_id != current_user.id:
+        #     raise HTTPException(status_code=403, detail="Access denied")
+        if current_user and resume.user_id != current_user.id:
             raise HTTPException(status_code=403, detail="Access denied")
 
         # Check status
@@ -77,12 +81,12 @@ async def download_optimized_resume(
 
         # If S3 key exists, redirect to presigned URL
         if optimized.s3_key:
-            presigned_url = get_presigned_url(optimized.s3_key, expiration=3600)
+            presigned_url = get_sas_url(optimized.s3_key, expiration_hours=1)
             if presigned_url:
-                logger.info(f"Redirecting to S3 presigned URL for resume_id={resume_id}")
+                logger.info(f"Redirecting to SAS URL for resume_id={resume_id}")
                 return RedirectResponse(url=presigned_url)
             else:
-                logger.warning(f"Failed to generate presigned URL, falling back to local file")
+                logger.warning(f"Failed to generate SAS URL, falling back to local file")
 
         # Fallback to local file
         file_path = Path(optimized.file_path)
@@ -106,7 +110,9 @@ async def download_optimized_resume(
 async def preview_optimized_resume(
     resume_id: int,
     db: Session = Depends(get_db),
-    current_user: AuthUser = Depends(get_current_user)
+    # AUTH_GATE_DISABLED: Original required auth dependency.
+    # current_user: AuthUser = Depends(get_current_user)
+    current_user: Optional[AuthUser] = Depends(get_optional_user)
 ):
     """
     Preview optimized resume (returns text content)
@@ -127,8 +133,10 @@ async def preview_optimized_resume(
         if not resume:
             raise HTTPException(status_code=404, detail="Resume not found")
 
-        # Verify ownership
-        if resume.user_id != current_user.id:
+        # AUTH_GATE_DISABLED: Original strict ownership check.
+        # if resume.user_id != current_user.id:
+        #     raise HTTPException(status_code=403, detail="Access denied")
+        if current_user and resume.user_id != current_user.id:
             raise HTTPException(status_code=403, detail="Access denied")
 
         # Check status
@@ -146,10 +154,10 @@ async def preview_optimized_resume(
         if not optimized:
             raise HTTPException(status_code=404, detail="Optimized resume not found")
 
-        # Generate S3 presigned URL if available
-        s3_download_url = None
+        # Generate SAS URL if available
+        sas_download_url = None
         if optimized.s3_key:
-            s3_download_url = get_presigned_url(optimized.s3_key, expiration=3600)
+            sas_download_url = get_sas_url(optimized.s3_key, expiration_hours=1)
 
         # Extract structured_data from optimized_json if available
         # This allows the frontend to use pre-parsed data instead of text parsing
@@ -165,7 +173,7 @@ async def preview_optimized_resume(
             "changes_summary": optimized.changes_summary,
             "file_format": optimized.file_format,
             "s3_url": optimized.s3_url,
-            "s3_download_url": s3_download_url
+            "s3_download_url": sas_download_url
         }
 
     except HTTPException:
@@ -185,7 +193,9 @@ class PDFUploadRequest(BaseModel):
 async def upload_pdf_to_s3(
     request: PDFUploadRequest,
     db: Session = Depends(get_db),
-    current_user: AuthUser = Depends(get_current_user)
+    # AUTH_GATE_DISABLED: Original required auth dependency.
+    # current_user: AuthUser = Depends(get_current_user)
+    current_user: Optional[AuthUser] = Depends(get_optional_user)
 ):
     """
     Upload client-generated PDF to S3 and update cv_info_store
@@ -195,7 +205,10 @@ async def upload_pdf_to_s3(
         resume = db.query(Resume).filter(Resume.id == request.resume_id).first()
         if not resume:
             raise HTTPException(status_code=404, detail="Resume not found")
-        if resume.user_id != current_user.id:
+        # AUTH_GATE_DISABLED: Original strict ownership check.
+        # if resume.user_id != current_user.id:
+        #     raise HTTPException(status_code=403, detail="Access denied")
+        if current_user and resume.user_id != current_user.id:
             raise HTTPException(status_code=403, detail="Access denied")
         if resume.status != ResumeStatus.OPTIMIZED:
             raise HTTPException(status_code=400, detail="Resume not optimized")
