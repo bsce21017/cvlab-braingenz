@@ -3,7 +3,7 @@
  * Handles all admin backend API communication
  */
 
-import { createClient } from './supabase/client';
+import { getToken } from './auth';
 
 // Production API URL
 // NEXT_PUBLIC_API_URL should be like: https://api.cvlab.sa/api
@@ -15,12 +15,10 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL
   : 'http://localhost:8002/api/admin';
 
 /**
- * Get current auth token from Supabase session
+ * Get current auth token from localStorage
  */
 async function getAuthToken(): Promise<string | null> {
-  const supabase = createClient();
-  const { data: { session } } = await supabase.auth.getSession();
-  return session?.access_token ?? null;
+  return getToken();
 }
 
 /**

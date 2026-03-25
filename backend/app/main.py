@@ -102,6 +102,10 @@ app.include_router(api_v1_router, prefix="/api/v1")
 from app.api.admin.router import router as admin_router
 app.include_router(admin_router, prefix="/api/admin")
 
+# Auth API router
+from app.api.auth.router import router as auth_router
+app.include_router(auth_router, prefix="/api/auth", tags=["Authentication"])
+
 
 # Global exception handler
 @app.exception_handler(Exception)

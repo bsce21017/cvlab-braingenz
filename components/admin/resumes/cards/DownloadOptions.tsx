@@ -5,7 +5,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { getResumeDownloadUrl } from '@/lib/admin-api';
-import { createClient } from '@/lib/supabase/client';
+import { getToken } from '@/lib/auth';
 
 interface DownloadOptionsProps {
   resumeId: number;
@@ -17,9 +17,7 @@ export default function DownloadOptions({ resumeId }: DownloadOptionsProps) {
   const handleDownload = async (type: 'original' | 'optimized') => {
     try {
       const downloadUrl = getResumeDownloadUrl(resumeId, type);
-      const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
-      const token = session?.access_token;
+      const token = getToken();
 
       // Fetch with authentication
       const response = await fetch(downloadUrl, {
