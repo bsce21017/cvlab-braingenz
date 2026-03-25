@@ -3,6 +3,7 @@ Answers API Endpoint
 Submit user answers to questions
 """
 import logging
+from typing import Optional
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 
@@ -12,7 +13,7 @@ from app.models.question import Question
 from app.models.answer import Answer
 from app.schemas.answer import AnswerSubmitRequest, AnswerResponse
 from app.tasks.optimization_task import optimize_resume_task
-from app.auth.middleware import get_current_user, AuthUser
+from app.auth.middleware import get_optional_user, AuthUser
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +24,9 @@ router = APIRouter()
 async def submit_answers(
     request: AnswerSubmitRequest,
     db: Session = Depends(get_db),
-    current_user: AuthUser = Depends(get_current_user)
+    # AUTH_GATE_DISABLED: Original required auth dependency.
+    # current_user: AuthUser = Depends(get_current_user)
+    current_user: Optional[AuthUser] = Depends(get_optional_user)
 ):
     """
     Submit user answers to questions
@@ -49,8 +52,10 @@ async def submit_answers(
         if not resume:
             raise HTTPException(status_code=404, detail="Resume not found")
 
-        # Verify ownership
-        if resume.user_id != current_user.id:
+        # AUTH_GATE_DISABLED: Original strict ownership check.
+        # if resume.user_id != current_user.id:
+        #     raise HTTPException(status_code=403, detail="Access denied")
+        if current_user and resume.user_id != current_user.id:
             raise HTTPException(status_code=403, detail="Access denied")
 
         # Check status

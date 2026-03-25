@@ -10,7 +10,7 @@ from datetime import datetime
 from pydantic import BaseModel
 
 from app.db.database import get_db
-from app.auth.middleware import get_current_user, AuthUser
+from app.auth.middleware import get_optional_user, AuthUser
 from app.services.user_notification_service import user_notification_service
 from app.models.user_notification import UserNotificationType
 
@@ -42,13 +42,23 @@ class UserNotificationListResponse(BaseModel):
 @router.get("/notifications", response_model=UserNotificationListResponse)
 async def list_user_notifications(
     db: Session = Depends(get_db),
-    current_user: AuthUser = Depends(get_current_user),
+    # AUTH_GATE_DISABLED: Original required auth dependency.
+    # current_user: AuthUser = Depends(get_current_user),
+    current_user: Optional[AuthUser] = Depends(get_optional_user),
     limit: int = Query(10, ge=1, le=50),
     unread_only: bool = Query(False, description="Only return unread notifications")
 ):
     """
     Get all notifications for the current user.
     """
+    # AUTH_GATE_DISABLED: Guests should not receive 401 here.
+    if not current_user:
+        return UserNotificationListResponse(
+            notifications=[],
+            unread_count=0,
+            total=0
+        )
+
     logger.info(f"User {current_user.id} fetching notifications")
     
     notifications = user_notification_service.get_notifications_for_user(
@@ -66,11 +76,16 @@ async def list_user_notifications(
 @router.get("/notifications/unread-count", response_model=dict)
 async def get_unread_count(
     db: Session = Depends(get_db),
-    current_user: AuthUser = Depends(get_current_user)
+    # AUTH_GATE_DISABLED: Original required auth dependency.
+    # current_user: AuthUser = Depends(get_current_user)
+    current_user: Optional[AuthUser] = Depends(get_optional_user)
 ):
     """
     Get the count of unread notifications for the current user.
     """
+    if not current_user:
+        return {"unread_count": 0}
+
     logger.info(f"User {current_user.id} fetching unread count")
     unread_count = user_notification_service.get_unread_count_for_user(db, current_user.id)
     return {"unread_count": unread_count}
@@ -80,11 +95,16 @@ async def get_unread_count(
 async def mark_user_notification_read(
     notification_id: int,
     db: Session = Depends(get_db),
-    current_user: AuthUser = Depends(get_current_user)
+    # AUTH_GATE_DISABLED: Original required auth dependency.
+    # current_user: AuthUser = Depends(get_current_user)
+    current_user: Optional[AuthUser] = Depends(get_optional_user)
 ):
     """
     Mark a specific user notification as read.
     """
+    if not current_user:
+        return {"message": "Guest mode: no notifications to mark", "id": notification_id}
+
     logger.info(f"User {current_user.id} marking notification {notification_id} as read")
     success = user_notification_service.mark_as_read_for_user(db, notification_id, current_user.id)
     if not success:
@@ -95,11 +115,16 @@ async def mark_user_notification_read(
 @router.patch("/notifications/read-all")
 async def mark_all_user_notifications_read(
     db: Session = Depends(get_db),
-    current_user: AuthUser = Depends(get_current_user)
+    # AUTH_GATE_DISABLED: Original required auth dependency.
+    # current_user: AuthUser = Depends(get_current_user)
+    current_user: Optional[AuthUser] = Depends(get_optional_user)
 ):
     """
     Mark all unread notifications as read for the current user.
     """
+    if not current_user:
+        return {"message": "Guest mode: no notifications to mark", "count": 0}
+
     logger.info(f"User {current_user.id} marking all notifications as read")
     count = user_notification_service.mark_all_as_read_for_user(db, current_user.id)
     return {"message": f"Marked {count} notifications as read", "count": count}

@@ -312,13 +312,13 @@ export async function getUserUnreadCount(): Promise<{ unread_count: number }> {
 
 export async function markUserNotificationRead(notificationId: number): Promise<{ message: string }> {
   return fetchAPI<{ message: string }>(`/notifications/${notificationId}/read`, {
-    method: 'PUT',
+    method: 'PATCH',
   });
 }
 
 export async function markAllUserNotificationsRead(): Promise<{ message: string }> {
   return fetchAPI<{ message: string }>('/notifications/read-all', {
-    method: 'PUT',
+    method: 'PATCH',
   });
 }
 

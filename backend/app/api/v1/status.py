@@ -3,6 +3,7 @@ Status API Endpoint
 Check resume processing status
 """
 import logging
+from typing import Optional
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 
@@ -13,7 +14,7 @@ from app.models.question import Question
 from app.models.answer import Answer
 from app.models.optimized_resume import OptimizedResume
 from app.schemas.resume import ResumeStatusResponse
-from app.auth.middleware import get_current_user, AuthUser
+from app.auth.middleware import get_optional_user, AuthUser
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +25,9 @@ router = APIRouter()
 async def get_resume_status(
     resume_id: int,
     db: Session = Depends(get_db),
-    current_user: AuthUser = Depends(get_current_user)
+    # AUTH_GATE_DISABLED: Original required auth dependency.
+    # current_user: AuthUser = Depends(get_current_user)
+    current_user: Optional[AuthUser] = Depends(get_optional_user)
 ):
     """
     Get resume processing status
@@ -50,8 +53,10 @@ async def get_resume_status(
         if not resume:
             raise HTTPException(status_code=404, detail="Resume not found")
 
-        # Verify ownership
-        if resume.user_id != current_user.id:
+        # AUTH_GATE_DISABLED: Original strict ownership check.
+        # if resume.user_id != current_user.id:
+        #     raise HTTPException(status_code=403, detail="Access denied")
+        if current_user and resume.user_id != current_user.id:
             raise HTTPException(status_code=403, detail="Access denied")
 
         # Check for related records

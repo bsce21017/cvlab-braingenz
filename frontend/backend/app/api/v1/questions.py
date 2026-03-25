@@ -3,6 +3,7 @@ Questions API Endpoint
 Get generated questions for a resume
 """
 import logging
+from typing import Optional
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 
@@ -10,7 +11,7 @@ from app.db.database import get_db
 from app.models.resume import Resume, ResumeStatus
 from app.models.question import Question
 from app.schemas.question import QuestionListResponse, QuestionItem
-from app.auth.middleware import get_current_user, AuthUser
+from app.auth.middleware import get_optional_user, AuthUser
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +22,9 @@ router = APIRouter()
 async def get_questions(
     resume_id: int,
     db: Session = Depends(get_db),
-    current_user: AuthUser = Depends(get_current_user)
+    # AUTH_GATE_DISABLED: Original required auth dependency.
+    # current_user: AuthUser = Depends(get_current_user)
+    current_user: Optional[AuthUser] = Depends(get_optional_user)
 ):
     """
     Get generated questions for a resume
@@ -43,8 +46,10 @@ async def get_questions(
         if not resume:
             raise HTTPException(status_code=404, detail="Resume not found")
 
-        # Verify ownership
-        if resume.user_id != current_user.id:
+        # AUTH_GATE_DISABLED: Original strict ownership check.
+        # if resume.user_id != current_user.id:
+        #     raise HTTPException(status_code=403, detail="Access denied")
+        if current_user and resume.user_id != current_user.id:
             raise HTTPException(status_code=403, detail="Access denied")
 
         # Check if questions are ready

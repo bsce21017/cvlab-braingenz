@@ -42,11 +42,12 @@ export async function updateSession(request: NextRequest) {
     request.nextUrl.pathname.startsWith(route)
   )
 
-  if (isProtectedRoute && !user) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/signin'
-    return NextResponse.redirect(url)
-  }
+  // AUTH_GATE_DISABLED: Keep original user-route auth wall for easy restore.
+  // if (isProtectedRoute && !user) {
+  //   const url = request.nextUrl.clone()
+  //   url.pathname = '/signin'
+  //   return NextResponse.redirect(url)
+  // }
 
   // Admin routes - require authentication and admin role
   const isAdminRoute = request.nextUrl.pathname.startsWith('/admin')

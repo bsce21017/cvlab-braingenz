@@ -45,6 +45,11 @@ class Settings(BaseSettings):
         "https://www.cvlab.sa",
         "http://cvlab.sa",
         "http://www.cvlab.sa",
+        # Local development
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:3001",
+        "http://127.0.0.1:3001",
     ]
 
     # File Storage

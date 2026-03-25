@@ -5,6 +5,7 @@
 
 // Production URL - used as fallback for all redirects and callbacks
 const PRODUCTION_URL = 'https://cvlab.sa';
+const LOCAL_DEV_URL = 'http://localhost:3000';
 
 /**
  * Get the site URL
@@ -18,6 +19,11 @@ export function getSiteUrl(): string {
   // Always prefer environment variable if set
   if (process.env.NEXT_PUBLIC_SITE_URL) {
     return process.env.NEXT_PUBLIC_SITE_URL;
+  }
+
+  // Local default for development when NEXT_PUBLIC_SITE_URL is unset
+  if (process.env.NODE_ENV !== 'production') {
+    return LOCAL_DEV_URL;
   }
   
   // Fallback to production URL (never use window.location.origin)
