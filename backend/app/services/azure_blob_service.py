@@ -8,7 +8,7 @@ import os
 from typing import Optional
 from datetime import datetime, timedelta
 
-from azure.storage.blob import BlobServiceClient, generate_blob_sas, BlobSasPermissions
+from azure.storage.blob import BlobServiceClient, generate_blob_sas, BlobSasPermissions, ContentSettings
 from azure.core.exceptions import AzureError
 
 logger = logging.getLogger(__name__)
@@ -84,7 +84,7 @@ def upload_file_to_azure(
         )
 
         with open(local_path, 'rb') as data:
-            blob_client.upload_blob(data, overwrite=True, content_settings={'content_type': content_type})
+            blob_client.upload_blob(data, overwrite=True, content_settings=ContentSettings(content_type=content_type))
 
         blob_url = blob_client.url
         logger.info(f"Uploaded {local_path} to {blob_url}")
@@ -121,7 +121,7 @@ def upload_content_to_azure(
             blob=blob_name
         )
 
-        blob_client.upload_blob(content, overwrite=True, content_settings={'content_type': content_type})
+        blob_client.upload_blob(content, overwrite=True, content_settings=ContentSettings(content_type=content_type))
 
         blob_url = blob_client.url
         logger.info(f"Uploaded content to {blob_url}")

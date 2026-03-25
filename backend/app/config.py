@@ -6,13 +6,17 @@ import os
 from pathlib import Path
 from typing import Optional
 from pydantic_settings import BaseSettings
+from pydantic import ConfigDict
 from dotenv import load_dotenv
-
-# Load environment variables
-load_dotenv()
 
 # Base directory
 BASE_DIR = Path(__file__).resolve().parent.parent
+PROJECT_ROOT = BASE_DIR.parent
+
+# Load environment variables from common locations.
+# Priority: process env > backend/.env > repo-level backend.env.production
+load_dotenv(BASE_DIR / ".env", override=False)
+load_dotenv(PROJECT_ROOT / "backend.env.production", override=False)
 
 
 class Settings(BaseSettings):
@@ -70,6 +74,12 @@ class Settings(BaseSettings):
     AWS_REGION: str = os.getenv("AWS_REGION", "me-central-1")
     S3_BUCKET: str = os.getenv("S3_BUCKET", "file-upload-cvai")
 
+    # Azure Blob Storage Settings
+    AZURE_STORAGE_CONNECTION_STRING: str = os.getenv("AZURE_STORAGE_CONNECTION_STRING", "")
+    AZURE_STORAGE_ACCOUNT_NAME: str = os.getenv("AZURE_STORAGE_ACCOUNT_NAME", "")
+    AZURE_STORAGE_ACCOUNT_KEY: str = os.getenv("AZURE_STORAGE_ACCOUNT_KEY", "")
+    AZURE_CONTAINER_NAME: str = os.getenv("AZURE_CONTAINER_NAME", "resumes")
+
     # Supabase Settings
     SUPABASE_URL: str = os.getenv("SUPABASE_URL", "")
     SUPABASE_ANON_KEY: str = os.getenv("SUPABASE_ANON_KEY", "")
@@ -95,9 +105,7 @@ class Settings(BaseSettings):
     PROMPT2_PATH: Path = PROMPTS_DIR / "generate_questions_prompt.txt"
     PROMPT3_PATH: Path = PROMPTS_DIR / "resume_enhancement_prompt.txt"
 
-    class Config:
-        env_file = ".env"
-        case_sensitive = True
+    model_config = ConfigDict(case_sensitive=True, extra='ignore')
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

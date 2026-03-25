@@ -2,246 +2,262 @@
 
 AI-powered resume optimization platform with a 3-prompt pipeline architecture. Built with Next.js (frontend) and FastAPI (backend).
 
-## Features
-
-### Authentication
-- **Supabase Auth** - Email/password and Google OAuth
-- **JWT-based API authentication** - Secure backend communication
-- **Auto-login after signup** - Seamless user experience
-
-### Resume Processing
-- **S3 File Storage** - AWS S3 for secure resume uploads
-- **OCR Text Extraction** - OpenAI Vision API for PDF processing
-- **3-Prompt AI Pipeline**:
-  1. **The Analyst** - CV analysis with ceiling/floor/delta mapping
-  2. **The Gatherer** - Generates 10-25 targeted questions
-  3. **The Craftsman** - Creates optimized CV (ZERO FABRICATION rule)
-- **Intelligent Resume Parsing** - Extracts structured data from optimized resumes:
-  - Supports markdown headers (`# Name`, `## Section`)
-  - Handles plain text formats (ALL CAPS section headers)
-  - Extracts contact info, experience, education, skills, certifications
-  - Robust name extraction from various formats
-  - Graceful fallback to raw text display
-
-### User Interface
-- **Bilingual Support** - English/Arabic with RTL support
-- **Drag & Drop Upload** - Modern file upload experience
-- **Real-time Progress** - Status tracking during processing
-- **Resume Preview** - Multiple template options (Classic, Modern, Executive, Technical)
-- **Robust Resume Parsing** - Handles multiple formats (markdown, plain text, various structures)
-- **Graceful Fallbacks** - Raw text display when structured parsing fails
-
 ## Tech Stack
 
 ### Frontend
-- Next.js 14 (App Router)
-- TypeScript
-- Tailwind CSS
-- Shadcn/ui Components
-- Supabase Client
+- Next.js 14 (App Router), TypeScript, Tailwind CSS, Shadcn/ui
+- Supabase Auth (email/password + Google OAuth)
+- Azure Blob Storage for file uploads
 
 ### Backend
-- FastAPI (Python 3.11+)
-- PostgreSQL + SQLAlchemy
-- Celery + Redis (Background tasks)
-- Claude/GPT-4o (LLM)
-- AWS S3
-- CORS middleware for cross-origin requests
-- Nginx reverse proxy configuration
+- FastAPI (Python 3.11+), PostgreSQL + SQLAlchemy, Alembic
+- Celery + Redis for background task processing
+- Claude (Anthropic) primary LLM, OpenAI GPT-4o for OCR
+- Azure Blob Storage
 
-## Project Structure
+---
 
+## Docker Setup (Recommended)
+
+Two separate docker-compose files must both be running.
+
+### Prerequisites
+- Docker Desktop installed and running
+- Fill in credentials in `backend/.env` and `.env` (see [Environment Variables](#environment-variables))
+
+### 1. Start the Backend
+
+```bash
+cd backend
+
+# Development (local PostgreSQL + Redis, backend on port 8000)
+docker-compose up -d --build
+
+# Production (Supabase DB, backend on port 8002)
+docker-compose -f docker-compose.prod.yml up -d --build
 ```
-cv-build/
-├── app/                    # Next.js pages
-│   ├── api/upload/         # S3 upload API route
-│   ├── signin/             # Sign in page
-│   ├── signup/             # Sign up page
-│   ├── payment/            # Payment page
-│   ├── processing/         # Processing status
-│   ├── questions/          # Q&A flow
-│   └── admin/              # Admin dashboard
-├── components/             # React components
-├── contexts/               # React contexts (Auth, Language)
-├── lib/                    # Utilities & Supabase client
-├── backend/                # FastAPI backend (see backend/README.md)
-└── public/                 # Static assets
+
+First time only — run migrations:
+```bash
+docker exec cv_build_backend alembic upgrade head
 ```
 
-## Quick Start
+### 2. Start the Frontend
+
+```bash
+# From repo root
+docker-compose up -d --build
+```
+
+### Container Overview
+
+| Container | Port | Compose file |
+|-----------|------|-------------|
+| `cvlab-app` | 8001 | root `docker-compose.yml` |
+| `cvlab_backend` / `cv_build_backend` | 8002 / 8000 | `backend/docker-compose.prod.yml` / `backend/docker-compose.yml` |
+| `cvlab_celery` / `cv_build_celery_worker` | — | backend compose |
+| `cvlab_redis` / `cv_build_redis` | 6379 | backend compose |
+
+> **Note:** Dev compose uses local PostgreSQL. Prod compose uses Supabase (external DB, no local postgres container).
+
+### Health Check
+
+```bash
+# Backend
+curl http://localhost:8000/health   # dev
+curl http://localhost:8002/health   # prod
+
+# Swagger UI
+open http://localhost:8000/docs
+```
+
+### Viewing Logs
+
+```bash
+cd backend
+
+# All services
+docker-compose logs -f
+
+# Celery worker only (most useful for debugging the AI pipeline)
+docker-compose logs -f celery_worker
+
+# Backend API only
+docker-compose logs -f backend
+```
+
+### Stop Everything
+
+```bash
+cd backend && docker-compose down
+# From repo root
+docker-compose down
+```
+
+---
+
+## Local Development (without Docker)
 
 ### Frontend
 
 ```bash
-# Install dependencies
 npm install
-
-# Configure environment
-cp .env.example .env
-# Edit .env with your credentials
-
-# Run development server
-npm run dev
+npm run dev        # http://localhost:3000
+npm run build
+npm run lint
+npm run typecheck
+npm test           # vitest
 ```
 
 ### Backend
 
 ```bash
 cd backend
-
-# Create virtual environment
 python -m venv venv
-venv\Scripts\activate  # Windows
-source venv/bin/activate  # Linux/Mac
+venv\Scripts\activate      # Windows
+source venv/bin/activate   # Linux/Mac
 
-# Install dependencies
 pip install -r requirements.txt
 
-# Configure environment
-cp .env.example .env
-# Edit .env with your credentials
-
-# Start services (PostgreSQL + Redis)
+# Start dependencies only
 docker-compose up -d postgres redis
 
 # Run migrations
 alembic upgrade head
 
-# Start FastAPI server
+# API server
 uvicorn app.main:app --reload --port 8000
 
-# Start Celery worker (separate terminal)
-celery -A app.tasks.celery_app worker --loglevel=info
+# Celery worker (separate terminal)
+celery -A app.tasks.celery_app worker --loglevel=info --pool=solo
 ```
+
+> **Important:** Always use `--pool=solo` for the Celery worker in local/Docker development. The default prefork pool hangs silently in WSL2/Docker environments.
+
+---
 
 ## Environment Variables
 
-### Frontend (.env)
+### Frontend (`.env`)
+
 ```env
-NEXT_PUBLIC_API_BASE_URL=http://localhost:8000/api/v1
+NEXT_PUBLIC_API_URL=http://localhost:8000/api
 NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
-AWS_ACCESS_KEY_ID=your-aws-key
-AWS_SECRET_ACCESS_KEY=your-aws-secret
-AWS_REGION=your-region
-S3_BUCKET=your-bucket
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+
+# Azure Blob Storage (for file uploads)
+AZURE_STORAGE_CONNECTION_STRING=DefaultEndpointsProtocol=https;AccountName=...
+AZURE_STORAGE_ACCOUNT_NAME=your-account-name
+AZURE_STORAGE_ACCOUNT_KEY=your-account-key
+AZURE_CONTAINER_NAME=resumes
+
+NEXT_PUBLIC_UPLOAD_API_URL=/api/upload
 ```
 
-### Backend (.env)
+### Backend (`backend/.env`)
+
 ```env
 ANTHROPIC_API_KEY=sk-ant-xxxxx
+OPENAI_API_KEY=sk-proj-xxxxx
+
 DATABASE_URL=postgresql://postgres:postgres@localhost:5432/cv_build
 REDIS_URL=redis://localhost:6379/0
+CELERY_BROKER_URL=redis://localhost:6379/0
+CELERY_RESULT_BACKEND=redis://localhost:6379/0
+
 SUPABASE_URL=your-supabase-url
 SUPABASE_ANON_KEY=your-supabase-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+
+AZURE_STORAGE_CONNECTION_STRING=DefaultEndpointsProtocol=https;AccountName=...
+AZURE_STORAGE_ACCOUNT_NAME=your-account-name
+AZURE_STORAGE_ACCOUNT_KEY=your-account-key
+AZURE_CONTAINER_NAME=resumes
+
+DEFAULT_LLM_PROVIDER=claude
+CLAUDE_MODEL=claude-sonnet-4-20250514
+USE_LANGGRAPH=false
+DEBUG=True
 ```
+
+---
+
+## Database Migrations
+
+```bash
+cd backend
+
+# Apply all pending migrations
+alembic upgrade head
+
+# Create a new migration
+alembic revision --autogenerate -m "description"
+
+# Roll back one migration
+alembic downgrade -1
+```
+
+---
+
+## API Endpoints
+
+### User API (`/api/v1/`)
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/upload` | Direct file upload |
+| POST | `/upload-s3` | Register Azure/S3 upload |
+| GET | `/status/{id}` | Poll resume processing status |
+| GET | `/questions/{id}` | Get generated questions |
+| POST | `/answers` | Submit user answers |
+| GET | `/preview/{id}` | Get optimized resume (JSON) |
+| GET | `/download/{id}` | Download optimized resume |
+
+### Resume Status Flow
+
+```
+UPLOADED → EXTRACTING → EXTRACTED → ANALYZING → ANALYZED
+→ QUESTIONS_GENERATED → OPTIMIZING → OPTIMIZED / FAILED
+```
+
+### Admin API (`/api/admin/`) — requires admin role
+
+Users, resumes, prompts, LLM config, claims management.
+
+---
 
 ## Routes
 
-### Public
 | Route | Description |
 |-------|-------------|
 | `/` | Landing page with upload |
-| `/signin` | Sign in |
-| `/signup` | Sign up |
-| `/payment` | Payment flow |
-| `/processing` | Processing status |
-| `/questions` | Optimization questions |
-| `/resume-preview` | Preview optimized resume with template selection |
-| `/profile` | User profile |
-| `/contact-us` | Contact page |
-
-### Admin
-| Route | Description |
-|-------|-------------|
-| `/admin/overview` | Dashboard overview |
+| `/processing` | Real-time processing status |
+| `/questions` | Q&A flow |
+| `/resume-preview` | Template selection & preview |
+| `/admin/overview` | Admin dashboard |
 | `/admin/resumes` | Resume management |
 | `/admin/users` | User management |
 | `/admin/prompts` | Prompt management |
 
-## API Endpoints
+---
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/v1/upload-s3` | Register S3 upload |
-| GET | `/api/v1/status/{id}` | Check processing status |
-| GET | `/api/v1/questions/{id}` | Get generated questions |
-| POST | `/api/v1/answers` | Submit user answers |
-| GET | `/api/v1/preview/{id}` | Get optimized resume preview (JSON) |
-| GET | `/api/v1/download/{id}` | Download optimized resume |
-
-## Development
+## Production Deployment
 
 ```bash
-# Type check
-npm run typecheck
+# Backend (Supabase DB, port 8002)
+cd backend
+docker-compose -f docker-compose.prod.yml up -d --build
 
-# Build
-npm run build
-
-# Lint
-npm run lint
+# Frontend (port 8001)
+# From repo root
+docker-compose up -d --build
 ```
 
-## Internationalization
+Production URLs: `https://cvlab.sa` (frontend) · `https://api.cvlab.sa` (backend)
 
-- Global language state via `LanguageContext`
-- Runtime direction switching (`ltr`/`rtl`)
-- Text translated via `t('key')` function
-
-## Resume Rendering
-
-The platform supports multiple resume templates with intelligent parsing:
-
-### Supported Templates
-- **Classic** - Traditional & Professional (ATS Friendly)
-- **Modern** - Contemporary & Creative (Bold Design)
-- **Executive** - Leadership & Senior Roles (Elegant)
-- **Technical** - IT & Engineering Roles
-
-### Parsing Capabilities
-The resume parser (`lib/parseResumeText.ts`) handles:
-- Markdown format with headers (`# Name`, `## Section`)
-- Plain text format with ALL CAPS section headers
-- Pipe-separated contact information
-- Various experience formats (bold titles, pipe-separated, bullet points)
-- Education entries with multiple formats
-- Skills (colon-separated categories, comma-separated lists)
-- Certifications and languages
-
-### Fallback Mechanism
-If structured parsing fails, the system gracefully falls back to displaying the raw optimized text, ensuring users always see their resume content.
-
-## Deployment
-
-### Production Setup
-- Frontend: Next.js standalone build in Docker (port 8001)
-- Backend: FastAPI with Docker Compose (port 8002)
-- Nginx: Reverse proxy for `cvlab.sa` and `api.cvlab.sa`
-- Celery: Background task processing for resume optimization
-- Redis: Task queue and caching
-
-### CORS Configuration
-- Frontend origin: `https://cvlab.sa`
-- API origin: `https://api.cvlab.sa`
-- CORS headers configured in both FastAPI middleware and Nginx
-
-## Recent Updates
-
-### Resume Parsing & Rendering (Latest)
-- Enhanced name extraction from various formats
-- Improved section detection (markdown and plain text)
-- Better experience/education parsing with pipe-separated formats
-- Skills parsing with category support
-- Graceful fallback to raw text when parsing fails
-- Multiple template support with robust data handling
-
-### CORS & Infrastructure
-- Fixed CORS policy for cross-origin API requests
-- Nginx configuration for API subdomain
-- Improved error handling in optimization tasks
-- Enhanced status checking for resume processing
+---
 
 ## License
 
-Proprietary - All rights reserved.
+Proprietary — All rights reserved.

@@ -31,7 +31,7 @@ def upgrade() -> None:
         sa.Column('text_s3_file_path', sa.String(length=1000), nullable=True),
         sa.Column('pdf_s3_file_path', sa.String(length=1000), nullable=True),
         sa.Column('date_added', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
-        sa.Column('metadata_status', sa.Enum('PENDING', 'DONE', 'ERROR', name='metadatastatus'), nullable=False, server_default='PENDING'),
+        sa.Column('metadata_status', postgresql.ENUM('PENDING', 'DONE', 'ERROR', name='metadatastatus', create_type=False), nullable=False, server_default='PENDING'),
         sa.Column('metadata_extracted_at', sa.DateTime(timezone=True), nullable=True),
         sa.Column('extracted_metadata', postgresql.JSONB(astext_type=sa.Text()), nullable=True),
         sa.Column('metadata_model', sa.String(length=100), nullable=True),

@@ -8,11 +8,14 @@ from typing import Optional
 from pydantic_settings import BaseSettings
 from dotenv import load_dotenv
 
-# Load environment variables
-load_dotenv()
-
 # Base directory
 BASE_DIR = Path(__file__).resolve().parent.parent
+PROJECT_ROOT = BASE_DIR.parent
+
+# Load environment variables from common locations.
+# Priority: process env > backend/.env > repo-level backend.env.production
+load_dotenv(BASE_DIR / ".env", override=False)
+load_dotenv(PROJECT_ROOT / "backend.env.production", override=False)
 
 
 class Settings(BaseSettings):

@@ -48,6 +48,7 @@ services:
       - REDIS_URL=redis://redis:6379/0
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - PYTHONUNBUFFERED=1
     env_file:
       - .env
     depends_on:
@@ -60,7 +61,7 @@ services:
   celery_worker:
     build: .
     container_name: cv_build_celery_worker
-    command: celery -A app.tasks.celery_app worker --loglevel=info
+    command: celery -A app.tasks.celery_app worker --loglevel=info --pool=solo
     volumes:
       - .:/app
       - ./uploads:/app/uploads
@@ -69,6 +70,7 @@ services:
       - REDIS_URL=redis://redis:6379/0
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - PYTHONUNBUFFERED=1
     env_file:
       - .env
     depends_on:

@@ -4,7 +4,9 @@ Handles background processing for Prompt 1 (Analysis) + Prompt 2 (Questions)
 """
 import logging
 import os
+import sys
 import tempfile
+import time
 from typing import Dict, Any
 from sqlalchemy.orm import Session
 
@@ -19,6 +21,12 @@ from app.agents.prompt1_analyst import analyst_agent
 from app.agents.prompt2_gatherer import gatherer_agent
 
 logger = logging.getLogger(__name__)
+
+
+def _log(msg: str):
+    """Force-flush log to ensure visibility in Docker logs."""
+    logger.info(msg)
+    print(f"[ANALYSIS_TASK] {msg}", flush=True)
 
 
 @celery_app.task(bind=True, name="tasks.analyze_resume")
@@ -37,68 +45,77 @@ def analyze_resume_task(self, resume_id: int) -> Dict[str, Any]:
     Returns:
         Dict with task results
     """
+    task_start = time.time()
+    _log(f"========== ANALYSIS TASK STARTED | resume_id={resume_id} | pid={os.getpid()} ==========")
+
     db: Session = SessionLocal()
 
     try:
-        logger.info(f"Starting analysis task for resume_id={resume_id}")
-
         # Get resume
+        _log(f"[DB] Querying resume_id={resume_id}")
         resume = db.query(Resume).filter(Resume.id == resume_id).first()
         if not resume:
             raise Exception(f"Resume not found: {resume_id}")
 
-        # Step 1: Extract text (OCR)
-        logger.info(f"Step 1: Extracting text from {resume.file_type} file")
+        _log(f"[DB] Found resume: filename={resume.original_filename}, type={resume.file_type}, "
+             f"size={resume.file_size}, s3_key={resume.s3_key}, file_path={resume.file_path}")
+
+        # ── Step 1: Extract text (OCR) ──────────────────────────────────────────
+        _log("STEP 1/3: Starting OCR text extraction")
         resume.status = ResumeStatus.EXTRACTING
         db.commit()
+        _log("[DB] Status → EXTRACTING committed")
 
         try:
-            # Determine file path - download from S3 if needed
             file_path = resume.file_path
             temp_file = None
 
             if resume.s3_key and (not os.path.exists(file_path)):
-                # File is in S3 and doesn't exist locally - download it
-                logger.info(f"Downloading file from S3: {resume.s3_key}")
+                _log(f"[AZURE] Local file missing, downloading from Azure: {resume.s3_key}")
                 temp_dir = tempfile.mkdtemp()
                 file_ext = os.path.splitext(resume.original_filename)[1]
                 temp_file = os.path.join(temp_dir, f"resume{file_ext}")
 
+                t0 = time.time()
                 success = download_file_from_s3(resume.s3_key, temp_file)
+                _log(f"[AZURE] Download {'SUCCESS' if success else 'FAILED'} in {time.time()-t0:.1f}s → {temp_file}")
                 if not success:
-                    raise Exception(f"Failed to download file from S3: {resume.s3_key}")
+                    raise Exception(f"Failed to download file from Azure: {resume.s3_key}")
 
                 file_path = temp_file
-                logger.info(f"Downloaded S3 file to: {file_path}")
+            else:
+                _log(f"[OCR] Using local file: {file_path} (exists={os.path.exists(file_path)})")
 
-            extracted_text = ocr_service.extract_text(
-                file_path,
-                resume.file_type
-            )
+            _log(f"[OCR] Calling extract_text: file_type={resume.file_type}, path={file_path}")
+            t0 = time.time()
+            extracted_text = ocr_service.extract_text(file_path, resume.file_type)
+            _log(f"[OCR] Extraction done in {time.time()-t0:.1f}s — {len(extracted_text)} chars extracted")
 
-            # Save extracted text
             resume.extracted_text = extracted_text
             resume.status = ResumeStatus.EXTRACTED
             db.commit()
-
-            logger.info(f"Text extraction complete: {len(extracted_text)} characters")
+            _log("[DB] Status → EXTRACTED committed")
 
         except Exception as e:
-            logger.error(f"OCR failed: {e}")
+            logger.error(f"OCR failed: {e}", exc_info=True)
+            _log(f"[ERROR] OCR failed: {e}")
             resume.status = ResumeStatus.FAILED
             resume.error_message = f"Text extraction failed: {str(e)}"
             db.commit()
             raise
 
-        # Step 2: Run Prompt 1 (The Analyst)
-        logger.info("Step 2: Running Prompt 1 (The Analyst)")
+        # ── Step 2: Run Prompt 1 (The Analyst) ─────────────────────────────────
+        _log("STEP 2/3: Running Prompt 1 — The Analyst")
         resume.status = ResumeStatus.ANALYZING
         db.commit()
+        _log("[DB] Status → ANALYZING committed")
 
         try:
+            t0 = time.time()
             analysis_result = analyst_agent.analyze_cv(extracted_text)
+            _log(f"[ANALYST] Completed in {time.time()-t0:.1f}s — "
+                 f"total_issues={analysis_result.get('total_issues', 'N/A')}")
 
-            # Save analysis to database
             analysis = Analysis(
                 resume_id=resume_id,
                 report_json=analysis_result,
@@ -109,26 +126,25 @@ def analyze_resume_task(self, resume_id: int) -> Dict[str, Any]:
             db.add(analysis)
             resume.status = ResumeStatus.ANALYZED
             db.commit()
-
-            logger.info(f"Analysis complete: {analysis.total_issues} issues identified")
+            _log(f"[DB] Status → ANALYZED committed | analysis_id={analysis.id}")
 
         except Exception as e:
-            logger.error(f"Analysis failed: {e}")
+            logger.error(f"Analysis (Prompt 1) failed: {e}", exc_info=True)
+            _log(f"[ERROR] Prompt 1 failed: {e}")
             resume.status = ResumeStatus.FAILED
             resume.error_message = f"Analysis failed: {str(e)}"
             db.commit()
             raise
 
-        # Step 3: Run Prompt 2 (The Gatherer)
-        logger.info("Step 3: Running Prompt 2 (The Gatherer)")
+        # ── Step 3: Run Prompt 2 (The Gatherer) ────────────────────────────────
+        _log("STEP 3/3: Running Prompt 2 — The Gatherer")
 
         try:
-            questions_result = gatherer_agent.generate_questions(
-                extracted_text,
-                analysis_result
-            )
+            t0 = time.time()
+            questions_result = gatherer_agent.generate_questions(extracted_text, analysis_result)
+            _log(f"[GATHERER] Completed in {time.time()-t0:.1f}s — "
+                 f"total_questions={questions_result.get('total_questions', 'N/A')}")
 
-            # Save questions to database
             question = Question(
                 resume_id=resume_id,
                 analysis_id=analysis.id,
@@ -139,18 +155,18 @@ def analyze_resume_task(self, resume_id: int) -> Dict[str, Any]:
             db.add(question)
             resume.status = ResumeStatus.QUESTIONS_GENERATED
             db.commit()
-
-            logger.info(f"Questions generated: {question.total_questions} questions")
+            _log(f"[DB] Status → QUESTIONS_GENERATED committed | question_id={question.id}")
 
         except Exception as e:
-            logger.error(f"Question generation failed: {e}")
+            logger.error(f"Question generation (Prompt 2) failed: {e}", exc_info=True)
+            _log(f"[ERROR] Prompt 2 failed: {e}")
             resume.status = ResumeStatus.FAILED
             resume.error_message = f"Question generation failed: {str(e)}"
             db.commit()
             raise
 
-        # Success!
-        logger.info(f"Analysis task complete for resume_id={resume_id}")
+        total_time = time.time() - task_start
+        _log(f"========== ANALYSIS TASK COMPLETE | resume_id={resume_id} | total={total_time:.1f}s ==========")
 
         return {
             "status": "success",
@@ -162,7 +178,9 @@ def analyze_resume_task(self, resume_id: int) -> Dict[str, Any]:
         }
 
     except Exception as e:
-        logger.error(f"Analysis task failed: {e}", exc_info=True)
+        total_time = time.time() - task_start
+        logger.error(f"Analysis task failed after {total_time:.1f}s: {e}", exc_info=True)
+        _log(f"========== ANALYSIS TASK FAILED | resume_id={resume_id} | {total_time:.1f}s | {e} ==========")
         return {
             "status": "failed",
             "resume_id": resume_id,
@@ -171,3 +189,4 @@ def analyze_resume_task(self, resume_id: int) -> Dict[str, Any]:
 
     finally:
         db.close()
+        _log(f"[DB] Session closed for resume_id={resume_id}")

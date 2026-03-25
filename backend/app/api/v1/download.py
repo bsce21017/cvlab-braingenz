@@ -221,7 +221,7 @@ async def upload_pdf_to_s3(
         pdf_s3_key = f"optimized/{uuid.uuid4()}_{original_name}_optimized.pdf"
         pdf_s3_url = upload_content_to_s3(
             content=pdf_content,
-            s3_key=pdf_s3_key,
+            blob_name=pdf_s3_key,
             content_type='application/pdf'
         )
 

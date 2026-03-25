@@ -127,11 +127,12 @@ function ProcessingContent() {
           }
         }
 
-        // Check for failure
-        if (status.status === 'FAILED') {
+        // Check for failure (status values are lowercase from backend)
+        if (status.status === 'failed') {
           clearInterval(pollInterval);
           clearInterval(progressInterval);
-          setError(status.error_message || 'Processing failed');
+          console.error('[PROCESSING] Resume failed:', status.error_message);
+          setError(status.error_message || 'Processing failed. Please try uploading again.');
           return;
         }
 

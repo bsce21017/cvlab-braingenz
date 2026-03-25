@@ -18,6 +18,7 @@ from app.services.file_service import file_service
 from app.services.azure_blob_service import download_file_from_s3, get_file_content_from_s3
 from app.tasks.analysis_task import analyze_resume_task
 from app.auth.middleware import get_optional_user, AuthUser
+from app.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +32,18 @@ class S3UploadRequest(BaseModel):
     original_filename: str
     file_size: int
     file_type: str
+
+
+def _require_openai_key() -> None:
+    """Fail fast when OCR dependency is not configured."""
+    if not settings.OPENAI_API_KEY:
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "OPENAI_API_KEY is not configured on backend. "
+                "Resume analysis cannot start. Please set OPENAI_API_KEY and restart backend and celery worker."
+            )
+        )
 
 
 @router.post("/upload", response_model=ResumeUploadResponse)
@@ -59,6 +72,7 @@ async def upload_resume(
         ResumeUploadResponse with resume details
     """
     try:
+        _require_openai_key()
         user_id = current_user.id if current_user else f"guest-{uuid4()}"
         logger.info(f"Uploading resume: {file.filename} for user: {user_id}")
 
@@ -130,6 +144,7 @@ async def upload_resume_from_s3(
         ResumeUploadResponse with resume details
     """
     try:
+        _require_openai_key()
         user_id = current_user.id if current_user else f"guest-{uuid4()}"
         logger.info(f"Registering S3 resume: {request.original_filename}, key={request.s3_key} for user: {user_id}")
 

@@ -102,10 +102,11 @@ class LLMHandler:
             raise Exception("Claude client not initialized. Check API key.")
 
         try:
-            logger.info(f"Calling Claude API with model: {self.model}")
+            import time as _time
+            t0 = _time.time()
+            logger.info(f"[LLM] Calling Claude API | model={self.model} | max_tokens={max_tokens}")
+            print(f"[LLM_HANDLER] Calling Claude: model={self.model} max_tokens={max_tokens}", flush=True)
 
-            # Convert messages format if needed (Claude expects specific format)
-            # For Claude, we need to extract system messages separately
             system_message = ""
             user_messages = []
 
@@ -118,11 +119,9 @@ class LLMHandler:
                         "content": msg["content"]
                     })
 
-            # If no user messages, just use the first message
             if not user_messages:
                 user_messages = [{"role": "user", "content": messages[0]["content"]}]
 
-            # Call Claude API
             kwargs = {
                 "model": self.model,
                 "max_tokens": max_tokens,
@@ -135,11 +134,14 @@ class LLMHandler:
             response = self.claude_client.messages.create(**kwargs)
 
             result = response.content[0].text
-            logger.info(f"Claude API call successful. Response length: {len(result)} chars")
+            elapsed = _time.time() - t0
+            logger.info(f"[LLM] Claude response: {len(result)} chars in {elapsed:.1f}s")
+            print(f"[LLM_HANDLER] Claude SUCCESS: {len(result)} chars in {elapsed:.1f}s", flush=True)
             return result
 
         except Exception as e:
-            logger.error(f"Claude API call failed: {str(e)}")
+            logger.error(f"[LLM] Claude API call failed: {str(e)}")
+            print(f"[LLM_HANDLER] Claude FAILED: {e}", flush=True)
             raise
 
     def _call_openai(self, messages: list, max_tokens: int = 8000) -> str:
@@ -157,9 +159,11 @@ class LLMHandler:
             raise Exception("OpenAI client not initialized. Check API key.")
 
         try:
-            logger.info(f"Calling OpenAI API with model: {self.model}")
+            import time as _time
+            t0 = _time.time()
+            logger.info(f"[LLM] Calling OpenAI API | model={self.model} | max_tokens={max_tokens}")
+            print(f"[LLM_HANDLER] Calling OpenAI: model={self.model} max_tokens={max_tokens}", flush=True)
 
-            # For o1 models, use max_completion_tokens instead of max_tokens
             if self.model.startswith("o1"):
                 response = self.openai_client.chat.completions.create(
                     model=self.model,
@@ -174,11 +178,14 @@ class LLMHandler:
                 )
 
             result = response.choices[0].message.content.strip()
-            logger.info(f"OpenAI API call successful. Response length: {len(result)} chars")
+            elapsed = _time.time() - t0
+            logger.info(f"[LLM] OpenAI response: {len(result)} chars in {elapsed:.1f}s")
+            print(f"[LLM_HANDLER] OpenAI SUCCESS: {len(result)} chars in {elapsed:.1f}s", flush=True)
             return result
 
         except Exception as e:
-            logger.error(f"OpenAI API call failed: {str(e)}")
+            logger.error(f"[LLM] OpenAI API call failed: {str(e)}")
+            print(f"[LLM_HANDLER] OpenAI FAILED: {e}", flush=True)
             raise
 
     def generate(

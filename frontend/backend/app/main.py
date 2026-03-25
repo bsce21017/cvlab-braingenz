@@ -29,6 +29,11 @@ async def lifespan(app: FastAPI):
     logger.info("Starting CV Build AI Backend...")
     logger.info(f"Version: {settings.VERSION}")
     logger.info(f"Debug mode: {settings.DEBUG}")
+    if not settings.OPENAI_API_KEY:
+        logger.warning(
+            "OPENAI_API_KEY is not configured. Resume processing OCR fallback will fail. "
+            "Set OPENAI_API_KEY in backend environment to enable analysis pipeline."
+        )
 
     # Initialize database
     try:
