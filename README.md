@@ -254,8 +254,6 @@ docker-compose -f docker-compose.prod.yml up -d --build
 docker-compose up -d --build
 ```
 
-Production URLs: `https://cvlab.sa` (frontend) · `https://api.cvlab.sa` (backend)
-
 ---
 
 ## License
