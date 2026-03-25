@@ -78,20 +78,12 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (!isAdmin) {
+  if (!user || !isAdmin) {
     return (
       <div className="flex h-screen items-center justify-center bg-gray-100">
-        <div className="rounded-lg bg-yellow-50 p-6 text-center">
-          <p className="text-yellow-700 font-medium">Access Denied</p>
-          <p className="text-yellow-600 text-sm mt-2">
-            You do not have permission to access the admin panel.
-          </p>
-          <button
-            onClick={() => router.push('/')}
-            className="mt-4 px-4 py-2 bg-gray-800 text-white rounded hover:bg-gray-900"
-          >
-            Go Home
-          </button>
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
+          <p className="text-gray-600">Redirecting...</p>
         </div>
       </div>
     );

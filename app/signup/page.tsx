@@ -8,6 +8,7 @@ import { Eye, EyeOff, Mail, Lock, User, Loader2, ArrowRight, ArrowLeft } from 'l
 import { toast } from 'sonner';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { signUpApi } from '@/lib/auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -74,32 +75,27 @@ function SignUpContent() {
     setIsSubmitting(true);
 
     try {
-      const { error: signUpError } = await signUp(formData.email, formData.password, formData.fullName);
+      await signUpApi(formData.email, formData.password, formData.fullName);
 
-      if (signUpError) {
-        const errorMessage = signUpError.message.toLowerCase();
+      toast.success(t('signUpSuccess') || 'Account created successfully! Please sign in.', { duration: 3000 });
+      clearSensitiveFields();
+      setTimeout(() => {
+        window.location.href = '/signin';
+      }, 1500);
+    } catch (err: any) {
+      const errorMessage = (err.message || '').toLowerCase();
 
-        if (errorMessage.includes('already registered') || errorMessage.includes('already exists')) {
-          setError(t('emailAlreadyRegistered') || 'This email is already registered. Please sign in instead.');
-          toast.error(t('emailAlreadyRegistered') || 'Email already registered');
-          setTimeout(() => router.push('/signin'), 2000);
-        } else if (errorMessage.includes('invalid email')) {
-          setError(t('invalidEmail') || 'Please enter a valid email address.');
-        } else if (errorMessage.includes('password')) {
-          setError(signUpError.message);
-        } else {
-          setError(signUpError.message || t('failedToCreateAccount') || 'Failed to create account.');
-        }
-        clearSensitiveFields();
-        setIsSubmitting(false);
-        return;
+      if (errorMessage.includes('already registered') || errorMessage.includes('already exists')) {
+        setError(t('emailAlreadyRegistered') || 'This email is already registered. Please sign in instead.');
+        toast.error(t('emailAlreadyRegistered') || 'Email already registered');
+        setTimeout(() => router.push('/signin'), 2000);
+      } else if (errorMessage.includes('invalid email')) {
+        setError(t('invalidEmail') || 'Please enter a valid email address.');
+      } else if (errorMessage.includes('password')) {
+        setError(err.message);
+      } else {
+        setError(err.message || t('failedToCreateAccount') || 'Failed to create account.');
       }
-
-      toast.success(t('signUpSuccess') || 'Account created successfully! Welcome!');
-      window.location.href = '/admin/dashboard';
-    } catch (err) {
-      console.error('Signup error:', err);
-      setError(t('unexpectedError') || 'An unexpected error occurred. Please try again.');
       clearSensitiveFields();
     } finally {
       setIsSubmitting(false);
