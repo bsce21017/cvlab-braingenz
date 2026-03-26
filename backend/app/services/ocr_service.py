@@ -621,21 +621,25 @@ Instructions:
             text = self._extract_from_pdf(file_path)
 
         elif file_type == "docx":
-            text = self.extract_text_from_docx(file_path)
-            # If docx extraction fails, try as PDF (might be misnamed)
+            # Primary: OpenAI Vision (faster, handles all formats reliably)
+            logger.info("DOCX: Trying OpenAI extraction first (primary)...")
+            text = self._extract_from_pdf(file_path)
+            # Fallback: local python-docx extraction
             if not text or len(text) < 50:
-                logger.info("DOCX extraction failed, trying as PDF...")
-                text = self._extract_from_pdf(file_path)
+                logger.info("OpenAI extraction failed, falling back to local DOCX parser...")
+                text = self.extract_text_from_docx(file_path)
 
         elif file_type == "doc":
-            text = self.extract_text_from_doc(file_path)
-            # If doc extraction fails, try as docx then PDF
+            # Primary: OpenAI Vision (faster, handles all formats reliably)
+            logger.info("DOC: Trying OpenAI extraction first (primary)...")
+            text = self._extract_from_pdf(file_path)
+            # Fallback: local doc extraction methods
             if not text or len(text) < 50:
-                logger.info("DOC extraction failed, trying as DOCX...")
+                logger.info("OpenAI extraction failed, falling back to local DOC parser...")
+                text = self.extract_text_from_doc(file_path)
+            if not text or len(text) < 50:
+                logger.info("DOC fallback failed, trying as DOCX...")
                 text = self.extract_text_from_docx(file_path)
-            if not text or len(text) < 50:
-                logger.info("DOCX fallback failed, trying as PDF...")
-                text = self._extract_from_pdf(file_path)
 
         elif file_type == "rtf":
             text = self.extract_text_from_rtf(file_path)
