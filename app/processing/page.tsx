@@ -6,7 +6,7 @@ import ResumePreviewHeader from '@/components/resume/ResumePreviewHeader';
 import ProcessingAnimation from '@/components/processing/ProcessingAnimation';
 import ProgressBar from '@/components/processing/ProgressBar';
 import ProTip from '@/components/processing/ProTip';
-import LanguageSwitcher from '@/components/questions/LanguageSwitcher';
+
 import { useLanguage } from '@/contexts/LanguageContext';
 import { getResumeStatus, StatusResponse } from '@/lib/api';
 import { Loader2 } from 'lucide-react';
@@ -188,7 +188,7 @@ function ProcessingContent() {
     <div className="min-h-screen bg-[#F5F5F7] flex flex-col">
       <ResumePreviewHeader />
       <div className="flex justify-end px-6 py-2">
-        <LanguageSwitcher />
+        
       </div>
 
       <div className="flex-1 flex items-center justify-center px-6 pb-8">

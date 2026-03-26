@@ -52,6 +52,7 @@ export default function ClaimsTable() {
   const [statusFilter, setStatusFilter] = useState<StatusFilterType>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [openDropdown, setOpenDropdown] = useState<number | null>(null);
+  const [expandedClaim, setExpandedClaim] = useState<number | null>(null);
 
   const pageSize = 10;
 
@@ -95,7 +96,8 @@ export default function ClaimsTable() {
       await updateClaimStatus(claimId, newStatus);
       fetchClaims();
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to update status');
+      const msg = err instanceof Error ? err.message : typeof err === 'string' ? err : 'Failed to update status';
+      alert(msg);
     }
     setOpenDropdown(null);
   };
@@ -297,7 +299,11 @@ export default function ClaimsTable() {
               </tr>
             ) : (
               claims.map((claim) => (
-                <tr key={claim.id} className="hover:bg-gray-50 transition-colors">
+                <React.Fragment key={claim.id}>
+                <tr
+                  className="hover:bg-gray-50 transition-colors cursor-pointer"
+                  onClick={() => setExpandedClaim(expandedClaim === claim.id ? null : claim.id)}
+                >
                   <td className={`px-6 py-4 text-sm font-medium text-gray-900 ${isArabic ? 'text-right' : 'text-left'}`}>
                     {claim.claim_id}
                   </td>
@@ -378,6 +384,24 @@ export default function ClaimsTable() {
                     </div>
                   </td>
                 </tr>
+                {expandedClaim === claim.id && (
+                  <tr>
+                    <td colSpan={6} className="px-6 py-0">
+                      <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 my-3">
+                        <h4 className="text-sm font-semibold text-gray-900 mb-3">Claim Details</h4>
+                        <div className="whitespace-pre-wrap text-sm text-gray-700 leading-relaxed">
+                          {claim.description}
+                        </div>
+                        <div className="mt-4 pt-4 border-t border-gray-200 flex items-center gap-4">
+                          <span className="text-xs text-gray-500">Claim ID: {claim.claim_id}</span>
+                          <span className="text-xs text-gray-500">Status: {claim.status}</span>
+                          <span className="text-xs text-gray-500">Submitted: {formatSubmitted(claim.created_at)}</span>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+                </React.Fragment>
               ))
             )}
           </tbody>
