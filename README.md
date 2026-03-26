@@ -34,7 +34,7 @@ cd backend
 docker-compose up -d --build
 
 # Production (Supabase DB, backend on port 8002)
-docker-compose -f docker-compose.prod.yml up -d --build
+# docker-compose -f docker-compose.prod.yml up -d --build
 ```
 
 First time only — run migrations:
