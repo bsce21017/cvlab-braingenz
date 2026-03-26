@@ -8,7 +8,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import ResumePreviewHeader from '@/components/resume/ResumePreviewHeader';
 import FileDisplay from '@/components/questions/FileDisplay';
 import QuestionCard from '@/components/questions/QuestionCard';
-import LanguageSwitcher from '@/components/questions/LanguageSwitcher';
+
 import { getQuestions, submitAnswers, QuestionItem, AnswerItem } from '@/lib/api';
 
 export default function QuestionsPage() {
@@ -127,7 +127,7 @@ export default function QuestionsPage() {
             </div>
             <h1 className="text-lg font-medium text-gray-900">{t('questions')}</h1>
           </div>
-          <LanguageSwitcher />
+          
         </div>
 
         <FileDisplay

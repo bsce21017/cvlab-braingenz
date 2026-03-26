@@ -314,7 +314,7 @@ export async function getClaims(params: ClaimListParams = {}): Promise<ClaimList
 export async function updateClaimStatus(claimId: number, status: ClaimStatus): Promise<AdminClaim> {
   return fetchAdminAPI<AdminClaim>(`/claims/${claimId}/status`, {
     method: 'PATCH',
-    body: JSON.stringify({ status }),
+    body: JSON.stringify({ status: status.toLowerCase() }),
   });
 }
 

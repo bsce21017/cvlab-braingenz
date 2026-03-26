@@ -2,7 +2,7 @@
 
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
-import LanguageSwitcher from '@/components/questions/LanguageSwitcher';
+
 import { useLanguage } from '@/contexts/LanguageContext';
 
 export default function PrivacyPolicyPage() {
@@ -11,7 +11,7 @@ export default function PrivacyPolicyPage() {
     <div className="flex flex-col min-h-screen">
       <Header />
       <div className="flex justify-end px-6 pt-4">
-        <LanguageSwitcher />
+        
       </div>
       <main className="flex-1 bg-white">
         <div className="max-w-4xl mx-auto px-6 py-16">

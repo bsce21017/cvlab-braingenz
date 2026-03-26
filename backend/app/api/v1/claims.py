@@ -9,6 +9,8 @@ from sqlalchemy.orm import Session
 from sqlalchemy import desc
 import math
 
+from pydantic import BaseModel, EmailStr, Field
+
 from app.db.database import get_db
 from app.auth.middleware import get_current_user, AuthUser
 from app.models.claim import Claim, ClaimStatus
@@ -16,6 +18,38 @@ from app.schemas.admin import ClaimCreate, ClaimResponse, ClaimStatus as SchemaC
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
+
+
+class PublicClaimCreate(BaseModel):
+    """Public contact form submission"""
+    full_name: str = Field(..., min_length=2, max_length=200)
+    email: EmailStr
+    phone: Optional[str] = None
+    message: str = Field(..., min_length=10, max_length=5000)
+
+
+@router.post("/claims/public")
+async def create_public_claim(
+    claim_data: PublicClaimCreate,
+    db: Session = Depends(get_db)
+):
+    """Create a claim from the public contact form (no auth required)"""
+    logger.info(f"Public contact form submission from {claim_data.email}")
+
+    claim = Claim(
+        user_id=f"guest:{claim_data.email}",
+        subject=f"Contact from {claim_data.full_name}",
+        description=f"Name: {claim_data.full_name}\nEmail: {claim_data.email}\nPhone: {claim_data.phone or 'N/A'}\n\nMessage:\n{claim_data.message}",
+        status=ClaimStatus.OPEN
+    )
+
+    db.add(claim)
+    db.commit()
+    db.refresh(claim)
+
+    logger.info(f"Public claim {claim.id} created successfully")
+
+    return {"success": True, "message": "Your message has been sent successfully!", "claim_id": claim.claim_id_formatted}
 
 
 def map_claim_status(status: ClaimStatus) -> SchemaClaimStatus:

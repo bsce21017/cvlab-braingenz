@@ -7,7 +7,7 @@ import ResumePreviewHeader from '@/components/resume/ResumePreviewHeader';
 import { TemplateSelector, Template } from '@/components/resume/TemplateSelector';
 import { ResumePreview } from '@/components/resume/ResumePreview';
 import { Button } from '@/components/ui/button';
-import LanguageSwitcher from '@/components/questions/LanguageSwitcher';
+
 import { useLanguage } from '@/contexts/LanguageContext';
 import { getResumePreview, PreviewResponse, uploadPDFToS3 } from '@/lib/api';
 import { downloadResumeAsWord } from '@/lib/downloadResume';
@@ -173,7 +173,7 @@ export default function ResumePreviewPage() {
 
       <main className="mx-auto max-w-7xl p-6">
         <div className="mb-6 flex justify-end items-center gap-4">
-          <LanguageSwitcher />
+          
           <div className="flex items-center gap-3">
             <Button
               type="button"
