@@ -9,7 +9,7 @@ interface ProgressBarProps {
 
 export default function ProgressBar({ progress, label }: ProgressBarProps) {
   const { language } = useLanguage();
-  const isRTL = language === 'ar';
+  const isRTL = language === 'ur';
 
   return (
     <div className="w-full">

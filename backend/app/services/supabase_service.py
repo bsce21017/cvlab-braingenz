@@ -1,269 +1,143 @@
 """
-Supabase Service
-Handles interactions with Supabase for user management
+User Service
+Handles user management via admin_users table in Azure PostgreSQL
+(Replaces the old Supabase-based service)
 """
 import logging
-from typing import Optional, Dict, Any
-import httpx
+from typing import Optional, Dict, Any, List
+from sqlalchemy.orm import Session
 
-from app.config import settings
+from app.db.database import SessionLocal
+from app.models.admin_user import AdminUser
 
 logger = logging.getLogger(__name__)
 
 
 class SupabaseService:
-    """Service for Supabase Admin API operations"""
+    """Service for user management operations using admin_users table.
+    Keeps the class name for backward compatibility with existing code."""
 
-    def __init__(self):
-        self.supabase_url = settings.SUPABASE_URL
-        self.service_role_key = settings.SUPABASE_SERVICE_ROLE_KEY
-        self.headers = {
-            "apikey": self.service_role_key,
-            "Authorization": f"Bearer {self.service_role_key}",
-            "Content-Type": "application/json"
-        }
+    def _get_db(self) -> Session:
+        return SessionLocal()
 
     async def get_user_by_id(self, user_id: str) -> Optional[Dict[str, Any]]:
-        """
-        Get user details from Supabase by ID
-
-        Args:
-            user_id: Supabase user UUID
-
-        Returns:
-            User data dict or None if not found
-        """
-        if not self.supabase_url or not self.service_role_key:
-            logger.warning("Supabase credentials not configured")
-            return None
-
+        """Get user details by ID"""
+        db = self._get_db()
         try:
-            async with httpx.AsyncClient() as client:
-                response = await client.get(
-                    f"{self.supabase_url}/auth/v1/admin/users/{user_id}",
-                    headers=self.headers,
-                    timeout=10.0
-                )
+            user = db.query(AdminUser).filter(AdminUser.id == int(user_id)).first()
+            if not user:
+                logger.info(f"User {user_id} not found")
+                return None
 
-                if response.status_code == 200:
-                    user_data = response.json()
-                    # Get role from user_metadata first, then raw_user_meta_data, then default to 'authenticated'
-                    user_metadata = user_data.get('user_metadata', {})
-                    raw_metadata = user_data.get('raw_user_meta_data', {})
-                    custom_role = user_metadata.get('role') or raw_metadata.get('role')
-                    # If no custom role, use the auth role (usually 'authenticated' for regular users)
-                    auth_role = user_data.get('role', 'authenticated')
-                    # Prefer custom role over auth role
-                    user_role = custom_role if custom_role else auth_role
-                    
-                    return {
-                        'id': user_data.get('id'),
-                        'email': user_data.get('email'),
-                        'full_name': user_metadata.get('full_name') or raw_metadata.get('full_name'),
-                        'role': user_role,
-                        'status': 'active' if not user_data.get('banned_until') else 'inactive',
-                        'created_at': user_data.get('created_at'),
-                        'last_sign_in_at': user_data.get('last_sign_in_at'),
-                        'email_confirmed_at': user_data.get('email_confirmed_at')
-                    }
-                elif response.status_code == 404:
-                    logger.info(f"User {user_id} not found in Supabase")
-                    return None
-                else:
-                    logger.error(f"Failed to get user from Supabase: {response.status_code}")
-                    return None
-
+            return {
+                'id': str(user.id),
+                'email': user.email,
+                'full_name': user.full_name,
+                'role': user.role,
+                'status': 'active' if user.is_active else 'inactive',
+                'created_at': user.created_at.isoformat() if user.created_at else None,
+                'last_sign_in_at': user.updated_at.isoformat() if user.updated_at else None,
+                'email_confirmed_at': user.created_at.isoformat() if user.created_at else None,
+            }
         except Exception as e:
-            logger.error(f"Error fetching user from Supabase: {e}")
+            logger.error(f"Error fetching user: {e}")
             return None
+        finally:
+            db.close()
 
     async def list_users(
         self,
         page: int = 1,
         per_page: int = 50
     ) -> Dict[str, Any]:
-        """
-        List all users from Supabase
-
-        Args:
-            page: Page number
-            per_page: Items per page
-
-        Returns:
-            Dict with users list and total count
-        """
-        if not self.supabase_url or not self.service_role_key:
-            logger.warning("Supabase credentials not configured")
-            return {"users": [], "total": 0}
-
+        """List all users with pagination"""
+        db = self._get_db()
         try:
-            async with httpx.AsyncClient() as client:
-              # Supabase Admin API uses different pagination - try both formats
-                response = await client.get(
-                    f"{self.supabase_url}/auth/v1/admin/users",
-                    headers=self.headers,
-                    params={"page": page, "per_page": per_page},
-                    timeout=30.0
-                )
+            offset = (page - 1) * per_page
+            users_query = db.query(AdminUser).order_by(AdminUser.created_at.desc())
+            total = users_query.count()
+            users_list = users_query.offset(offset).limit(per_page).all()
 
-                if response.status_code == 200:
-                    data = response.json()
-                    users = []
-                    
-                    # Handle different response formats
-                    # Format 1: Direct array of users
-                    if isinstance(data, list):
-                        user_list = data
-                    # Format 2: Object with 'users' key
-                    elif isinstance(data, dict) and 'users' in data:
-                        user_list = data['users']
-                    # Format 3: Object with other structure
-                    else:
-                        logger.warning(f"Unexpected Supabase response format: {type(data)}")
-                        user_list = []
-                    
-                    for user_data in user_list:
-                        # Get role from user_metadata first, then raw_user_meta_data, then default to 'authenticated'
-                        user_metadata = user_data.get('user_metadata', {})
-                        raw_metadata = user_data.get('raw_user_meta_data', {})
-                        custom_role = user_metadata.get('role') or raw_metadata.get('role')
-                        # If no custom role, use the auth role (usually 'authenticated' for regular users)
-                        auth_role = user_data.get('role', 'authenticated')
-                        # Prefer custom role over auth role
-                        user_role = custom_role if custom_role else auth_role
-                        
-                        users.append({
-                            'id': user_data.get('id'),
-                            'email': user_data.get('email'),
-                            'full_name': user_metadata.get('full_name') or raw_metadata.get('full_name'),
-                            'role': user_role,
-                            'status': 'active' if not user_data.get('banned_until') else 'inactive',
-                            'created_at': user_data.get('created_at'),
-                            'last_sign_in_at': user_data.get('last_sign_in_at'),
-                            'banned_until': user_data.get('banned_until')
-                        })
-                    
-                    logger.info(f"Supabase API returned {len(users)} users for page {page}")
-                    return {
-                        "users": users,
-                        "total": len(users)  # Total will be accumulated across all pages
-                    }
-                else:
-                    logger.error(f"Failed to list users from Supabase: {response.status_code} - {response.text[:200]}")
-                    return {"users": [], "total": 0}
+            users = []
+            for user in users_list:
+                users.append({
+                    'id': str(user.id),
+                    'email': user.email,
+                    'full_name': user.full_name,
+                    'role': user.role,
+                    'status': 'active' if user.is_active else 'inactive',
+                    'created_at': user.created_at.isoformat() if user.created_at else None,
+                    'last_sign_in_at': user.updated_at.isoformat() if user.updated_at else None,
+                    'banned_until': None if user.is_active else '2099-01-01T00:00:00',
+                })
 
+            logger.info(f"Listed {len(users)} users (page {page}, total: {total})")
+            return {
+                "users": users,
+                "total": total
+            }
         except Exception as e:
-            logger.error(f"Error listing users from Supabase: {e}")
+            logger.error(f"Error listing users: {e}")
             return {"users": [], "total": 0}
+        finally:
+            db.close()
 
     async def update_user_status(self, user_id: str, status: str) -> bool:
-        """
-        Update user status in Supabase (ban/unban)
-
-        Args:
-            user_id: Supabase user UUID
-            status: 'active' or 'inactive'
-
-        Returns:
-            True if successful, False otherwise
-        """
-        if not self.supabase_url or not self.service_role_key:
-            logger.warning("Supabase credentials not configured")
-            return False
-
+        """Update user status (active/inactive)"""
+        db = self._get_db()
         try:
-            async with httpx.AsyncClient() as client:
-                # Use ban_duration to set status
-                # Setting to "none" unbans, setting to a duration bans
-                if status == 'inactive':
-                    # Ban user for a very long time (essentially permanent)
-                    body = {"ban_duration": "876000h"}  # ~100 years
-                else:
-                    # Unban user
-                    body = {"ban_duration": "none"}
+            user = db.query(AdminUser).filter(AdminUser.id == int(user_id)).first()
+            if not user:
+                logger.error(f"User {user_id} not found")
+                return False
 
-                response = await client.put(
-                    f"{self.supabase_url}/auth/v1/admin/users/{user_id}",
-                    headers=self.headers,
-                    json=body,
-                    timeout=10.0
-                )
-
-                if response.status_code == 200:
-                    logger.info(f"User {user_id} status updated to {status}")
-                    return True
-                else:
-                    logger.error(f"Failed to update user status: {response.status_code} - {response.text}")
-                    return False
-
+            user.is_active = (status == 'active')
+            db.commit()
+            logger.info(f"User {user_id} status updated to {status}")
+            return True
         except Exception as e:
-            logger.error(f"Error updating user status in Supabase: {e}")
+            db.rollback()
+            logger.error(f"Error updating user status: {e}")
             return False
+        finally:
+            db.close()
 
     async def delete_user(self, user_id: str) -> bool:
-        """
-        Delete a user from Supabase
-
-        Args:
-            user_id: Supabase user UUID
-
-        Returns:
-            True if successful, False otherwise
-        """
-        if not self.supabase_url or not self.service_role_key:
-            logger.warning("Supabase credentials not configured")
-            return False
-
+        """Delete a user"""
+        db = self._get_db()
         try:
-            async with httpx.AsyncClient() as client:
-                response = await client.delete(
-                    f"{self.supabase_url}/auth/v1/admin/users/{user_id}",
-                    headers=self.headers,
-                    timeout=10.0
-                )
+            user = db.query(AdminUser).filter(AdminUser.id == int(user_id)).first()
+            if not user:
+                logger.error(f"User {user_id} not found")
+                return False
 
-                if response.status_code in [200, 204]:
-                    logger.info(f"User {user_id} deleted from Supabase")
-                    return True
-                else:
-                    logger.error(f"Failed to delete user from Supabase: {response.status_code}")
-                    return False
-
+            db.delete(user)
+            db.commit()
+            logger.info(f"User {user_id} deleted")
+            return True
         except Exception as e:
-            logger.error(f"Error deleting user from Supabase: {e}")
+            db.rollback()
+            logger.error(f"Error deleting user: {e}")
             return False
+        finally:
+            db.close()
 
     async def update_user_role(self, user_id: str, role: str) -> bool:
-        """
-        Update user role in Supabase
-
-        Args:
-            user_id: Supabase user UUID
-            role: New role ('user', 'admin', etc.)
-
-        Returns:
-            True if successful, False otherwise
-        """
-        if not self.supabase_url or not self.service_role_key:
-            logger.warning("Supabase credentials not configured")
-            return False
-
+        """Update user role"""
+        db = self._get_db()
         try:
-            async with httpx.AsyncClient() as client:
-                response = await client.put(
-                    f"{self.supabase_url}/auth/v1/admin/users/{user_id}",
-                    headers=self.headers,
-                    json={"role": role},
-                    timeout=10.0
-                )
+            user = db.query(AdminUser).filter(AdminUser.id == int(user_id)).first()
+            if not user:
+                logger.error(f"User {user_id} not found")
+                return False
 
-                if response.status_code == 200:
-                    logger.info(f"User {user_id} role updated to {role}")
-                    return True
-                else:
-                    logger.error(f"Failed to update user role: {response.status_code}")
-                    return False
-
+            user.role = role
+            db.commit()
+            logger.info(f"User {user_id} role updated to {role}")
+            return True
         except Exception as e:
-            logger.error(f"Error updating user role in Supabase: {e}")
+            db.rollback()
+            logger.error(f"Error updating user role: {e}")
             return False
+        finally:
+            db.close()

@@ -52,7 +52,7 @@ export default function AdminSidebar() {
     },
   ];
 
-  const isRTL = language === 'ar';
+  const isRTL = language === 'ur';
 
   return (
     <aside className={`w-56 bg-white border-r border-gray-200 h-screen overflow-y-auto ${isRTL ? 'border-l border-r-0' : ''}`} dir={isRTL ? 'rtl' : 'ltr'}>

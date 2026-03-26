@@ -6,7 +6,7 @@ import ResumesDashboardTable from './ResumesDashboardTable';
 
 export default function ResumesDashboardPage() {
   const { language } = useLanguage();
-  const isRTL = language === 'ar';
+  const isRTL = language === 'ur';
 
   return (
     <div className="bg-gray-50" dir={isRTL ? 'rtl' : 'ltr'}>

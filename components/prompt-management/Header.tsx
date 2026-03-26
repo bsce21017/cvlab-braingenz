@@ -31,7 +31,7 @@ export default function PromptManagementHeader() {
   const { language, t } = useLanguage();
   const { user, signOut } = useAdminAuth();
   const router = useRouter();
-  const isArabic = language === 'ar';
+  const isArabic = language === 'ur';
   const pathname = usePathname();
   const sectionLabel = getAdminSectionLabel(pathname, t);
   const [isSigningOut, setIsSigningOut] = useState(false);

@@ -8,7 +8,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 
 export default function AdminDashboardPage() {
   const { language } = useLanguage();
-  const isRTL = language === 'ar';
+  const isRTL = language === 'ur';
 
   return (
     <div className="flex flex-col h-screen" dir={isRTL ? 'rtl' : 'ltr'}>

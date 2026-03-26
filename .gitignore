@@ -109,3 +109,4 @@ Thumbs.db
 # Docker volumes (local)
 postgres_data/
 redis_data/
+backend/.env.example

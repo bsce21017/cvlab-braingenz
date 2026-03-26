@@ -17,7 +17,7 @@ Backend FastAPI (port 8002)
     ↓ queues task
 Celery Worker  →  Redis (broker)
     ↓ uses
-PostgreSQL (Supabase-hosted)  +  Anthropic/OpenAI APIs
+PostgreSQL (Azure-hosted)  +  Anthropic/OpenAI APIs
 ```
 
 ### 3-Prompt Pipeline (in `backend/app/agents/`)
@@ -29,8 +29,11 @@ PostgreSQL (Supabase-hosted)  +  Anthropic/OpenAI APIs
 `UPLOADED → EXTRACTING → EXTRACTED → ANALYZING → ANALYZED → QUESTIONS_GENERATED → OPTIMIZING → OPTIMIZED / FAILED`
 
 ### Auth
-- Frontend uses Supabase Auth (JWT); tokens forwarded to backend in `Authorization: Bearer` header
-- Backend middleware (`backend/app/auth/middleware.py`) verifies JWT via Supabase
+- Custom JWT authentication (replaced Supabase Auth); tokens stored in localStorage, forwarded to backend in `Authorization: Bearer` header
+- Backend middleware (`backend/app/auth/middleware.py`) verifies JWT using `python-jose`
+- Admin users stored in `admin_users` table (`backend/app/models/admin_user.py`) with bcrypt-hashed passwords
+- Auth endpoints at `/api/auth/` — signup, signin, me (`backend/app/api/auth/router.py`)
+- Frontend auth via `lib/auth.ts` + `contexts/AuthContext.tsx` + `contexts/AdminAuthContext.tsx`
 - Most user endpoints use `get_optional_user` — guest mode is enabled (no login required)
 - Admin endpoints require admin role
 
@@ -66,7 +69,7 @@ docker-compose up -d --build
 
 **Dev vs Prod compose:**
 - `backend/docker-compose.yml` — dev only; runs local postgres on port 5432, maps backend to `8000:8000`, uses `backend/.env`
-- `backend/docker-compose.prod.yml` — production; uses Supabase DB (external), maps backend to `8002:8000`, no `--reload`
+- `backend/docker-compose.prod.yml` — production; uses Azure PostgreSQL (external), maps backend to `8002:8000`, no `--reload`
 
 ## Local Development
 
@@ -98,8 +101,8 @@ alembic upgrade head
 # API server
 uvicorn app.main:app --reload --port 8000
 
-# Celery worker (separate terminal, same venv)
-celery -A app.tasks.celery_app worker --loglevel=info
+# Celery worker (separate terminal, same venv; use --pool=solo on Windows/WSL2/Docker)
+celery -A app.tasks.celery_app worker --loglevel=info --pool=solo
 ```
 
 ### Run a single test
@@ -124,10 +127,13 @@ alembic downgrade -1
 | `backend/app/services/azure_blob_service.py` | Azure Blob Storage (primary) |
 | `backend/app/services/llm_handler.py` | Unified Claude/GPT-4o interface |
 | `backend/app/services/ocr_service.py` | Text extraction via OpenAI Vision |
+| `backend/app/api/auth/router.py` | Custom JWT auth endpoints (signup/signin/me) |
+| `backend/app/models/admin_user.py` | Admin user model (bcrypt passwords) |
 | `backend/prompts/` | Prompt template text files |
 | `app/api/upload/route.ts` | Next.js Azure upload handler |
+| `lib/auth.ts` | Frontend auth utilities (custom JWT) |
 | `lib/parseResumeText.ts` | Frontend resume parser (markdown + plain text) |
-| `contexts/` | React Auth + Language (i18n) contexts |
+| `contexts/` | React Auth, AdminAuth, and Language (i18n) contexts |
 | `__tests__/` | Vitest tests (functional + visual regression) |
 
 ## Configuration Notes
@@ -149,4 +155,7 @@ alembic downgrade -1
 | POST | `/api/v1/answers` | optional | Submit answers |
 | GET | `/api/v1/preview/{id}` | optional | Get optimized resume JSON |
 | GET | `/api/v1/download/{id}` | optional | Download optimized resume |
+| POST | `/api/auth/signup` | none | Register new admin user |
+| POST | `/api/auth/signin` | none | Sign in (returns JWT) |
+| GET | `/api/auth/me` | bearer | Get current user profile |
 | GET/POST | `/api/admin/*` | admin role | Admin dashboard operations |

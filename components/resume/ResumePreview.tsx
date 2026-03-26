@@ -61,7 +61,7 @@ const sampleResumeData: ResumeData = {
 
 export function ResumePreview({ optimizedText, template = 'classic', onResumeDataReady }: ResumePreviewProps) {
   const { t, language } = useLanguage();
-  const isRTL = language === 'ar';
+  const isRTL = language === 'ur';
   const [zoom, setZoom] = useState(100);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const templateRef = useRef<HTMLDivElement>(null);

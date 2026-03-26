@@ -39,7 +39,7 @@ type StatusFilterType = 'all' | ClaimStatus;
 
 export default function ClaimsTable() {
   const { t, language } = useLanguage();
-  const isArabic = language === 'ar';
+  const isArabic = language === 'ur';
 
   const [claims, setClaims] = useState<AdminClaim[]>([]);
   const [loading, setLoading] = useState(true);

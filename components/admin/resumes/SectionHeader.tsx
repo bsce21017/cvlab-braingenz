@@ -26,7 +26,7 @@ export default function AdminSectionHeader({
   const { t, language } = useLanguage();
   const { user, signOut } = useAdminAuth();
   const router = useRouter();
-  const isArabic = language === 'ar';
+  const isArabic = language === 'ur';
   const pathname = usePathname();
   const [isSigningOut, setIsSigningOut] = useState(false);
 

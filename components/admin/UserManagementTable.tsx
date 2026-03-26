@@ -50,7 +50,7 @@ export default function UserManagementTable({
 }) {
   const router = useRouter();
   const { t, language } = useLanguage();
-  const isArabic = language === 'ar';
+  const isArabic = language === 'ur';
 
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
