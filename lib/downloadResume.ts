@@ -27,6 +27,7 @@ import {
   VerticalAlign,
 } from "docx";
 import { ResumeData } from "./resumeDataTypes";
+import { classicStyle, modernStyle, executiveStyle } from "./templateStyles";
 
 // ============================================================================
 // FONT & SIZE CONFIGURATION
@@ -499,19 +500,26 @@ function generateClassicTemplate(
   data: ResumeData,
   children: (Paragraph | Table)[],
 ): void {
-  const BLACK = COLORS.black;
+  // Colors from shared templateStyles (single source of truth)
+  const CLASSIC_C = {
+    name: classicStyle.colors.name.replace('#', ''),
+    sectionHeading: classicStyle.colors.sectionHeading.replace('#', ''),
+    divider: classicStyle.colors.divider.replace('#', ''),
+    bodyText: classicStyle.colors.bodyText.replace('#', ''),
+    subtleText: classicStyle.colors.subtleText.replace('#', ''),
+  };
   const FONT = FONT_FAMILIES.serif;
 
   // Helper to create text with classic styling
   const classicText = (
     text: string,
-    options: { bold?: boolean; italic?: boolean; size?: number } = {},
+    options: { bold?: boolean; italic?: boolean; size?: number; color?: string } = {},
   ): TextRun => {
     return new TextRun({
       text,
       font: FONT,
       size: options.size ?? CLASSIC_SIZES.body,
-      color: BLACK,
+      color: options.color ?? CLASSIC_C.bodyText,
       bold: options.bold,
       italics: options.italic,
     });
@@ -521,7 +529,7 @@ function generateClassicTemplate(
   const createSection = (heading: string): void => {
     children.push(
       new Paragraph({
-        children: [classicText(heading.toUpperCase(), { bold: true, size: CLASSIC_SIZES.sectionHeading })],
+        children: [classicText(heading.toUpperCase(), { bold: true, size: CLASSIC_SIZES.sectionHeading, color: CLASSIC_C.sectionHeading })],
         spacing: { before: SPACING.lg, after: SPACING.xs },
         keepNext: true,
       }),
@@ -532,7 +540,7 @@ function generateClassicTemplate(
         spacing: { after: SPACING.sm },
         border: {
           bottom: {
-            color: BLACK,
+            color: CLASSIC_C.divider,
             size: 1,
             style: BorderStyle.SINGLE,
           },
@@ -551,7 +559,7 @@ function generateClassicTemplate(
           font: FONT,
           size: CLASSIC_SIZES.name,
           bold: true,
-          color: BLACK,
+          color: CLASSIC_C.name,
           characterSpacing: 40, // Letter spacing (in twips, ~2pt)
         }),
       ],
@@ -597,8 +605,8 @@ function generateClassicTemplate(
         createLeftRightLine(exp.title || "", exp.period || "", {
           leftBold: true,
           rightBold: false,
-          leftColor: BLACK,
-          rightColor: BLACK,
+          leftColor: CLASSIC_C.bodyText,
+          rightColor: CLASSIC_C.subtleText,
           leftSize: CLASSIC_SIZES.body,
           rightSize: CLASSIC_SIZES.body,
           spacingAfter: 0,
@@ -664,8 +672,8 @@ function generateClassicTemplate(
         createLeftRightLine(institutionLine, edu.period || "", {
           leftBold: true,
           rightBold: false,
-          leftColor: BLACK,
-          rightColor: BLACK,
+          leftColor: CLASSIC_C.bodyText,
+          rightColor: CLASSIC_C.subtleText,
           leftSize: CLASSIC_SIZES.body,
           rightSize: CLASSIC_SIZES.body,
           spacingAfter: 0,
@@ -789,12 +797,12 @@ function generateModernTemplate(
   data: ResumeData,
   children: (Paragraph | Table)[],
 ): void {
-  // Colors matching golden reference
+  // Colors from shared templateStyles (single source of truth)
   const MODERN_COLORS = {
-    black: "000000",      // Pure black for name and headings
-    darkGray: "333333",   // Body text
-    mediumGray: "666666", // Secondary text (dates, company)
-    dividerGray: "CCCCCC", // Light gray for divider lines
+    black: modernStyle.colors.name.replace('#', ''),
+    darkGray: modernStyle.colors.bodyText.replace('#', ''),
+    mediumGray: modernStyle.colors.subtleText.replace('#', ''),
+    dividerGray: modernStyle.colors.divider.replace('#', ''),
   };
 
   // Font sizes in half-points (multiply pt by 2)
@@ -1069,11 +1077,11 @@ function generateExecutiveTemplate(
   data: ResumeData,
   children: (Paragraph | Table)[],
 ): void {
-  // Executive colors matching PDF spec
+  // Colors from shared templateStyles (single source of truth)
   const EXEC_COLORS = {
-    navy: "003366",      // Name, section headings, dividers
-    black: "000000",     // Body text, job titles, bullets, company line
-    darkGray: "444444",  // Contact info, dates
+    navy: executiveStyle.colors.primary.replace('#', ''),
+    black: executiveStyle.colors.bodyText.replace('#', ''),
+    darkGray: executiveStyle.colors.subtleText.replace('#', ''),
   };
 
   // Font sizes in half-points (multiply pt by 2)

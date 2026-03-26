@@ -227,13 +227,13 @@ export default function HeroSection() {
     <section className="relative pt-8 pb-16 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto text-center space-y-6">
         <div className="space-y-6">
-          <h1 className="text-5xl md:text-6xl lg:text-[72px] text-gray-900 leading-tight">
+          <h1 className={`text-gray-900 ${language === 'ur' ? 'text-4xl md:text-5xl lg:text-6xl leading-[2.2] md:leading-[2.4]' : 'text-5xl md:text-6xl lg:text-[72px] leading-tight'}`}>
             <span className="font-normal">{t('heroTitleLine1Part1')}</span>
             {t('heroTitleLine1Part2') && t('heroTitleLine1Part2') !== 'heroTitleLine1Part2' && (
               <>{' '}<span className="font-bold">{t('heroTitleLine1Part2')}</span></>
             )}
             <br />
-            <span className="font-bold">{t('heroTitleLine2')}</span>
+            <span className={`font-bold${language === 'ur' ? ' font-almarai' : ''}`}>{t('heroTitleLine2')}</span>
           </h1>
 
           <p className="text-lg md:text-xl leading-relaxed max-w-2xl mx-auto font-normal" style={{ color: '#475569' }}>

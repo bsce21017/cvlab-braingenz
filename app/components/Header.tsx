@@ -42,9 +42,9 @@ export default function Header() {
   };
 
   // Get user info from Supabase user object
-  const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
+  const userName = user?.full_name || user?.email?.split('@')[0] || 'User';
   const userEmail = user?.email || '';
-  const userAvatar = user?.user_metadata?.avatar_url || user?.user_metadata?.picture || null;
+  const userAvatar = null;
 
   return (
     <>

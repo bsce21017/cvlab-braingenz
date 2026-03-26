@@ -8,8 +8,8 @@ RUN apk add --no-cache libc6-compat
 # Copy package files
 COPY package.json package-lock.json* ./
 
-# Install dependencies
-RUN npm ci --legacy-peer-deps
+# Install dependencies (--ignore-scripts skips canvas native build; not needed in production)
+RUN npm ci --legacy-peer-deps --ignore-scripts
 
 # Stage 2: Builder
 FROM node:20-alpine AS builder
@@ -23,21 +23,8 @@ COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 
-# Build-time environment variables (needed for Next.js build)
-# These should be passed as build args or from .env files
-ARG NEXT_PUBLIC_SITE_URL
-ARG NEXT_PUBLIC_API_URL
-ARG NEXT_PUBLIC_SUPABASE_URL
-ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
-ARG NEXT_PUBLIC_UPLOAD_API_URL
-
-ENV NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL
-ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
-ENV NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL
-ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY
-ENV NEXT_PUBLIC_UPLOAD_API_URL=$NEXT_PUBLIC_UPLOAD_API_URL
-
 # Build the application
+# NEXT_PUBLIC_* vars are read from .env.production by Next.js during build (NODE_ENV=production)
 RUN npm run build
 
 # Stage 3: Runner
@@ -60,6 +47,7 @@ COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 
 # Set correct permissions
+RUN chown -R nextjs:nodejs /app
 USER nextjs
 
 # Expose port

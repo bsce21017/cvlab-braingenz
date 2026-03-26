@@ -390,6 +390,7 @@ export function ResumePreview({ optimizedText, template = 'classic', onResumeDat
           ref={templateRef}
           key={`card-${template}`}
           className="overflow-hidden shadow-lg inline-block"
+          dir="ltr"
           style={{
             transform: isFullscreen ? 'scale(1)' : `scale(${zoom / 100})`,
             transformOrigin: isFullscreen ? 'top center' : 'top left',

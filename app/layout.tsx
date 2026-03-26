@@ -1,11 +1,17 @@
 import './globals.css';
 import type { Metadata } from 'next';
-import { Manrope } from 'next/font/google';
+import { Manrope, Gulzar } from 'next/font/google';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { Toaster } from '@/components/ui/sonner';
 
 const manrope = Manrope({ subsets: ['latin'] });
+const gulzar = Gulzar({
+  subsets: ['arabic'],
+  weight: ['400'],
+  variable: '--font-gulzar',
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
   title: 'ResumeAI - Optimize Your Career',
@@ -19,7 +25,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={manrope.className} suppressHydrationWarning>
+      <body className={`${manrope.className} ${gulzar.variable}`} suppressHydrationWarning>
         <AuthProvider>
           <LanguageProvider>
             {children}

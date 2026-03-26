@@ -51,35 +51,13 @@
   font-display: swap;
 }
 
-/* Almarai Arabic Font */
-@font-face {
-  font-family: 'Almarai';
-  src: url('/fonts/Almarai/Almarai-Light.ttf') format('truetype');
-  font-weight: 300;
-  font-style: normal;
-  font-display: swap;
-}
+/* Gulzar Urdu — loaded via next/font/google as --font-gulzar */
 
+/* Jameel Noori Nastaleeq — used for specific Urdu heading lines */
 @font-face {
-  font-family: 'Almarai';
-  src: url('/fonts/Almarai/Almarai-Regular.ttf') format('truetype');
+  font-family: 'Jameel Noori Nastaleeq';
+  src: url('/fonts/jameel-noori-nastaleeq/Jameel Noori Nastaleeq Regular.ttf') format('truetype');
   font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Almarai';
-  src: url('/fonts/Almarai/Almarai-Bold.ttf') format('truetype');
-  font-weight: 700;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Almarai';
-  src: url('/fonts/Almarai/Almarai-ExtraBold.ttf') format('truetype');
-  font-weight: 800;
   font-style: normal;
   font-display: swap;
 }
@@ -91,7 +69,7 @@ body,
   font-family: 'Manrope', sans-serif;
 }
 
-/* Apply Almarai font for Urdu language - override all fonts */
+/* Apply Gulzar font for Urdu language - override all fonts */
 html[lang="ur"],
 html[lang="ur"] body,
 html[lang="ur"] *,
@@ -99,7 +77,14 @@ html[dir="rtl"],
 html[dir="rtl"] body,
 html[dir="rtl"] *,
 .font-urdu {
-  font-family: 'Almarai', sans-serif !important;
+  font-family: var(--font-gulzar), 'Gulzar', sans-serif !important;
+}
+
+/* Force Jameel Noori Nastaleeq on specific elements — must come after Gulzar rule, with higher specificity */
+html .font-almarai,
+html[lang="ur"] .font-almarai,
+html[dir="rtl"] .font-almarai {
+  font-family: 'Jameel Noori Nastaleeq', sans-serif !important;
 }
 
 /* RTL support for stat cards - swap icon and text positions */
