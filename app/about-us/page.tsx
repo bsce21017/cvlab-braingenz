@@ -8,7 +8,7 @@ import Image from 'next/image';
 
 export default function AboutUsPage() {
   const { t, language } = useLanguage();
-  const isRTL = language === 'ar';
+  const isRTL = language === 'ur';
 
   return (
     <div className="flex flex-col min-h-screen bg-white" dir={isRTL ? 'rtl' : 'ltr'}>

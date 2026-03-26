@@ -11,7 +11,7 @@ import { useEffect } from 'react';
 function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   const { isAdmin, isLoading, error, user } = useAdminAuth();
   const { language } = useLanguage();
-  const isRTL = language === 'ar';
+  const isRTL = language === 'ur';
   const router = useRouter();
 
   useEffect(() => {

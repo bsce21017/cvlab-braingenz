@@ -28,7 +28,7 @@ const templateColors = {
 
 export function TemplateSelector({ selectedTemplate, onTemplateChange }: TemplateSelectorProps) {
   const { t, language } = useLanguage();
-  const isRTL = language === 'ar';
+  const isRTL = language === 'ur';
 
   const templates: Template[] = ['classic', 'modern', 'executive'];
 

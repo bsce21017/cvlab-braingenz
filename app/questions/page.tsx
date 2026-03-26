@@ -14,7 +14,7 @@ import { getQuestions, submitAnswers, QuestionItem, AnswerItem } from '@/lib/api
 export default function QuestionsPage() {
   const { t, language } = useLanguage();
   const router = useRouter();
-  const isRTL = language === 'ar';
+  const isRTL = language === 'ur';
 
   const [questions, setQuestions] = useState<QuestionItem[]>([]);
   const [answers, setAnswers] = useState<Record<number, string>>({});

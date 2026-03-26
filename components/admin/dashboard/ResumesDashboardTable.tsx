@@ -14,7 +14,7 @@ const REFRESH_INTERVAL = 30000; // 30 seconds auto-refresh
 export default function ResumesDashboardTable() {
   const { t, language } = useLanguage();
   const router = useRouter();
-  const isRTL = language === 'ar';
+  const isRTL = language === 'ur';
 
   const [resumes, setResumes] = useState<AdminResumeListItem[]>([]);
   const [loading, setLoading] = useState(true);

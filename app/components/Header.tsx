@@ -145,11 +145,11 @@ export default function Header() {
 
             <div className="flex items-center gap-4">
               <button
-                onClick={() => setLanguage(language === 'en' ? 'ar' : 'en')}
+                onClick={() => setLanguage(language === 'en' ? 'ur' : 'en')}
                 className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 hover:bg-gray-50 transition-colors"
               >
                 <span className="text-base">&#x1F310;</span>
-                {language === 'en' ? 'العربية' : 'English'}
+                {language === 'en' ? 'اردو' : 'English'}
               </button>
             </div>
           </div>

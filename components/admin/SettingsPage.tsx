@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 
 export default function SettingsPage() {
   const { t, language } = useLanguage();
-  const isArabic = language === 'ar';
+  const isArabic = language === 'ur';
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [config, setConfig] = useState<LLMConfig | null>(null);

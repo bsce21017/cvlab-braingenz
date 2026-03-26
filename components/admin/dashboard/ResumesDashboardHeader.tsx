@@ -5,7 +5,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 
 export default function ResumesDashboardHeader() {
   const { t, language } = useLanguage();
-  const isRTL = language === 'ar';
+  const isRTL = language === 'ur';
 
   return (
     <div

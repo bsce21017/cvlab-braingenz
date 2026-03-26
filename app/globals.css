@@ -91,14 +91,14 @@ body,
   font-family: 'Manrope', sans-serif;
 }
 
-/* Apply Almarai font for Arabic language - override all fonts */
-html[lang="ar"],
-html[lang="ar"] body,
-html[lang="ar"] *,
+/* Apply Almarai font for Urdu language - override all fonts */
+html[lang="ur"],
+html[lang="ur"] body,
+html[lang="ur"] *,
 html[dir="rtl"],
 html[dir="rtl"] body,
 html[dir="rtl"] *,
-.font-arabic {
+.font-urdu {
   font-family: 'Almarai', sans-serif !important;
 }
 

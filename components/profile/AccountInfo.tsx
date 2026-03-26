@@ -14,7 +14,7 @@ interface AccountInfoProps {
 export default function AccountInfo({ userId }: AccountInfoProps) {
   const { t, language } = useLanguage();
   const { user } = useAuth();
-  const isArabic = language === 'ar';
+  const isArabic = language === 'ur';
   const [memberSince, setMemberSince] = useState<string>('');
   const [lastSignIn, setLastSignIn] = useState<string>('');
   const [emailVerified, setEmailVerified] = useState<boolean>(false);

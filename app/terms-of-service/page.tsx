@@ -7,7 +7,7 @@ import { FileText } from 'lucide-react';
 
 export default function TermsOfServicePage() {
   const { t, language } = useLanguage();
-  const isRTL = language === 'ar';
+  const isRTL = language === 'ur';
 
   const sections = [
     { title: 'termsSection1Title', text: 'termsSection1Text' },

@@ -12,7 +12,7 @@ export default function ResumePreviewHeader() {
   const { language, t } = useLanguage();
   const { user, signOut } = useAuth();
   const router = useRouter();
-  const isRTL = language === 'ar';
+  const isRTL = language === 'ur';
 
   // Get user info from Supabase user object
   const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';

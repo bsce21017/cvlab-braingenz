@@ -16,7 +16,7 @@ interface ActivityHistoryProps {
 export default function ActivityHistory({ userId }: ActivityHistoryProps) {
   const { t, language } = useLanguage();
   const { user } = useAuth();
-  const isArabic = language === 'ar';
+  const isArabic = language === 'ur';
   const [activities, setActivities] = useState<ResumeActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
   const isViewingOtherUser = !!userId && userId !== user?.id;

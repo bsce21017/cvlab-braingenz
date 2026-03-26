@@ -40,7 +40,7 @@ const PROMPT_DISPLAY_NAMES: Record<string, { title: string; description: string 
 
 export default function PromptManagementPage() {
   const { t, language } = useLanguage();
-  const isArabic = language === 'ar';
+  const isArabic = language === 'ur';
 
   const [prompts, setPrompts] = useState<Prompt[]>([]);
   const [loading, setLoading] = useState(true);

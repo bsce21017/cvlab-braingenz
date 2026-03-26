@@ -14,7 +14,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 
 function SignInContent() {
   const { language, setLanguage, t } = useLanguage();
-  const isRTL = language === 'ar';
+  const isRTL = language === 'ur';
   const { signIn, user, loading: authLoading } = useAuth();
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
@@ -253,10 +253,10 @@ function SignInContent() {
 
           <div className="flex justify-center">
             <button
-              onClick={() => setLanguage(language === 'en' ? 'ar' : 'en')}
+              onClick={() => setLanguage(language === 'en' ? 'ur' : 'en')}
               className="text-sm text-gray-600 hover:text-gray-900 transition-colors flex items-center gap-1"
             >
-              {language === 'en' ? 'English' : 'العربية'}
+              {language === 'en' ? 'English' : 'اردو'}
               <span className="text-gray-400">&#9662;</span>
             </button>
           </div>

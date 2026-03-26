@@ -34,7 +34,7 @@ export default function PromptCard({
   onCancelEdit,
 }: PromptCardProps) {
   const { t, language } = useLanguage();
-  const isArabic = language === 'ar';
+  const isArabic = language === 'ur';
 
   const [editedContent, setEditedContent] = useState(content);
   const [saving, setSaving] = useState(false);

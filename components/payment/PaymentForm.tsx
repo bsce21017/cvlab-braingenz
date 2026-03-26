@@ -20,7 +20,7 @@ export default function PaymentForm({
   onSubmit,
 }: PaymentFormProps) {
   const { t, language } = useLanguage();
-  const isRTL = language === 'ar';
+  const isRTL = language === 'ur';
 
   const handleChange = (field: string, value: string | boolean) => {
     setFormData({ ...formData, [field]: value });

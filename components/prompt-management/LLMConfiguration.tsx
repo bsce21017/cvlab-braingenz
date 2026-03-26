@@ -29,7 +29,7 @@ const PROVIDER_MODELS: Record<LLMProvider, string[]> = {
 
 export default function LLMConfiguration() {
   const { t, language } = useLanguage();
-  const isArabic = language === 'ar';
+  const isArabic = language === 'ur';
 
   const [config, setConfig] = useState<LLMConfig | null>(null);
   const [loading, setLoading] = useState(true);

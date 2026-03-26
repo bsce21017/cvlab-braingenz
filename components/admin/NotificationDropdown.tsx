@@ -20,7 +20,7 @@ const POLL_INTERVAL = 30000; // 30 seconds
 
 export default function NotificationDropdown() {
   const { t, language } = useLanguage();
-  const isArabic = language === 'ar';
+  const isArabic = language === 'ur';
   const router = useRouter();
   const [notifications, setNotifications] = useState<AdminNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
