@@ -54,6 +54,10 @@ class Settings(BaseSettings):
         "http://127.0.0.1:3000",
         "http://localhost:3001",
         "http://127.0.0.1:3001",
+        "http://localhost:8001",
+        "http://127.0.0.1:8001",
+        # Azure VM
+        "http://172.172.160.62:8001",
     ]
 
     # File Storage
