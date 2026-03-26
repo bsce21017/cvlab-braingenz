@@ -110,8 +110,6 @@ if (isBrowser) {
 // CLASSIC TEMPLATE - Serif font, navy blue accents (matching web preview)
 // ============================================================================
 
-import { classicStyle } from './templateStyles';
-
 const CLASSIC_COLORS = {
   name: classicStyle.colors.name,
   sectionHeading: classicStyle.colors.sectionHeading,
@@ -379,8 +377,6 @@ export function ClassicPDFTemplate({ data }: { data: ResumeData }) {
 // MODERN TEMPLATE - Serif font, section heading with gray line
 // ============================================================================
 
-import { modernStyle } from './templateStyles';
-
 const MODERN_COLORS = {
   name: modernStyle.colors.name,
   sectionHeading: modernStyle.colors.sectionHeading,
@@ -619,8 +615,6 @@ export function ModernPDFTemplate({ data }: { data: ResumeData }) {
 // ============================================================================
 // EXECUTIVE TEMPLATE - Navy blue, no title under name, no header divider
 // ============================================================================
-
-import { executiveStyle } from './templateStyles';
 
 const EXEC_COLORS = {
   navy: executiveStyle.colors.primary,

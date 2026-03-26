@@ -209,20 +209,27 @@ class CraftsmanAgent:
                 questions,
                 user_answers
             )
+            prompt_len = len(prompt)
+            print(f"[CRAFTSMAN] Prompt prepared: {prompt_len} chars (~{prompt_len//4} tokens) | CV: {len(cv_text)} chars | Questions: {len(questions)} | Answers: {len(user_answers)}", flush=True)
 
             # Get max tokens (optimization needs more tokens)
             if max_tokens is None:
                 max_tokens = settings.MAX_TOKENS
 
             # Call LLM
-            logger.info(f"Calling LLM for CV optimization (max_tokens={max_tokens})")
+            print(f"[CRAFTSMAN] Calling LLM (max_tokens={max_tokens})...", flush=True)
+            llm_start = time.time()
             response = self.llm_handler.generate(
                 prompt=prompt,
                 max_tokens=max_tokens
             )
+            llm_elapsed = time.time() - llm_start
+            print(f"[CRAFTSMAN] LLM returned {len(response)} chars in {llm_elapsed:.1f}s", flush=True)
 
             # Parse response
+            parse_start = time.time()
             optimized_data = self._parse_optimization_response(response)
+            print(f"[CRAFTSMAN] Response parsed in {time.time()-parse_start:.2f}s", flush=True)
 
             # Add duration
             duration = int(time.time() - start_time)
