@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { MessageSquare } from 'lucide-react';
+import { MessageSquare, BarChart3 } from 'lucide-react';
 import ClaimsOverview from '@/components/admin/claims/ClaimsOverview';
 
 type MenuItem = {
@@ -44,6 +44,11 @@ export default function AdminSidebar() {
       label: t('admin.claims'),
       href: '/admin/claims',
       customIcon: '/assets/claims.svg',
+    },
+    {
+      label: t('admin.analytics'),
+      href: '/admin/analytics',
+      icon: BarChart3,
     },
     {
       label: t('admin.settings'),

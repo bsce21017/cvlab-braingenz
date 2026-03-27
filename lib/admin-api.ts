@@ -389,3 +389,27 @@ export async function markAllNotificationsRead(): Promise<{ count: number }> {
     method: 'PATCH',
   });
 }
+
+// Analytics
+export interface MonthlyData {
+  year: number;
+  month: number;
+  count: number;
+}
+
+export interface GeoData {
+  location: string;
+  count: number;
+}
+
+export interface AnalyticsResponse {
+  monthly: MonthlyData[];
+  geography: GeoData[];
+  total_resumes: number;
+  with_location: number;
+  without_location: number;
+}
+
+export async function getAnalytics(months: number = 12): Promise<AnalyticsResponse> {
+  return fetchAdminAPI<AnalyticsResponse>(`/analytics?months=${months}`);
+}

@@ -13,6 +13,12 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import LanguageSwitcher from '@/components/questions/LanguageSwitcher';
 import { getResumePreview, PreviewResponse, uploadPDFToS3 } from '@/lib/api';
 import { downloadResumeAsWord } from '@/lib/downloadResume';
+
+const templateDisplayName: Record<string, string> = {
+  classic: 'core',
+  modern: 'dynamic',
+  executive: 'premium',
+};
 import { generateAndDownloadPDF, generatePDFBase64 } from '@/lib/generatePDF';
 import { ResumeData } from '@/lib/resumeDataTypes';
 
@@ -58,7 +64,7 @@ export default function ResumePreviewPage() {
     const resumeId = sessionStorage.getItem('resumeId');
     if (data && resumeId) {
       const name = data.name || 'resume';
-      const filename = `${name.replace(/\s+/g, '_')}_${selectedTemplate}.pdf`;
+      const filename = `${name.replace(/\s+/g, '_')}_${templateDisplayName[selectedTemplate] || selectedTemplate}.pdf`;
       generatePDFBase64(data, selectedTemplate)
         .then(pdfBase64 => uploadPDFToS3(parseInt(resumeId), pdfBase64, filename))
         .then(result => console.log('[ResumePreviewPage] PDF auto-uploaded to S3:', result))
@@ -70,7 +76,7 @@ export default function ResumePreviewPage() {
     try {
       if (!resumeData) { alert('Resume data not available. Please wait a moment and try again.'); return false; }
       const name = resumeData.name || 'resume';
-      const filename = `${name.replace(/\s+/g, '_')}_${selectedTemplate}.pdf`;
+      const filename = `${name.replace(/\s+/g, '_')}_${templateDisplayName[selectedTemplate] || selectedTemplate}.pdf`;
       await generateAndDownloadPDF(resumeData, selectedTemplate, filename);
       return false;
     } catch (error) {
@@ -84,7 +90,7 @@ export default function ResumePreviewPage() {
     try {
       if (!resumeData) { alert('Resume data not available. Please wait a moment and try again.'); return false; }
       const name = resumeData.name || 'resume';
-      const filename = `${name.replace(/\s+/g, '_')}_${selectedTemplate}.docx`;
+      const filename = `${name.replace(/\s+/g, '_')}_${templateDisplayName[selectedTemplate] || selectedTemplate}.docx`;
       await downloadResumeAsWord(resumeData, selectedTemplate, filename);
       return false;
     } catch (error) {
