@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, ArrowRight, Loader2 } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Loader2, MessageSquare } from 'lucide-react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { useLanguage } from '@/contexts/LanguageContext';
-import ResumePreviewHeader from '@/components/resume/ResumePreviewHeader';
+import LanguageSwitcher from '@/components/questions/LanguageSwitcher';
 import FileDisplay from '@/components/questions/FileDisplay';
 import QuestionCard from '@/components/questions/QuestionCard';
 
@@ -35,27 +36,19 @@ export default function QuestionsPage() {
       setFileSize(`${sizeKB} kB`);
     }
 
-    if (!resumeId) {
-      router.push('/');
-      return;
-    }
+    if (!resumeId) { router.push('/'); return; }
 
     const fetchQuestions = async () => {
       try {
         const response = await getQuestions(parseInt(resumeId));
         setQuestions(response.questions);
-        // Initialize answers object
         const initialAnswers: Record<number, string> = {};
-        response.questions.forEach((q) => {
-          initialAnswers[q.id] = '';
-        });
+        response.questions.forEach((q) => { initialAnswers[q.id] = ''; });
         setAnswers(initialAnswers);
       } catch (err) {
         console.error('Error fetching questions:', err);
         setError(err instanceof Error ? err.message : 'Failed to load questions');
-      } finally {
-        setLoading(false);
-      }
+      } finally { setLoading(false); }
     };
 
     fetchQuestions();
@@ -73,28 +66,19 @@ export default function QuestionsPage() {
 
   const handleAnalyze = async () => {
     const resumeId = sessionStorage.getItem('resumeId');
-    if (!resumeId) {
-      router.push('/');
-      return;
-    }
+    if (!resumeId) { router.push('/'); return; }
 
     setSubmitting(true);
     setError(null);
 
     try {
-      // Prepare answers for submission
       const answerItems: AnswerItem[] = questions.map((q) => ({
         question_id: q.id,
         answer: answers[q.id] || '',
         status: answers[q.id]?.trim() ? 'complete' : 'skipped',
       }));
 
-      await submitAnswers({
-        resume_id: parseInt(resumeId),
-        answers: answerItems,
-      });
-
-      // Navigate to processing page (optimization mode)
+      await submitAnswers({ resume_id: parseInt(resumeId), answers: answerItems });
       router.push('/processing?mode=optimization');
     } catch (err) {
       console.error('Error submitting answers:', err);
@@ -107,104 +91,115 @@ export default function QuestionsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <Loader2 className="w-8 h-8 animate-spin text-gray-900" />
-          <p className="text-gray-600">Loading questions...</p>
+          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-brand-blue to-brand-blue-light flex items-center justify-center">
+            <Loader2 className="w-6 h-6 animate-spin text-white" />
+          </div>
+          <p className="text-muted-foreground text-sm">Loading questions...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50" dir={isRTL ? 'rtl' : 'ltr'}>
-      <ResumePreviewHeader />
-      <div className="max-w-3xl mx-auto px-6 py-8">
-        <div className={`flex items-center justify-between mb-8 ${isRTL ? 'flex-row-reverse' : ''}`}>
-          <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
-            <div className="w-10 h-10 bg-gray-900 rounded-full flex items-center justify-center">
-              <span className="text-white font-semibold text-sm">{questions.length}</span>
+    <div className="min-h-screen bg-gradient-to-b from-white via-brand-blue-muted/10 to-white" dir={isRTL ? 'rtl' : 'ltr'}>
+      {/* Simple header */}
+      <header className="px-6 py-5 flex items-center justify-between border-b border-brand-blue/[0.06] bg-white/80 backdrop-blur-md sticky top-0 z-40" dir={isRTL ? 'rtl' : 'ltr'}>
+        <Link href="/" className="flex items-center" dir="ltr">
+          <Image src="/assets/Main logo.svg" alt="CV Summit Logo" width={160} height={80} className="h-12 w-auto" />
+        </Link>
+        <LanguageSwitcher />
+      </header>
+
+      <div className="max-w-3xl mx-auto px-6 py-10">
+        {/* Page header */}
+        <div className="mb-8 animate-fade-up">
+          <div className={`flex items-center gap-4 mb-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
+            <div className="w-12 h-12 bg-brand-blue rounded-2xl flex items-center justify-center shadow-sm">
+              <MessageSquare className="w-6 h-6 text-brand-yellow" />
             </div>
-            <h1 className="text-lg font-medium text-gray-900">{t('questions')}</h1>
-          </div>
-          
-        </div>
-
-        <FileDisplay
-          fileName={fileName}
-          fileSize={fileSize}
-          pageCount={1}
-          status={t('ready')}
-          isRTL={isRTL}
-        />
-
-        <div className="bg-white rounded-2xl shadow-sm p-8 mb-6">
-          <div className="text-center">
-            <h2 className="text-2xl font-normal text-gray-900 mb-3">
-              {t('resumeOptimizationTitle')}
-            </h2>
-            <p className="text-gray-600 text-sm mb-8 max-w-2xl mx-auto">
-              {t('resumeOptimizationSubtitle')}
-            </p>
-          </div>
-
-          <div className="mb-8">
-            <div className={`flex items-center justify-between mb-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
-              <span className="text-sm text-gray-600">{t('progress')}</span>
-              <span className="text-sm font-medium text-gray-900">{progress}%</span>
+            <div>
+              <h1 className="text-2xl font-bold text-foreground">{t('questions')}</h1>
+              <p className="text-xs text-muted-foreground">{questions.length} questions to answer</p>
             </div>
-            <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-gray-900 transition-all duration-300"
-                style={{ width: `${progress}%` }}
-              />
-            </div>
-          </div>
-
-          {error && (
-            <div className="mb-6 p-4 bg-red-50 text-red-600 rounded-lg text-sm">
-              {error}
-            </div>
-          )}
-
-          <div className="space-y-6">
-            {questions.map((question, index) => (
-              <QuestionCard
-                key={question.id}
-                number={index + 1}
-                title={question.question}
-                placeholder={question.example || 'Type your answer here...'}
-                value={answers[question.id] || ''}
-                onChange={(value) => handleAnswerChange(question.id, value)}
-                isRTL={isRTL}
-              />
-            ))}
           </div>
         </div>
 
-        <div className="flex justify-center pb-8">
+        {/* File info */}
+        <div className="animate-fade-up-delay-1">
+          <FileDisplay
+            fileName={fileName}
+            fileSize={fileSize}
+            pageCount={1}
+            status={t('ready')}
+            isRTL={isRTL}
+          />
+        </div>
+
+        {/* Main card */}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden mb-8 animate-fade-up-delay-2">
+          {/* Card header */}
+          <div className="px-8 pt-8 pb-6 border-b border-gray-100">
+            <h2 className="text-xl font-bold text-foreground mb-2">{t('resumeOptimizationTitle')}</h2>
+            <p className="text-muted-foreground text-sm max-w-2xl">{t('resumeOptimizationSubtitle')}</p>
+
+            {/* Progress bar */}
+            <div className="mt-6">
+              <div className={`flex items-center justify-between mb-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                <span className="text-xs text-muted-foreground font-medium">{t('progress')}</span>
+                <span className="text-xs font-bold text-brand-blue">{progress}%</span>
+              </div>
+              <div className="w-full h-2 bg-brand-blue/[0.08] rounded-full overflow-hidden">
+                <div
+                  className="h-full rounded-full transition-all duration-500"
+                  style={{
+                    width: `${progress}%`,
+                    background: 'linear-gradient(90deg, #093D7F, #F9CB12)',
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Questions */}
+          <div className="px-8 py-6">
+            {error && (
+              <div className="mb-6 p-4 bg-red-50 border border-red-100 text-red-600 rounded-xl text-sm">
+                {error}
+              </div>
+            )}
+
+            <div className="space-y-8">
+              {questions.map((question, index) => (
+                <QuestionCard
+                  key={question.id}
+                  number={index + 1}
+                  title={question.question}
+                  placeholder={question.example || 'Type your answer here...'}
+                  value={answers[question.id] || ''}
+                  onChange={(value) => handleAnswerChange(question.id, value)}
+                  isRTL={isRTL}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Submit button */}
+        <div className="flex justify-center pb-12">
           <button
             onClick={handleAnalyze}
             disabled={submitting}
-            className="flex items-center gap-3 bg-gray-900 text-white px-8 py-4 rounded-xl font-medium hover:bg-gray-800 transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+            className="btn-magnetic flex items-center gap-3 bg-brand-blue text-white px-10 py-4 rounded-xl font-bold text-sm hover:bg-brand-blue-light transition-all duration-300 shadow-lg shadow-brand-blue/20 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {submitting ? (
               <Loader2 className="w-5 h-5 animate-spin" />
             ) : (
-              <Image
-                src="/assets/analyze_optimize.svg"
-                alt="Analyze"
-                width={20}
-                height={20}
-                className="w-5 h-5"
-              />
+              <Image src="/assets/analyze_optimize.svg" alt="Analyze" width={20} height={20} className="w-5 h-5" />
             )}
             <span>{submitting ? 'Submitting...' : t('analyzeButton')}</span>
-            {!submitting && (isRTL ? (
-              <ArrowLeft className="w-5 h-5" />
-            ) : (
-              <ArrowRight className="w-5 h-5" />
-            ))}
+            {!submitting && (isRTL ? <ArrowLeft className="w-5 h-5" /> : <ArrowRight className="w-5 h-5" />)}
           </button>
         </div>
       </div>

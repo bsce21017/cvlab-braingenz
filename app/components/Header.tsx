@@ -97,17 +97,17 @@ export default function Header() {
             <Link href="/" className="flex items-center flex-shrink-0">
               {pathname === '/contact-us' || pathname === '/profile' ? (
                 <div className="flex items-center gap-3">
-                  <div className="bg-black rounded-xl p-2">
+                  <div className="bg-brand-blue rounded-xl p-2">
                     <Sparkles className="w-5 h-5 text-white" />
                   </div>
                   <span className="text-xl font-semibold text-gray-900">
-                    ResumeAI
+                    CV Summit
                   </span>
                 </div>
               ) : (
                 <Image
-                  src="/assets/CVLab Logo.png"
-                  alt="CVLab Logo"
+                  src="/assets/CV Summit Logo.png"
+                  alt="CV Summit Logo"
                   width={120}
                   height={40}
                   className="h-10 w-auto"

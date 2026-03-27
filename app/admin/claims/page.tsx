@@ -6,7 +6,7 @@ export default function AdminClaimsPage() {
   return (
     <div className="flex flex-col h-screen">
       <DashboardHeader />
-      <div className="flex-1 overflow-auto p-8 bg-gray-50">
+      <div className="flex-1 overflow-auto p-8 bg-[#F7F9FC]">
         <div className="w-full max-w-full">
           <ClaimsTable />
         </div>

@@ -152,11 +152,11 @@ export default function ProfileForm({ userId }: ProfileFormProps) {
     <div className="bg-white rounded-lg p-8 space-y-8">
       <div className="flex flex-col items-center">
         <div className="relative">
-          <div className="w-24 h-24 rounded-full bg-black overflow-hidden flex items-center justify-center">
+          <div className="w-24 h-24 rounded-full bg-brand-blue overflow-hidden flex items-center justify-center">
             <span className="text-white text-3xl font-semibold">{userInitial}</span>
           </div>
           <button 
-            className="absolute bottom-0 right-0 w-8 h-8 bg-black rounded-full flex items-center justify-center hover:bg-gray-800 transition-colors"
+            className="absolute bottom-0 right-0 w-8 h-8 bg-brand-blue rounded-full flex items-center justify-center hover:bg-brand-blue-light transition-colors"
             disabled
             title="Profile photo upload coming soon"
           >
@@ -267,7 +267,7 @@ export default function ProfileForm({ userId }: ProfileFormProps) {
             <Button
               onClick={handleChangePassword}
               disabled={saving || !passwordData.currentPassword || !passwordData.newPassword}
-              className="px-6 py-2 bg-gray-900 text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-6 py-2 bg-gray-900 text-white text-sm font-medium rounded-lg hover:bg-brand-blue-light transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {saving ? (
                 <>
@@ -286,7 +286,7 @@ export default function ProfileForm({ userId }: ProfileFormProps) {
         <Button
           onClick={handleSaveProfile}
           disabled={saving || isViewingOtherUser}
-          className="px-8 py-3 bg-black text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="px-8 py-3 bg-brand-blue text-white text-sm font-medium rounded-lg hover:bg-brand-blue-light transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {saving ? (
             <>

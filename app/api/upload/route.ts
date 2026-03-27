@@ -143,11 +143,18 @@ export async function POST(req: NextRequest) {
     const fileUrl = blockBlobClient.url;
     const presignedUrl = `${fileUrl}?${sasToken}`;
 
+    // Extract client IP for geo-location
+    const clientIp = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+      || req.headers.get('x-real-ip')
+      || req.ip
+      || '';
+
     // Debug: Log the uploaded file URL
     console.log('File uploaded successfully!');
     console.log('File URL (direct):', fileUrl);
     console.log('Presigned URL (accessible):', presignedUrl);
     console.log('Original Name:', file.name);
+    console.log('Client IP:', clientIp);
 
     return NextResponse.json({
       success: true,
@@ -155,6 +162,7 @@ export async function POST(req: NextRequest) {
       presignedUrl,
       key: blobName,
       originalName: file.name,
+      clientIp,
     });
   } catch (error: any) {
     console.error('Upload error:', error);

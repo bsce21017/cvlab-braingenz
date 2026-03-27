@@ -115,6 +115,7 @@ export interface AdminResumeListItem {
   user_status: UserStatus | null;  // User's active/inactive status
   created_at: string;
   file_size: number | null;
+  location: string | null;  // "City, Country" from IP geo
 }
 
 export interface ResumeListResponse {
@@ -277,8 +278,10 @@ export async function getResume(resumeId: number): Promise<AdminResumeDetail> {
   return fetchAdminAPI<AdminResumeDetail>(`/resumes/${resumeId}`);
 }
 
-export async function deleteResume(resumeId: number): Promise<void> {
-  await fetchAdminAPI(`/resumes/${resumeId}`, { method: 'DELETE' });
+export type DeleteType = 'original' | 'optimized' | 'both';
+
+export async function deleteResume(resumeId: number, deleteType: DeleteType = 'both'): Promise<void> {
+  await fetchAdminAPI(`/resumes/${resumeId}?delete_type=${deleteType}`, { method: 'DELETE' });
 }
 
 export async function exportResumes(): Promise<Blob> {

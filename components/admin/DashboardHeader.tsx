@@ -63,7 +63,7 @@ export default function DashboardHeader() {
       {/* Top AdminHub brand + breadcrumb row (same as prompts page) */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3" dir="ltr">
-          <span className="text-sm font-semibold text-gray-900">
+          <span className="text-sm font-semibold text-brand-blue">
             {t('pm.brand')}
           </span>
           <div className="flex items-center gap-2 text-xs text-gray-600">
@@ -81,11 +81,11 @@ export default function DashboardHeader() {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button className="flex items-center gap-3 hover:opacity-80 transition-opacity cursor-pointer">
-                    <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center">
+                    <div className="w-10 h-10 bg-gradient-to-br from-brand-blue to-brand-blue-light rounded-full flex items-center justify-center">
                       <span className="text-white font-semibold text-sm">{userInitials}</span>
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-gray-900">{userName}</p>
+                      <p className="text-sm font-medium text-foreground">{userName}</p>
                     </div>
                     <ChevronDown className="w-4 h-4 text-gray-500" />
                   </button>
@@ -120,11 +120,11 @@ export default function DashboardHeader() {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button className="flex items-center gap-3 pl-4 border-l border-gray-200 hover:opacity-80 transition-opacity cursor-pointer">
-                    <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center">
+                    <div className="w-10 h-10 bg-gradient-to-br from-brand-blue to-brand-blue-light rounded-full flex items-center justify-center">
                       <span className="text-white font-semibold text-sm">{userInitials}</span>
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-gray-900">{userName}</p>
+                      <p className="text-sm font-medium text-foreground">{userName}</p>
                     </div>
                     <ChevronDown className="w-4 h-4 text-gray-500" />
                   </button>
@@ -154,7 +154,7 @@ export default function DashboardHeader() {
 
       {/* Page title + subtitle row */}
       <div className={`mt-4 ${isArabic ? 'text-right' : ''}`}>
-        <h2 className="text-2xl font-bold text-gray-900">
+        <h2 className="text-2xl font-bold text-foreground">
           {pathname.startsWith('/admin/claims')
             ? t('claims.title')
             : pathname.startsWith('/admin/resumes') 

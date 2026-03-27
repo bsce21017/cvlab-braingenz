@@ -166,7 +166,7 @@ export default function SettingsPage() {
             <Button
               onClick={handleSave}
               disabled={saving || !model}
-              className="bg-black hover:bg-gray-800"
+              className="bg-brand-blue hover:bg-brand-blue-light"
             >
               {saving ? (
                 <>

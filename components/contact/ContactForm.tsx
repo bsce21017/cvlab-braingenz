@@ -56,7 +56,7 @@ export default function ContactForm() {
       <div className="bg-white rounded-lg p-8">
         <div className="flex flex-col items-center justify-center py-12 text-center">
           <CheckCircle className="w-16 h-16 text-green-500 mb-4" />
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">
+          <h3 className="text-xl font-semibold text-foreground mb-2">
             {t('contact.thankYou') || 'Thank you!'}
           </h3>
           <p className="text-gray-600">
@@ -64,7 +64,7 @@ export default function ContactForm() {
           </p>
           <button
             onClick={() => setIsSuccess(false)}
-            className="mt-6 px-6 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
+            className="mt-6 px-6 py-2 bg-brand-blue text-white rounded-lg hover:bg-brand-blue-light btn-magnetic transition-colors"
           >
             {t('contact.sendAnother') || 'Send another message'}
           </button>
@@ -76,13 +76,13 @@ export default function ContactForm() {
   return (
     <div className="bg-white rounded-lg p-8">
       <div className="mb-6">
-        <h3 className="text-xl font-semibold text-gray-900 mb-2">{t('contact.sendMessage')}</h3>
+        <h3 className="text-xl font-semibold text-foreground mb-2">{t('contact.sendMessage')}</h3>
         <p className="text-sm text-gray-600">{t('contact.replyTime')}</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>
-          <label className="block text-sm font-medium text-gray-900 mb-2">
+          <label className="block text-sm font-medium text-foreground mb-2">
             {t('contact.fullName')}
           </label>
           <input
@@ -91,12 +91,12 @@ export default function ContactForm() {
             value={formData.full_name}
             onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
             placeholder={t('contact.fullNamePlaceholder')}
-            className="w-full px-4 py-3 border border-gray-200 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent placeholder:text-gray-400"
+            className="w-full px-4 py-3 border border-gray-200 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:border-transparent placeholder:text-gray-400"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-900 mb-2">
+          <label className="block text-sm font-medium text-foreground mb-2">
             {t('contact.email')}
           </label>
           <input
@@ -105,12 +105,12 @@ export default function ContactForm() {
             value={formData.email}
             onChange={(e) => setFormData({ ...formData, email: e.target.value })}
             placeholder={t('contact.emailPlaceholder')}
-            className="w-full px-4 py-3 border border-gray-200 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent placeholder:text-gray-400"
+            className="w-full px-4 py-3 border border-gray-200 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:border-transparent placeholder:text-gray-400"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-900 mb-2">
+          <label className="block text-sm font-medium text-foreground mb-2">
             {t('contact.phoneNumber')}
           </label>
           <input
@@ -118,12 +118,12 @@ export default function ContactForm() {
             value={formData.phone}
             onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
             placeholder={t('contact.phonePlaceholder')}
-            className="w-full px-4 py-3 border border-gray-200 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent placeholder:text-gray-400"
+            className="w-full px-4 py-3 border border-gray-200 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:border-transparent placeholder:text-gray-400"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-900 mb-2">
+          <label className="block text-sm font-medium text-foreground mb-2">
             {t('contact.message')}
           </label>
           <textarea
@@ -132,14 +132,14 @@ export default function ContactForm() {
             value={formData.message}
             onChange={(e) => setFormData({ ...formData, message: e.target.value })}
             placeholder={t('contact.messagePlaceholder')}
-            className="w-full px-4 py-3 border border-gray-200 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent placeholder:text-gray-400 resize-none"
+            className="w-full px-4 py-3 border border-gray-200 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:border-transparent placeholder:text-gray-400 resize-none"
           />
         </div>
 
         <button
           type="submit"
           disabled={isSubmitting}
-          className="w-full py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors flex items-center justify-center gap-2 font-medium disabled:opacity-50"
+          className="w-full py-3 bg-brand-blue text-white rounded-lg hover:bg-brand-blue-light btn-magnetic transition-colors flex items-center justify-center gap-2 font-medium disabled:opacity-50"
         >
           {isSubmitting ? (
             <Loader2 className="w-5 h-5 animate-spin" />

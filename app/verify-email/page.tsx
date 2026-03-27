@@ -66,14 +66,14 @@ function VerifyEmailContent() {
 
   if (authLoading || !email) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#f7f9fb]">
+      <div className="min-h-screen flex items-center justify-center bg-[#F7F9FC]">
         <Loader2 className="h-8 w-8 animate-spin text-gray-600" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#f7f9fb]">
+    <div className="min-h-screen flex flex-col bg-[#F7F9FC]">
       {/* Header */}
       <header className="p-6">
         <Link href="/" className="flex items-center w-fit">
@@ -101,13 +101,13 @@ function VerifyEmailContent() {
 
           {/* Title & Description */}
           <div className="space-y-3">
-            <h1 className="text-3xl font-semibold text-gray-900">
+            <h1 className="text-3xl font-semibold text-foreground">
               Check Your Email
             </h1>
             <p className="text-gray-600 text-lg">
               You're almost there! We sent a confirmation email to:
             </p>
-            <p className="font-semibold text-gray-900 text-lg break-all">
+            <p className="font-semibold text-foreground text-lg break-all">
               {email}
             </p>
           </div>
@@ -158,7 +158,7 @@ function VerifyEmailContent() {
           <div className="pt-4 border-t border-gray-100">
             <Link
               href="/signup"
-              className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900 transition-colors"
+              className="inline-flex items-center text-sm text-gray-600 hover:text-brand-blue transition-colors"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Sign Up
@@ -168,7 +168,7 @@ function VerifyEmailContent() {
           {/* Already verified hint */}
           <div className="text-sm text-gray-500">
             Already confirmed your email?{' '}
-            <Link href="/signin" className="text-gray-900 font-medium hover:underline">
+            <Link href="/signin" className="text-brand-blue font-medium hover:underline">
               Sign in here
             </Link>
           </div>
@@ -181,7 +181,7 @@ function VerifyEmailContent() {
 export default function VerifyEmailPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-[#f7f9fb]">
+      <div className="min-h-screen flex items-center justify-center bg-[#F7F9FC]">
         <Loader2 className="h-8 w-8 animate-spin text-gray-600" />
       </div>
     }>

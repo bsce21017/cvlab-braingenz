@@ -13,9 +13,9 @@ export default function PrivacyPolicyPage() {
       <div className="flex justify-end px-6 pt-4">
         
       </div>
-      <main className="flex-1 bg-white">
+      <main className="flex-1 bg-[#F7F9FC]">
         <div className="max-w-4xl mx-auto px-6 py-16">
-          <h1 className="text-3xl font-semibold text-gray-900 mb-4">
+          <h1 className="text-3xl font-semibold text-foreground mb-4">
             {t('privacyPolicy')}
           </h1>
           <p className="text-gray-600">{t('admin.comingSoon')}</p>

@@ -7,6 +7,7 @@ import os
 import tempfile
 from typing import Optional
 from uuid import uuid4
+import httpx
 from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
@@ -32,6 +33,7 @@ class S3UploadRequest(BaseModel):
     original_filename: str
     file_size: int
     file_type: str
+    ip_address: Optional[str] = None
 
 
 def _require_openai_key() -> None:
@@ -161,6 +163,23 @@ async def upload_resume_from_s3(
         # Determine file type from extension
         file_type = "pdf" if file_extension.lower() == ".pdf" else "docx"
 
+        # Resolve IP to location
+        location = None
+        client_ip = request.ip_address
+        if client_ip and client_ip not in ('', '0.0.0.0', '::1', '127.0.0.1'):
+            try:
+                async with httpx.AsyncClient(timeout=5.0) as client:
+                    geo_resp = await client.get(f"http://ip-api.com/json/{client_ip}?fields=city,country,status")
+                    if geo_resp.status_code == 200:
+                        geo = geo_resp.json()
+                        if geo.get("status") == "success":
+                            city = geo.get("city", "")
+                            country = geo.get("country", "")
+                            location = f"{city}, {country}" if city else country
+                            logger.info(f"Resolved IP {client_ip} to {location}")
+            except Exception as e:
+                logger.warning(f"Failed to resolve IP {client_ip}: {e}")
+
         # Create database record with S3 reference
         resume = Resume(
             original_filename=request.original_filename,
@@ -172,14 +191,16 @@ async def upload_resume_from_s3(
             # user_id=current_user.id,
             user_id=user_id,
             s3_key=request.s3_key,  # Store S3 key
-            s3_url=request.s3_url   # Store S3 URL
+            s3_url=request.s3_url,  # Store S3 URL
+            ip_address=client_ip,
+            location=location,
         )
 
         db.add(resume)
         db.commit()
         db.refresh(resume)
 
-        logger.info(f"S3 Resume registered successfully: resume_id={resume.id}")
+        logger.info(f"S3 Resume registered successfully: resume_id={resume.id}, location={location}")
 
         # Trigger background analysis task
         logger.info(f"Triggering analysis task for resume_id={resume.id}")

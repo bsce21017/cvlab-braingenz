@@ -49,7 +49,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
 
   if (isLoading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-gray-100">
+      <div className="flex h-screen items-center justify-center bg-[#F7F9FC]">
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
           <p className="text-gray-600">Verifying admin access...</p>
@@ -63,7 +63,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
 
   if (error) {
     return (
-      <div className="flex h-screen items-center justify-center bg-gray-100">
+      <div className="flex h-screen items-center justify-center bg-[#F7F9FC]">
         <div className="rounded-lg bg-red-50 p-6 text-center">
           <p className="text-red-700 font-medium">Authentication Error</p>
           <p className="text-red-600 text-sm mt-2">{error}</p>
@@ -80,7 +80,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
 
   if (!user || !isAdmin) {
     return (
-      <div className="flex h-screen items-center justify-center bg-gray-100">
+      <div className="flex h-screen items-center justify-center bg-[#F7F9FC]">
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
           <p className="text-gray-600">Redirecting...</p>
@@ -90,7 +90,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="flex h-screen bg-gray-100" dir={isRTL ? 'rtl' : 'ltr'}>
+    <div className="flex h-screen bg-[#F7F9FC]" dir={isRTL ? 'rtl' : 'ltr'}>
       <AdminSidebar />
       <div className="flex-1 overflow-auto">{children}</div>
     </div>

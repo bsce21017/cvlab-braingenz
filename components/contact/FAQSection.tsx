@@ -14,7 +14,7 @@ export default function FAQSection() {
 
   return (
     <div className="bg-white rounded-lg p-8 mt-6">
-      <h3 className="text-xl font-semibold text-gray-900 mb-6">{t('contact.faq')}</h3>
+      <h3 className="text-xl font-semibold text-foreground mb-6">{t('contact.faq')}</h3>
       <div className="space-y-4">
         {faqs.map((faq) => (
           <div key={faq.id} className="flex items-start gap-3">
@@ -25,7 +25,7 @@ export default function FAQSection() {
               height={16}
               className="w-4 h-4 mt-0.5 flex-shrink-0"
             />
-            <p className="text-sm text-gray-900">{faq.question}</p>
+            <p className="text-sm text-foreground">{faq.question}</p>
           </div>
         ))}
       </div>

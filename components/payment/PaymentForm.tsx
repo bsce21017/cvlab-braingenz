@@ -158,7 +158,7 @@ export default function PaymentForm({
 
         <Button
           type="submit"
-          className="w-full bg-black hover:bg-[#1D1D1F] text-white rounded-xl h-14 text-base font-medium flex items-center justify-center gap-2"
+          className="w-full bg-brand-blue hover:bg-brand-blue-light text-white rounded-xl h-14 text-base font-medium flex items-center justify-center gap-2"
         >
           <Lock className="w-5 h-5" />
           {t('payOptimize')}

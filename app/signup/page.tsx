@@ -104,8 +104,8 @@ function SignUpContent() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#f7f9fb]">
-        <Loader2 className="h-8 w-8 animate-spin text-gray-600" />
+      <div className="min-h-screen flex items-center justify-center bg-[#F7F9FC]">
+        <Loader2 className="h-8 w-8 animate-spin text-brand-blue" />
       </div>
     );
   }
@@ -122,19 +122,22 @@ function SignUpContent() {
             backgroundSize: 'cover',
           }}
         />
-        <div className="absolute inset-0 bg-black/70" />
-        <div className="relative z-10 flex h-full flex-col justify-center px-14 text-white space-y-4">
-          <h1 className="text-5xl font-normal leading-tight max-w-xl">
+        <div className="absolute inset-0 bg-brand-blue/85" />
+        <div className="relative z-10 flex h-full flex-col justify-center px-14 text-white space-y-5">
+          <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-brand-yellow text-sm font-medium w-fit">
+            CV Summit
+          </span>
+          <h1 className="text-5xl font-bold leading-tight max-w-xl">
             {t('optimizeCareer')}
           </h1>
-          <p className="text-lg text-gray-200 leading-relaxed max-w-xl">
+          <p className="text-lg text-blue-100 leading-relaxed max-w-xl">
             {t('transformCV')}
           </p>
         </div>
       </div>
 
-      <div className="flex items-center justify-center bg-[#f7f9fb] px-6 py-12">
-        <div className="w-full max-w-2xl space-y-8">
+      <div className="flex items-center justify-center bg-[#F7F9FC] px-6 py-12">
+        <div className="w-full max-w-2xl space-y-8 animate-fade-up">
           <div className="flex items-center justify-center">
             <Image
               src="/assets/Main logo.svg"
@@ -146,13 +149,13 @@ function SignUpContent() {
           </div>
 
           <div className="text-center space-y-2">
-            <h2 className="text-4xl font-normal text-gray-900">
+            <h2 className="text-4xl font-bold text-foreground">
               {t('createAccount')}
             </h2>
-            <p className="text-base text-gray-600">{t('signupSubtitle')}</p>
+            <p className="text-base text-muted-foreground">{t('signupSubtitle')}</p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5 bg-[#f7f9fb] rounded-2xl p-6 shadow-sm">
+          <form onSubmit={handleSubmit} className="space-y-5 bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
             {error && (
               <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg">
                 {error}
@@ -160,7 +163,7 @@ function SignUpContent() {
             )}
 
             <div className="space-y-2">
-              <label className={`text-sm text-gray-700 block ${isRTL ? 'text-right' : ''}`}>{t('fullName')}</label>
+              <label className={`text-sm text-gray-700 font-medium block ${isRTL ? 'text-right' : ''}`}>{t('fullName')}</label>
               <div className="relative">
                 <User className={`absolute top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 ${isRTL ? 'right-3' : 'left-3'}`} />
                 <Input
@@ -168,7 +171,7 @@ function SignUpContent() {
                   placeholder={t('enterFullName')}
                   value={formData.fullName}
                   onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                  className={`h-12 bg-gray-50 border-gray-200 ${isRTL ? 'pr-11 text-right' : 'pl-11'}`}
+                  className={`h-12 bg-gray-50 border-gray-200 focus:border-brand-blue focus:ring-brand-blue/20 ${isRTL ? 'pr-11 text-right' : 'pl-11'}`}
                   autoComplete="name"
                   dir={isRTL ? 'rtl' : 'ltr'}
                 />
@@ -176,7 +179,7 @@ function SignUpContent() {
             </div>
 
             <div className="space-y-2">
-              <label className={`text-sm text-gray-700 block ${isRTL ? 'text-right' : ''}`}>{t('emailAddress')}</label>
+              <label className={`text-sm text-gray-700 font-medium block ${isRTL ? 'text-right' : ''}`}>{t('emailAddress')}</label>
               <div className="relative">
                 <Mail className={`absolute top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 ${isRTL ? 'right-3' : 'left-3'}`} />
                 <Input
@@ -184,7 +187,7 @@ function SignUpContent() {
                   placeholder={t('enterEmail')}
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className={`h-12 bg-gray-50 border-gray-200 ${isRTL ? 'pr-11 text-right' : 'pl-11'}`}
+                  className={`h-12 bg-gray-50 border-gray-200 focus:border-brand-blue focus:ring-brand-blue/20 ${isRTL ? 'pr-11 text-right' : 'pl-11'}`}
                   autoComplete="email"
                   dir={isRTL ? 'rtl' : 'ltr'}
                 />
@@ -192,7 +195,7 @@ function SignUpContent() {
             </div>
 
             <div className="space-y-2">
-              <label className={`text-sm text-gray-700 block ${isRTL ? 'text-right' : ''}`}>{t('password')}</label>
+              <label className={`text-sm text-gray-700 font-medium block ${isRTL ? 'text-right' : ''}`}>{t('password')}</label>
               <div className="relative">
                 <Lock className={`absolute top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 ${isRTL ? 'right-3' : 'left-3'}`} />
                 <Input
@@ -200,7 +203,7 @@ function SignUpContent() {
                   placeholder={t('enterPassword')}
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  className={`h-12 bg-gray-50 border-gray-200 ${isRTL ? 'pr-11 pl-12 text-right' : 'pl-11 pr-12'}`}
+                  className={`h-12 bg-gray-50 border-gray-200 focus:border-brand-blue focus:ring-brand-blue/20 ${isRTL ? 'pr-11 pl-12 text-right' : 'pl-11 pr-12'}`}
                   autoComplete="new-password"
                   dir={isRTL ? 'rtl' : 'ltr'}
                 />
@@ -216,21 +219,21 @@ function SignUpContent() {
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-gray-600">{t('passwordStrength')}</span>
-                    <span className={`font-medium ${passwordStrength.level === 1 ? 'text-red-500' : passwordStrength.level === 2 ? 'text-yellow-500' : 'text-green-500'}`}>
+                    <span className={`font-medium ${passwordStrength.level === 1 ? 'text-red-500' : passwordStrength.level === 2 ? 'text-brand-warm-yellow' : 'text-brand-green'}`}>
                       {passwordStrength.label}
                     </span>
                   </div>
                   <div className="flex gap-2">
-                    <div className={`h-1 flex-1 rounded-full transition-colors ${passwordStrength.level >= 1 ? (passwordStrength.level === 1 ? 'bg-red-500' : passwordStrength.level === 2 ? 'bg-yellow-500' : 'bg-green-500') : 'bg-gray-200'}`}></div>
-                    <div className={`h-1 flex-1 rounded-full transition-colors ${passwordStrength.level >= 2 ? (passwordStrength.level === 2 ? 'bg-yellow-500' : 'bg-green-500') : 'bg-gray-200'}`}></div>
-                    <div className={`h-1 flex-1 rounded-full transition-colors ${passwordStrength.level >= 3 ? 'bg-green-500' : 'bg-gray-200'}`}></div>
+                    <div className={`h-1 flex-1 rounded-full transition-colors ${passwordStrength.level >= 1 ? (passwordStrength.level === 1 ? 'bg-red-500' : passwordStrength.level === 2 ? 'bg-brand-warm-yellow' : 'bg-brand-green') : 'bg-gray-200'}`}></div>
+                    <div className={`h-1 flex-1 rounded-full transition-colors ${passwordStrength.level >= 2 ? (passwordStrength.level === 2 ? 'bg-brand-warm-yellow' : 'bg-brand-green') : 'bg-gray-200'}`}></div>
+                    <div className={`h-1 flex-1 rounded-full transition-colors ${passwordStrength.level >= 3 ? 'bg-brand-green' : 'bg-gray-200'}`}></div>
                   </div>
                 </div>
               )}
             </div>
 
             <div className="space-y-2">
-              <label className={`text-sm text-gray-700 block ${isRTL ? 'text-right' : ''}`}>{t('confirmPassword')}</label>
+              <label className={`text-sm text-gray-700 font-medium block ${isRTL ? 'text-right' : ''}`}>{t('confirmPassword')}</label>
               <div className="relative">
                 <Lock className={`absolute top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 ${isRTL ? 'right-3' : 'left-3'}`} />
                 <Input
@@ -238,7 +241,7 @@ function SignUpContent() {
                   placeholder={t('reEnterPassword')}
                   value={formData.confirmPassword}
                   onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                  className={`h-12 bg-gray-50 border-gray-200 ${isRTL ? 'pr-11 pl-12 text-right' : 'pl-11 pr-12'}`}
+                  className={`h-12 bg-gray-50 border-gray-200 focus:border-brand-blue focus:ring-brand-blue/20 ${isRTL ? 'pr-11 pl-12 text-right' : 'pl-11 pr-12'}`}
                   autoComplete="new-password"
                   dir={isRTL ? 'rtl' : 'ltr'}
                 />
@@ -257,7 +260,7 @@ function SignUpContent() {
                 id="terms"
                 checked={formData.agreeToTerms}
                 onCheckedChange={(checked) => setFormData({ ...formData, agreeToTerms: checked as boolean })}
-                className="mt-1 border-gray-300"
+                className="mt-1 border-gray-300 data-[state=checked]:bg-brand-blue data-[state=checked]:border-brand-blue"
               />
               <label htmlFor="terms" className="text-sm text-gray-600 cursor-pointer leading-relaxed">
                 {t('agreeToTerms')}
@@ -267,7 +270,7 @@ function SignUpContent() {
             <Button
               type="submit"
               disabled={isSubmitting}
-              className="w-full h-12 bg-black hover:bg-gray-900 text-white font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="w-full h-12 btn-magnetic bg-brand-blue hover:bg-brand-blue-light text-white font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {isSubmitting ? (
                 <>
@@ -293,7 +296,7 @@ function SignUpContent() {
                 {t('haveAccount')}
               </p>
               <div>
-                <Link href="/signin" className="text-sm font-bold text-gray-900 hover:underline">
+                <Link href="/signin" className="text-sm font-bold text-brand-blue hover:underline">
                   {t('signIn')}
                 </Link>
               </div>
@@ -303,7 +306,7 @@ function SignUpContent() {
           <div className="flex justify-center">
             <button
               onClick={() => setLanguage(language === 'en' ? 'ur' : 'en')}
-              className="text-sm text-gray-600 hover:text-gray-900 transition-colors flex items-center gap-1"
+              className="text-sm text-gray-600 hover:text-brand-blue transition-colors flex items-center gap-1"
             >
               {language === 'en' ? 'English' : 'اردو'}
               <span className="text-gray-400">&#9662;</span>
@@ -318,8 +321,8 @@ function SignUpContent() {
 export default function SignUpPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-[#f7f9fb]">
-        <Loader2 className="h-8 w-8 animate-spin text-gray-600" />
+      <div className="min-h-screen flex items-center justify-center bg-[#F7F9FC]">
+        <Loader2 className="h-8 w-8 animate-spin text-brand-blue" />
       </div>
     }>
       <SignUpContent />

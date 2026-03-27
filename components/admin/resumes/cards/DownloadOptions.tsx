@@ -146,7 +146,7 @@ export default function DownloadOptions({ resumeId }: DownloadOptionsProps) {
 
           <Button 
             onClick={handleDownloadOptimized}
-            className="flex items-center gap-3 px-6 py-6 bg-black hover:bg-gray-800 text-white h-auto"
+            className="flex items-center gap-3 px-6 py-6 bg-brand-blue hover:bg-brand-blue-light text-white h-auto"
           >
             <Wand2 className="w-5 h-5" />
             <div className="text-left">

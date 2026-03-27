@@ -38,7 +38,7 @@ from app.schemas.admin import (
 )
 from app.services.supabase_service import SupabaseService
 from app.services import s3_service
-from app.services.azure_blob_service import get_sas_url, get_file_content_from_s3
+from app.services.azure_blob_service import get_sas_url, get_file_content_from_s3, delete_file_from_azure
 from app.config import settings
 from pathlib import Path
 
@@ -205,7 +205,8 @@ async def list_resumes(
             status=map_resume_status(resume.status),
             user_status=user_status,
             created_at=resume.created_at,
-            file_size=getattr(resume, 'file_size', None)
+            file_size=getattr(resume, 'file_size', None),
+            location=getattr(resume, 'location', None),
         )
         resume_items.append(resume_item)
 
@@ -892,3 +893,90 @@ def format_structured_data_as_text(structured_data: Dict[str, Any]) -> str:
             lines.append("")
     
     return "\n".join(lines)
+
+
+@router.delete("/resumes/{resume_id}")
+async def delete_resume(
+    resume_id: int,
+    delete_type: str = Query("both", description="Type of delete: original, optimized, or both"),
+    db: Session = Depends(get_db),
+    admin_user: AuthUser = Depends(get_admin_user),
+):
+    """
+    Delete resume data based on delete_type.
+
+    - original: Remove original CV file only
+    - optimized: Remove optimized CV only
+    - both: Remove entire resume and all related data
+    """
+    if delete_type not in ("original", "optimized", "both"):
+        raise HTTPException(status_code=400, detail="Invalid delete_type. Must be 'original', 'optimized', or 'both'")
+
+    logger.info(f"Admin {admin_user.id} deleting resume {resume_id} (type={delete_type})")
+
+    resume = db.query(Resume).options(
+        joinedload(Resume.optimized_resume),
+        joinedload(Resume.analysis),
+        joinedload(Resume.questions),
+        joinedload(Resume.answers),
+    ).filter(Resume.id == resume_id).first()
+
+    if not resume:
+        raise HTTPException(status_code=404, detail="Resume not found")
+
+    if delete_type == "original":
+        # Delete original file from blob storage
+        if resume.s3_key:
+            try:
+                delete_file_from_azure(resume.s3_key)
+            except Exception as e:
+                logger.warning(f"Failed to delete original blob for resume {resume_id}: {e}")
+        resume.s3_key = None
+        resume.s3_url = None
+        resume.file_path = ""
+        db.commit()
+        return {"message": f"Original file for resume {resume_id} deleted successfully"}
+
+    elif delete_type == "optimized":
+        if not resume.optimized_resume:
+            raise HTTPException(status_code=404, detail="No optimized resume to delete")
+        # Delete optimized file from blob storage
+        if resume.optimized_resume.s3_key:
+            try:
+                delete_file_from_azure(resume.optimized_resume.s3_key)
+            except Exception as e:
+                logger.warning(f"Failed to delete optimized blob for resume {resume_id}: {e}")
+        db.delete(resume.optimized_resume)
+        db.commit()
+        return {"message": f"Optimized resume for resume {resume_id} deleted successfully"}
+
+    else:  # both
+        # Delete blob files
+        if resume.s3_key:
+            try:
+                delete_file_from_azure(resume.s3_key)
+            except Exception as e:
+                logger.warning(f"Failed to delete original blob for resume {resume_id}: {e}")
+        if resume.optimized_resume and resume.optimized_resume.s3_key:
+            try:
+                delete_file_from_azure(resume.optimized_resume.s3_key)
+            except Exception as e:
+                logger.warning(f"Failed to delete optimized blob for resume {resume_id}: {e}")
+
+        # Delete all related DB records (order matters for FK constraints)
+        # Must flush between dependents to enforce correct SQL ordering
+        if resume.optimized_resume:
+            db.delete(resume.optimized_resume)
+            db.flush()
+        if resume.answers:
+            db.delete(resume.answers)
+            db.flush()
+        if resume.questions:
+            db.delete(resume.questions)
+            db.flush()
+        if resume.analysis:
+            db.delete(resume.analysis)
+            db.flush()
+        db.delete(resume)
+        db.commit()
+        return {"message": f"Resume {resume_id} and all associated data deleted successfully"}

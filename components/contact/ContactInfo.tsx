@@ -9,10 +9,10 @@ export default function ContactInfo() {
   return (
     <div className="bg-white rounded-lg p-8 space-y-8">
       <div>
-        <h3 className="text-xl font-semibold text-gray-900 mb-6">{t('contact.contactInfo')}</h3>
+        <h3 className="text-xl font-semibold text-foreground mb-6">{t('contact.contactInfo')}</h3>
         <div className="space-y-6">
           <div className="flex gap-4">
-            <div className="w-12 h-12 bg-gray-50 rounded-lg flex items-center justify-center flex-shrink-0">
+            <div className="w-12 h-12 bg-brand-blue-muted rounded-lg flex items-center justify-center flex-shrink-0">
               <Image
                 src="/assets/contact-us-email.svg"
                 alt="Email"
@@ -22,12 +22,12 @@ export default function ContactInfo() {
               />
             </div>
             <div>
-              <h4 className="text-sm font-semibold text-gray-900 mb-1">{t('contact.email')}</h4>
+              <h4 className="text-sm font-semibold text-foreground mb-1">{t('contact.email')}</h4>
               <p className="text-sm text-gray-600">{t('contact.emailValue')}</p>
             </div>
           </div>
           <div className="flex gap-4">
-            <div className="w-12 h-12 bg-gray-50 rounded-lg flex items-center justify-center flex-shrink-0">
+            <div className="w-12 h-12 bg-brand-blue-muted rounded-lg flex items-center justify-center flex-shrink-0">
               <Image
                 src="/assets/contact-us-address.svg"
                 alt="Address"
@@ -37,7 +37,7 @@ export default function ContactInfo() {
               />
             </div>
             <div>
-              <h4 className="text-sm font-semibold text-gray-900 mb-1">{t('contact.address')}</h4>
+              <h4 className="text-sm font-semibold text-foreground mb-1">{t('contact.address')}</h4>
               <p className="text-sm text-gray-600">{t('contact.addressFull')}</p>
             </div>
           </div>

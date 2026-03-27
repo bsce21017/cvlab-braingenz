@@ -9,7 +9,7 @@ export default function ResumesDashboardPage() {
   const isRTL = language === 'ur';
 
   return (
-    <div className="bg-gray-50" dir={isRTL ? 'rtl' : 'ltr'}>
+    <div className="bg-[#F7F9FC]" dir={isRTL ? 'rtl' : 'ltr'}>
       <div className="max-w-7xl mx-auto p-8">
         <div className="bg-white rounded-lg shadow-sm p-6">
           <ResumesDashboardHeader />

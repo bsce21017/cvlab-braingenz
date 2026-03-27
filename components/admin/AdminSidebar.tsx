@@ -90,7 +90,7 @@ export default function AdminSidebar() {
             }
             if (Icon) {
               // Prompts icon always black
-              return <Icon className="w-5 h-5 flex-shrink-0 text-gray-900" />;
+              return <Icon className="w-5 h-5 flex-shrink-0 text-brand-blue" />;
             }
             return null;
           };
@@ -101,8 +101,8 @@ export default function AdminSidebar() {
               href={item.href}
               className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-sm ${
                 isActive
-                  ? 'bg-gray-100 text-gray-900 font-bold'
-                  : 'text-gray-700 hover:bg-gray-100 font-medium'
+                  ? 'bg-brand-blue-muted text-brand-blue font-bold'
+                  : 'text-gray-600 hover:bg-brand-blue-muted/50 font-medium'
               }`}
               dir="ltr"
             >

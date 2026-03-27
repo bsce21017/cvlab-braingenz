@@ -88,7 +88,7 @@ export interface TemplateStyle {
  */
 export const classicStyle: TemplateStyle = {
   id: 'classic',
-  name: 'Classic',
+  name: 'Core',
   fonts: {
     primary: 'Georgia',
     fallback: ['Times New Roman', 'Times', 'serif'],
@@ -140,7 +140,7 @@ export const classicStyle: TemplateStyle = {
  */
 export const modernStyle: TemplateStyle = {
   id: 'modern',
-  name: 'Modern',
+  name: 'Dynamic',
   fonts: {
     primary: 'Times New Roman',
     fallback: ['Times', 'serif'],
@@ -193,7 +193,7 @@ export const modernStyle: TemplateStyle = {
  */
 export const executiveStyle: TemplateStyle = {
   id: 'executive',
-  name: 'Executive',
+  name: 'Premium',
   fonts: {
     primary: 'Times New Roman',
     fallback: ['Times', 'serif'],

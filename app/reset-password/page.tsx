@@ -82,7 +82,7 @@ export default function ResetPasswordPage() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#f7f9fb]">
+      <div className="min-h-screen flex items-center justify-center bg-[#F7F9FC]">
         <Loader2 className="h-8 w-8 animate-spin text-gray-600" />
       </div>
     );
@@ -91,7 +91,7 @@ export default function ResetPasswordPage() {
   // Success state
   if (resetSuccess) {
     return (
-      <div className="min-h-screen flex flex-col bg-[#f7f9fb]">
+      <div className="min-h-screen flex flex-col bg-[#F7F9FC]">
         {/* Header */}
         <header className="p-6">
           <Link href="/" className="flex items-center w-fit">
@@ -119,7 +119,7 @@ export default function ResetPasswordPage() {
 
             {/* Title & Description */}
             <div className="space-y-3">
-              <h1 className="text-3xl font-semibold text-gray-900">
+              <h1 className="text-3xl font-semibold text-foreground">
                 {t('youreAllSet') || "You're All Set!"}
               </h1>
               <p className="text-gray-600 text-lg">
@@ -130,7 +130,7 @@ export default function ResetPasswordPage() {
             {/* Action Button */}
             <Button
               onClick={() => router.push('/')}
-              className="w-full h-12 bg-black hover:bg-gray-900 text-white font-medium rounded-lg"
+              className="w-full h-12 bg-brand-blue hover:bg-brand-blue-light text-white btn-magnetic font-medium rounded-lg"
             >
               {t('continueToHome') || 'Continue to Home'}
             </Button>
@@ -158,7 +158,7 @@ export default function ResetPasswordPage() {
             backgroundSize: 'cover',
           }}
         />
-        <div className="absolute inset-0 bg-black/70" />
+        <div className="absolute inset-0 bg-brand-blue/85" />
         <div className="relative z-10 flex h-full flex-col justify-center px-14 text-white space-y-4">
           <h1 className="text-5xl font-normal leading-tight max-w-xl">
             {t('pickNewPassword') || 'Pick a New Password'}
@@ -170,7 +170,7 @@ export default function ResetPasswordPage() {
       </div>
 
       {/* Right form panel */}
-      <div className="flex items-center justify-center bg-[#f7f9fb] px-6 py-12">
+      <div className="flex items-center justify-center bg-[#F7F9FC] px-6 py-12">
         <div className="w-full max-w-xl space-y-8">
           <div className="flex items-center justify-center">
             <Image
@@ -183,7 +183,7 @@ export default function ResetPasswordPage() {
           </div>
 
           <div className="text-center space-y-2">
-            <h2 className="text-4xl font-normal text-gray-900">
+            <h2 className="text-4xl font-bold text-foreground">
               {t('createYourNewPassword') || 'Create Your New Password'}
             </h2>
             <p className="text-base text-gray-600">
@@ -191,7 +191,7 @@ export default function ResetPasswordPage() {
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5 bg-[#f7f9fb] rounded-2xl p-6 shadow-sm">
+          <form onSubmit={handleSubmit} className="space-y-5 bg-[#F7F9FC] rounded-2xl p-6 shadow-sm">
             {error && (
               <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg">
                 {error}
@@ -265,7 +265,7 @@ export default function ResetPasswordPage() {
             <Button
               type="submit"
               disabled={isSubmitting}
-              className="w-full h-12 bg-black hover:bg-gray-900 text-white font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full h-12 bg-brand-blue hover:bg-brand-blue-light text-white btn-magnetic font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSubmitting ? (
                 <>

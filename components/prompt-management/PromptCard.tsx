@@ -123,7 +123,7 @@ export default function PromptCard({
           {!isEditing ? (
             <button
               onClick={handleEditClick}
-              className="flex items-center gap-1.5 rounded-lg bg-black px-3 py-1.5 text-sm text-white transition hover:bg-gray-900"
+              className="flex items-center gap-1.5 rounded-lg bg-brand-blue px-3 py-1.5 text-sm text-white transition hover:bg-brand-blue-light"
             >
               <Image
                 src="/assets/edit.svg"
@@ -188,7 +188,7 @@ export default function PromptCard({
           <button
             onClick={handleSave}
             disabled={saving}
-            className={`inline-flex items-center gap-2 rounded bg-black px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-900 disabled:opacity-50 ${
+            className={`inline-flex items-center gap-2 rounded bg-brand-blue px-4 py-2 text-sm font-medium text-white transition hover:bg-brand-blue-light disabled:opacity-50 ${
               isArabic ? 'flex-row-reverse' : ''
             }`}
           >

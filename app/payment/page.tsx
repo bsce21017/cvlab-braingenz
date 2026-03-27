@@ -28,7 +28,7 @@ export default function PaymentPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F5F5F7]">
+    <div className="min-h-screen bg-[#F7F9FC]">
       <PaymentHeader />
 
       <div className="max-w-7xl mx-auto px-6 py-12">

@@ -14,8 +14,8 @@ const gulzar = Gulzar({
 });
 
 export const metadata: Metadata = {
-  title: 'ResumeAI - Optimize Your Career',
-  description: 'Transform your resume with intelligent optimization',
+  title: 'CV Summit - Optimize Your Career',
+  description: 'Transform your resume with CV Summit\'s intelligent AI-powered optimization',
 };
 
 export default function RootLayout({
