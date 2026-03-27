@@ -97,10 +97,10 @@ export default function Header() {
           <div className="flex items-center justify-between h-20">
             <Link href="/" className="flex items-center flex-shrink-0">
               <Image
-                src="/assets/Main_logo.svg"
-                alt="CVLab Logo"
+                src="/assets/Main logo.svg"
+                alt="CV Summit Logo"
                 width={200}
-                height={200}
+                height={120}
                 className="h-20 w-auto"
                 priority
               />

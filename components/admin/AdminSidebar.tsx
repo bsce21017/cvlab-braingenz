@@ -59,10 +59,10 @@ export default function AdminSidebar() {
       <div className="p-6 border-b border-gray-200">
         <Link href="/admin/dashboard" className="flex items-center justify-center">
           <Image
-            src="/assets/Main_logo.svg"
-            alt="CVLab Logo"
+            src="/assets/Main logo.svg"
+            alt="CV Summit Logo"
             width={200}
-            height={200}
+            height={120}
             className="h-20 w-auto"
           />
         </Link>

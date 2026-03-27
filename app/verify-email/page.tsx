@@ -78,10 +78,10 @@ function VerifyEmailContent() {
       <header className="p-6">
         <Link href="/" className="flex items-center w-fit">
           <Image
-            src="/assets/Main_logo.svg"
-            alt="CVLab Logo"
+            src="/assets/Main logo.svg"
+            alt="CV Summit Logo"
             width={200}
-            height={200}
+            height={120}
             className="h-20 w-auto"
           />
         </Link>

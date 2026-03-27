@@ -121,7 +121,7 @@ const translations = {
     termsOfService: 'Terms of Service',
     // Terms of Service Page
     termsTitle: 'Terms & Conditions',
-    termsSubtitle: 'CVLab سی وی لیب',
+    termsSubtitle: 'CVLab',
     termsLastUpdated: 'Last Updated: January 2026',
     termsSection1Title: '1. Introduction',
     termsSection1Text: 'Welcome to CVLab ("we," "our," or "us"). By accessing or using our website and services, you agree to be bound by these Terms and Conditions. Please read them carefully before using our CV creation platform.',
@@ -251,10 +251,11 @@ const translations = {
     'contact.subtitle': "We're here to help. Reach out anytime.",
     'contact.contactInfo': 'Contact Information',
     'contact.email': 'Email',
+    'contact.emailValue': 'sales@braingenz.com',
     'contact.address': 'Address',
-    'contact.riyadh': 'Riyadh',
-    'contact.saudiArabia': 'Saudi Arabia',
-    'contact.addressFull': 'Riyadh, Saudi Arabia',
+    'contact.riyadh': 'Lahore',
+    'contact.saudiArabia': 'Pakistan',
+    'contact.addressFull': '5th floor, A1, 1 Sunrise Rd, Block H Valencia, Lahore, Pakistan',
     'contact.faq': 'Frequently Asked Questions',
     'contact.faq1': 'How does resume optimization work?',
     'contact.faq2': 'Is my data safe and secure?',
@@ -836,10 +837,11 @@ const translations = {
     'contact.subtitle': 'ہم آپ کی مدد کے لیے حاضر ہیں۔ کسی بھی وقت رابطہ کریں۔',
     'contact.contactInfo': 'رابطہ کی معلومات',
     'contact.email': 'ای میل',
+    'contact.emailValue': 'sales@braingenz.com',
     'contact.address': 'پتہ',
-    'contact.riyadh': 'ریاض',
-    'contact.saudiArabia': 'سعودی عرب',
-    'contact.addressFull': 'ریاض، سعودی عرب',
+    'contact.riyadh': 'لاہور',
+    'contact.saudiArabia': 'پاکستان',
+    'contact.addressFull': '5ویں منزل، A1، 1 سن رائز روڈ، بلاک H والینشیا، لاہور، پاکستان',
     'contact.faq': 'عمومی سوالات',
     'contact.faq1': 'ریزیومے کی بہتری کیسے کام کرتی ہے؟',
     'contact.faq2': 'کیا میرا ڈیٹا محفوظ ہے؟',
@@ -1173,7 +1175,17 @@ const LanguageContext = createContext<LanguageContextType | undefined>(
 export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [language, setLanguage] = useState<Language>('en');
+  const [language, setLanguageState] = useState<Language>(() => {
+    if (typeof window !== 'undefined') {
+      return (localStorage.getItem('language') as Language) || 'en';
+    }
+    return 'en';
+  });
+
+  const setLanguage = (lang: Language) => {
+    setLanguageState(lang);
+    localStorage.setItem('language', lang);
+  };
 
   useEffect(() => {
     document.documentElement.dir = language === 'ur' ? 'rtl' : 'ltr';

@@ -118,10 +118,10 @@ function SignInContent() {
         <div className="w-full max-w-xl space-y-8">
           <div className="flex items-center justify-center">
             <Image
-              src="/assets/Main_logo.svg"
-              alt="CVLab Logo"
+              src="/assets/Main logo.svg"
+              alt="CV Summit Logo"
               width={200}
-              height={200}
+              height={120}
               className="h-20 w-auto"
             />
           </div>

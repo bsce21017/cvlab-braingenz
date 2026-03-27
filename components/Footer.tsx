@@ -15,10 +15,10 @@ export default function Footer() {
           <div className="space-y-3">
             <div className="flex items-center">
               <Image
-                src="/assets/Main_logo.svg"
-                alt="CVLab Logo"
+                src="/assets/Main logo.svg"
+                alt="CV Summit Logo"
                 width={200}
-                height={200}
+                height={120}
                 className="h-16 w-auto invert"
               />
             </div>
@@ -51,20 +51,20 @@ export default function Footer() {
             <h4 className="font-normal text-white text-sm">{t('legal')}</h4>
             <ul className="space-y-2 text-sm">
               <li>
-                <a
+                <Link
                   href="/privacy-policy"
                   className="text-gray-400 hover:text-white transition-colors"
                 >
                   {t('privacyPolicy')}
-                </a>
+                </Link>
               </li>
               <li>
-                <a
+                <Link
                   href="/terms-of-service"
                   className="text-gray-400 hover:text-white transition-colors"
                 >
                   {t('termsOfService')}
-                </a>
+                </Link>
               </li>
             </ul>
           </div>

@@ -15,10 +15,10 @@ export default function ResumePreviewHeader() {
         <div className="flex items-center justify-between">
           <div className="flex items-center" dir="ltr">
             <Image
-              src="/assets/Main_logo.svg"
-              alt="CVLab Logo"
+              src="/assets/Main logo.svg"
+              alt="CV Summit Logo"
               width={200}
-              height={200}
+              height={120}
               className="h-20 w-auto"
             />
           </div>

@@ -23,7 +23,7 @@ export default function ContactInfo() {
             </div>
             <div>
               <h4 className="text-sm font-semibold text-gray-900 mb-1">{t('contact.email')}</h4>
-              <p className="text-sm text-gray-600">support@smartcv.com</p>
+              <p className="text-sm text-gray-600">{t('contact.emailValue')}</p>
             </div>
           </div>
           <div className="flex gap-4">
@@ -38,8 +38,7 @@ export default function ContactInfo() {
             </div>
             <div>
               <h4 className="text-sm font-semibold text-gray-900 mb-1">{t('contact.address')}</h4>
-              <p className="text-sm text-gray-600">{language === 'ur' ? 'الرياض،' : 'Riyadh,'}</p>
-              <p className="text-sm text-gray-600">{language === 'ur' ? 'المملكة اردو السعودية' : 'Saudi Arabia'}</p>
+              <p className="text-sm text-gray-600">{t('contact.addressFull')}</p>
             </div>
           </div>
         </div>
