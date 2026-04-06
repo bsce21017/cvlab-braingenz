@@ -307,14 +307,7 @@ export default function EvalResultsPage() {
             })}
           </div>
 
-          {/* Token usage info */}
-          {results.token_usage && (
-            <div className="bg-gray-50 rounded-xl p-4 mb-8 text-center">
-              <p className="text-xs text-muted-foreground">
-                Tokens used: {results.token_usage.total_tokens.toLocaleString()} (Input: {results.token_usage.input_tokens.toLocaleString()} | Output: {results.token_usage.output_tokens.toLocaleString()})
-              </p>
-            </div>
-          )}
+          {/* Token usage tracked in admin dashboard only */}
 
           {/* Back button */}
           <div className="text-center">
