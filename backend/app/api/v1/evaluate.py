@@ -1,11 +1,14 @@
 """
-CV Evaluation Endpoint
-Upload multiple CVs + job description, AI ranks top 3
+CV Evaluation Endpoint — 2-Step Pipeline
+Step 1: Batch extract structured candidate profiles from all CVs
+Step 2: Rank structured profiles against job description
 """
 import logging
 import json
+import re
 import time
 from typing import List
+from datetime import datetime, timezone
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Depends
 from sqlalchemy.orm import Session
 
@@ -58,115 +61,219 @@ def extract_text_from_file(file_bytes: bytes, filename: str) -> str:
     return ''
 
 
-EVALUATION_SYSTEM_PROMPT = """You are a Senior Talent Acquisition Director with 20+ years of experience in technical hiring across Fortune 500 companies. You specialize in CV screening, candidate ranking, and evidence-based hiring decisions.
+def parse_json_response(text: str) -> dict:
+    """Robustly parse JSON from AI response."""
+    text = text.strip()
+    # Remove markdown code fences
+    if text.startswith('```'):
+        text = text.split('\n', 1)[1].rsplit('```', 1)[0].strip()
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        # Try to find JSON object in text
+        match = re.search(r'\{[\s\S]*\}', text)
+        if match:
+            return json.loads(match.group())
+        # Try to find JSON array
+        match = re.search(r'\[[\s\S]*\]', text)
+        if match:
+            return json.loads(match.group())
+        raise ValueError("No valid JSON found in AI response")
 
-YOUR TASK: Evaluate multiple candidate CVs against a specific job description. Produce a rigorous, data-driven ranking of the top 3 candidates.
+
+# ═══════════════════════════════════════════════════════════════
+# STEP 1: Batch Skill & Profile Extraction Prompt
+# ═══════════════════════════════════════════════════════════════
+
+EXTRACTION_SYSTEM_PROMPT = """You are a precise CV data extraction engine. Your job is to read raw CV text and extract structured candidate profiles.
+
+CRITICAL RULES:
+- Extract ONLY information that is EXPLICITLY written in the CV text
+- NEVER infer or assume skills based on job titles. Example: "Backend Developer" does NOT automatically mean Python or Node.js unless those words appear in the CV
+- If information is missing or unclear, set it to null or empty array
+- For skills, only list technologies/tools/frameworks that are explicitly named
+- For experience years, calculate from the actual date ranges mentioned, not from assumptions
+- Extract company names exactly as written
+- For education, extract degree, field, institution, and year if available
+
+OUTPUT FORMAT (Strict JSON array — no markdown, no text outside JSON):
+
+[
+  {
+    "filename": "exact_filename.pdf",
+    "name": "Candidate full name or null if not found",
+    "experience_years": 5,
+    "current_role": "Most recent job title or null",
+    "skills": {
+      "programming_languages": ["Python", "JavaScript"],
+      "frameworks": ["Django", "React"],
+      "databases": ["PostgreSQL", "Redis"],
+      "cloud_devops": ["AWS", "Docker"],
+      "tools": ["Git", "Jira"],
+      "other": ["Agile", "REST APIs"]
+    },
+    "education": [
+      {
+        "degree": "BS Computer Science",
+        "institution": "University Name",
+        "year": "2018"
+      }
+    ],
+    "certifications": ["AWS Certified Solutions Architect"],
+    "companies": [
+      {
+        "name": "Company Name",
+        "role": "Software Engineer",
+        "duration": "2020-2023",
+        "key_achievements": ["Built X that improved Y by Z%"]
+      }
+    ],
+    "total_achievements_quantified": 3,
+    "languages_spoken": ["English", "Urdu"],
+    "location": "City, Country or null",
+    "cv_quality_notes": "Brief note on CV formatting, completeness, any issues"
+  }
+]
+
+Return one profile per CV. Maintain the exact filename for each."""
+
+
+# ═══════════════════════════════════════════════════════════════
+# STEP 2: Ranking & Evaluation Prompt
+# ═══════════════════════════════════════════════════════════════
+
+RANKING_SYSTEM_PROMPT = """You are a Senior Talent Acquisition Director with 20+ years of experience in technical hiring. You specialize in evidence-based candidate ranking and hiring decisions.
+
+You are given:
+1. A structured job description
+2. Pre-extracted structured candidate profiles (skills, experience, education, achievements)
+
+Your task: Rank the top 3 candidates using rigorous, weighted evaluation.
 
 ═══════════════════════════════════════
-EVALUATION FRAMEWORK (Weighted Scoring)
+STEP A: PARSE THE JOB DESCRIPTION
 ═══════════════════════════════════════
 
-Score each candidate on these 6 dimensions. The final score is the weighted average.
+Extract these fields mentally before scoring:
+- Job title and seniority level
+- Required skills (must-have — dealbreakers if missing)
+- Preferred skills (nice-to-have — differentiators)
+- Minimum years of experience
+- Education requirements
+- Industry/domain context
+- Location requirements
+
+═══════════════════════════════════════
+STEP B: SEMANTIC SKILL MATCHING
+═══════════════════════════════════════
+
+When comparing candidate skills to JD requirements, recognize these equivalences:
+- React = ReactJS = React.js
+- Node = Node.js = NodeJS
+- PostgreSQL = Postgres = PG
+- MongoDB = Mongo
+- Python = Python3
+- JavaScript = JS = ECMAScript
+- TypeScript = TS
+- Docker = Containerization
+- Kubernetes = K8s
+- AWS = Amazon Web Services
+- Azure = Microsoft Azure
+- GCP = Google Cloud Platform
+- CI/CD = Continuous Integration / Continuous Deployment
+- REST = RESTful = REST APIs
+- GraphQL = GQL
+- TensorFlow = Deep Learning Framework
+- PyTorch = Deep Learning Framework
+- Machine Learning = ML
+- Artificial Intelligence = AI
+- Agile = Scrum = Kanban (related but not identical)
+
+═══════════════════════════════════════
+STEP C: SCORING FRAMEWORK (Weighted)
+═══════════════════════════════════════
+
+Score each candidate 0-100 on these 6 dimensions:
 
 1. HARD SKILLS MATCH (Weight: 25%)
-   - Map each required skill from the JD to evidence in the CV
-   - Distinguish between: explicitly listed, demonstrated through projects, implied through experience, or absent
-   - Penalize missing "must-have" skills heavily; "nice-to-have" gaps are minor
-   - Award bonus points for skills beyond the JD that add value to the role
+   - Map each required JD skill to candidate's extracted skills
+   - Only count skills that are EXPLICITLY in the candidate profile
+   - Missing must-have = heavy penalty
+   - Missing nice-to-have = minor penalty
+   - Extra relevant skills = bonus points
 
 2. EXPERIENCE RELEVANCE & DEPTH (Weight: 25%)
-   - Years of relevant experience vs. JD requirement (exact match = 100%, ±2 years = partial credit)
-   - Quality of experience: relevant industry, company tier, role responsibilities
-   - Progression trajectory: promotions, increasing scope, leadership growth
-   - Quantified achievements (revenue impact, team size, system scale, percentages)
-   - Penalize: career gaps >1 year without explanation, frequent job-hopping (<1 year per role)
+   - Years match vs. JD requirement
+   - Role relevance (same domain, similar responsibilities)
+   - Career progression (promotions, increasing scope)
+   - Quantified achievements (count from profile)
+   - Red flags: gaps, job-hopping (<1 year/role)
 
 3. EDUCATION & CERTIFICATIONS (Weight: 15%)
-   - Degree relevance and level vs. JD requirement
-   - Institution reputation (tier-1, tier-2, other)
-   - Relevant certifications (current vs. expired)
-   - Continuous learning signals (recent courses, bootcamps, conferences)
+   - Degree relevance and level
+   - Certifications that match JD requirements
+   - Continuous learning signals
 
-4. ATS KEYWORD OPTIMIZATION (Weight: 15%)
-   - Count exact keyword matches between JD and CV
-   - Identify semantic matches (synonyms, related terms)
-   - Check for industry-standard terminology
-   - Evaluate keyword density and natural placement (not keyword-stuffed)
+4. ATS KEYWORD MATCH (Weight: 15%)
+   - Count exact + semantic keyword matches
+   - Industry terminology alignment
+   - Natural keyword placement
 
-5. CV PRESENTATION & COMMUNICATION (Weight: 10%)
-   - Clarity and structure of the CV
-   - Use of action verbs and quantified results
-   - Appropriate length and formatting
-   - Grammar, spelling, and professional tone
-   - Tailoring signals (CV appears customized vs. generic)
+5. CV QUALITY & PRESENTATION (Weight: 10%)
+   - Based on cv_quality_notes from extraction
+   - Number of quantified achievements
+   - Completeness of information
 
-6. CULTURAL & ROLE FIT INDICATORS (Weight: 10%)
-   - Alignment with company type/size mentioned in JD
-   - Location/timezone compatibility
-   - Industry domain experience
-   - Soft skills evidence (leadership, collaboration, communication)
-   - Career trajectory alignment with the role's growth path
+6. CULTURAL & ROLE FIT (Weight: 10%)
+   - Location compatibility
+   - Industry domain match
+   - Company size/type alignment
+   - Career trajectory fit
 
 ═══════════════════════════════════════
-RANKING METHODOLOGY
+ANTI-HALLUCINATION RULES
 ═══════════════════════════════════════
 
-Step 1: Parse the job description and extract:
-  - Job title, seniority level, department
-  - Must-have requirements (hard dealbreakers)
-  - Nice-to-have requirements (differentiators)
-  - Key responsibilities
-  - Industry/domain context
-
-Step 2: For EACH candidate CV:
-  - Extract all relevant data points
-  - Score each of the 6 dimensions (0-100)
-  - Calculate weighted final score
-  - Identify top 3-5 strengths with SPECIFIC evidence from the CV
-  - Identify top 2-3 gaps or concerns
-  - Note any red flags (fabrication signals, inconsistencies, unexplained gaps)
-
-Step 3: Compare candidates HEAD-TO-HEAD:
-  - For close scores (within 5 points), do pairwise comparison
-  - Consider overall risk profile (high-potential-high-risk vs. safe-but-average)
-  - Break ties using: experience depth > skills breadth > education > presentation
-
-Step 4: Produce final ranking with confidence level
+- ONLY use data from the extracted candidate profiles. Do NOT invent skills or experience.
+- If a required skill is NOT in the candidate's skill list, mark it as MISSING — do not assume it.
+- A "Backend Developer" does NOT automatically know Python, Node.js, or any specific technology unless listed.
+- A "Data Scientist" does NOT automatically know TensorFlow unless listed.
+- If experience_years is null, do NOT guess — note it as "unknown."
+- Every strength claim MUST reference specific data from the profile (company name, skill, achievement).
 
 ═══════════════════════════════════════
 SCORING GUIDE
 ═══════════════════════════════════════
 
-90-100: Exceptional match. Exceeds requirements. Strong hire recommendation.
-80-89:  Strong match. Meets all must-haves, most nice-to-haves. Recommended.
-70-79:  Good match. Meets most must-haves. Worth interviewing.
-60-69:  Moderate match. Some gaps but transferable skills present.
-50-59:  Weak match. Significant gaps in key areas.
-Below 50: Poor match. Does not meet minimum requirements.
+90-100: Exceptional. Exceeds all requirements.
+80-89:  Strong match. All must-haves met, most nice-to-haves.
+70-79:  Good match. Most must-haves met. Interview-worthy.
+60-69:  Moderate. Some gaps but transferable skills.
+50-59:  Weak. Significant gaps.
+Below 50: Poor match.
+
+Do NOT inflate scores. A mediocre candidate should get 50-65, not 75+.
 
 ═══════════════════════════════════════
-CRITICAL RULES
-═══════════════════════════════════════
-
-- NEVER fabricate or assume information not present in the CV
-- If a CV has unreadable/missing text, note it and score based on available data only
-- Be objective — do not favor based on name, gender, ethnicity, or age signals
-- Provide SPECIFIC evidence from the CV for every claim (quote bullet points, mention exact skills)
-- If two candidates are genuinely equal, say so and explain the tiebreaker
-- Scores must reflect reality — do not inflate. A mediocre CV should score 50-65, not 75+
-
-═══════════════════════════════════════
-OUTPUT FORMAT (Strict JSON — no markdown, no text outside JSON)
+OUTPUT FORMAT (Strict JSON)
 ═══════════════════════════════════════
 
 {
-  "job_summary": "One-line summary: [Title] at [seniority] level requiring [top 3 skills]",
+  "job_summary": "One-line: [Title] requiring [top 3 skills], [X]+ years experience",
+  "jd_parsed": {
+    "required_skills": ["Python", "FastAPI", "PostgreSQL"],
+    "preferred_skills": ["Docker", "AWS"],
+    "min_experience_years": 3,
+    "education_requirement": "BS in CS or equivalent"
+  },
   "total_candidates_analyzed": 5,
   "ranked_candidates": [
     {
       "rank": 1,
       "filename": "exact_filename.pdf",
+      "candidate_name": "Name from profile",
       "score": 87,
+      "confidence": 92,
       "score_breakdown": {
         "hard_skills": 90,
         "experience": 85,
@@ -175,24 +282,39 @@ OUTPUT FORMAT (Strict JSON — no markdown, no text outside JSON)
         "presentation": 85,
         "cultural_fit": 82
       },
-      "reasoning": "Detailed 3-5 sentence explanation of why this candidate is ranked #1. Reference SPECIFIC items from their CV — job titles, companies, skills, achievements, years. Explain what makes them the strongest match compared to other candidates.",
+      "skills_matched": ["Python", "FastAPI", "PostgreSQL", "Docker"],
+      "skills_missing": ["Kubernetes"],
+      "reasoning": "3-5 sentences with SPECIFIC evidence from profile. Reference exact companies, skills, years, achievements.",
+      "why_selected": [
+        "5 years Python backend at Systems Limited — directly relevant",
+        "Built microservices handling 1M+ requests — proves scalability skills",
+        "PostgreSQL + Redis experience matches tech stack exactly",
+        "AWS certified — covers cloud requirement"
+      ],
+      "why_not_others": [
+        "Candidate 2 lacks FastAPI experience (only Django)",
+        "Candidate 4 has only 1.5 years experience vs required 3"
+      ],
       "strengths": [
-        "Specific strength with evidence from CV",
-        "Another strength with evidence",
-        "Third strength with evidence",
-        "Fourth strength with evidence",
-        "Fifth strength with evidence"
+        "Specific strength with evidence",
+        "Another strength",
+        "Third strength",
+        "Fourth strength",
+        "Fifth strength"
       ],
       "gaps": [
         "Specific gap or concern",
         "Another gap if applicable"
       ],
-      "hire_recommendation": "Strong Hire / Hire / Lean Hire / No Hire"
+      "hire_recommendation": "Strong Hire"
     }
   ]
 }
 
-Return exactly 3 candidates. Rank from best (#1) to third-best (#3). Every field is required."""
+hire_recommendation must be one of: "Strong Hire", "Hire", "Lean Hire", "No Hire"
+confidence is 0-100: how confident you are in this ranking (based on data completeness + skill clarity + JD alignment)
+
+Return exactly 3 candidates. Rank best (#1) to third (#3). Every field required."""
 
 
 @router.post("/evaluate")
@@ -202,8 +324,9 @@ async def evaluate_cvs(
     db: Session = Depends(get_db),
 ):
     """
-    Evaluate multiple CVs against a job description.
-    Returns top 3 ranked candidates with reasoning.
+    2-Step CV Evaluation Pipeline:
+    Step 1: Extract structured profiles from all CVs (1 LLM call)
+    Step 2: Rank profiles against JD (1 LLM call)
     """
     start_time = time.time()
 
@@ -215,7 +338,7 @@ async def evaluate_cvs(
     if not job_description.strip():
         raise HTTPException(status_code=400, detail="Job description is required")
 
-    logger.info(f"[EVAL] Starting evaluation: {len(files)} CVs")
+    logger.info(f"[EVAL] Starting 2-step evaluation: {len(files)} CVs")
 
     # Create evaluation record
     evaluation = CVEvaluation(
@@ -227,101 +350,144 @@ async def evaluate_cvs(
     db.commit()
     db.refresh(evaluation)
 
+    total_input_tokens = 0
+    total_output_tokens = 0
+
     try:
-        # Extract text from all CVs
+        # ═══════════════════════════════════════
+        # PHASE 1: Text Extraction (no AI)
+        # ═══════════════════════════════════════
         cv_texts = []
         for f in files:
             content = await f.read()
             text = extract_text_from_file(content, f.filename or 'unknown.pdf')
             if text.strip():
-                cv_texts.append({"filename": f.filename, "text": text[:8000]})  # Limit per CV
+                cv_texts.append({"filename": f.filename, "text": text[:6000]})
             else:
                 cv_texts.append({"filename": f.filename, "text": f"[Could not extract text from {f.filename}]"})
             logger.info(f"[EVAL] Extracted {len(text)} chars from {f.filename}")
 
-        # Build the evaluation prompt
-        cv_section = ""
+        # ═══════════════════════════════════════
+        # PHASE 2: Batch Profile Extraction (1 LLM call)
+        # ═══════════════════════════════════════
+        cv_block = ""
         for i, cv in enumerate(cv_texts, 1):
-            cv_section += f"\n--- CV {i}: {cv['filename']} ---\n{cv['text']}\n"
+            cv_block += f"\n{'='*60}\nCV {i}: {cv['filename']}\n{'='*60}\n{cv['text']}\n"
 
-        prompt = f"""Job Description:
+        extraction_prompt = f"""Extract structured candidate profiles from these {len(cv_texts)} CVs.
+Return a JSON array with one profile per CV.
+
+{cv_block}"""
+
+        logger.info(f"[EVAL] Step 1: Extracting profiles ({len(extraction_prompt)} chars)")
+        step1_result = llm_handler.generate_with_usage(
+            prompt=extraction_prompt,
+            system_prompt=EXTRACTION_SYSTEM_PROMPT,
+            max_tokens=6000,
+        )
+
+        total_input_tokens += step1_result["input_tokens"]
+        total_output_tokens += step1_result["output_tokens"]
+
+        # Parse extracted profiles
+        try:
+            profiles = parse_json_response(step1_result["text"])
+            if isinstance(profiles, dict) and "profiles" in profiles:
+                profiles = profiles["profiles"]
+            if not isinstance(profiles, list):
+                profiles = [profiles]
+        except Exception as e:
+            logger.error(f"[EVAL] Profile extraction parse failed: {e}")
+            raise HTTPException(status_code=500, detail="Failed to extract candidate profiles")
+
+        logger.info(f"[EVAL] Step 1 complete: extracted {len(profiles)} profiles, tokens: {step1_result['total_tokens']}")
+
+        # Track Step 1 token usage
+        db.add(TokenUsage(
+            feature="cv_evaluation",
+            reference_id=evaluation.id,
+            model=step1_result["model"],
+            input_tokens=step1_result["input_tokens"],
+            output_tokens=step1_result["output_tokens"],
+            total_tokens=step1_result["total_tokens"],
+            prompt_name="profile_extraction",
+            num_cvs=len(files),
+        ))
+
+        # ═══════════════════════════════════════
+        # PHASE 3: Ranking (1 LLM call)
+        # ═══════════════════════════════════════
+        ranking_prompt = f"""JOB DESCRIPTION:
 {job_description}
 
-{len(cv_texts)} Candidate CVs:
-{cv_section}
+EXTRACTED CANDIDATE PROFILES ({len(profiles)} candidates):
+{json.dumps(profiles, indent=2, ensure_ascii=False)}
 
-Analyze all {len(cv_texts)} CVs against the job description. Rank the top 3 best matches. Return valid JSON only."""
+Evaluate all {len(profiles)} candidates against the job description.
+Rank the top 3. Return strict JSON only."""
 
-        # Call AI with token tracking
-        logger.info(f"[EVAL] Calling AI for evaluation (prompt ~{len(prompt)} chars)")
-        result = llm_handler.generate_with_usage(
-            prompt=prompt,
-            system_prompt=EVALUATION_SYSTEM_PROMPT,
+        logger.info(f"[EVAL] Step 2: Ranking candidates ({len(ranking_prompt)} chars)")
+        step2_result = llm_handler.generate_with_usage(
+            prompt=ranking_prompt,
+            system_prompt=RANKING_SYSTEM_PROMPT,
             max_tokens=8000,
         )
 
-        response_text = result["text"]
-        input_tokens = result["input_tokens"]
-        output_tokens = result["output_tokens"]
-        total_tokens = result["total_tokens"]
-        model_used = result["model"]
+        total_input_tokens += step2_result["input_tokens"]
+        total_output_tokens += step2_result["output_tokens"]
 
-        logger.info(f"[EVAL] AI response: {len(response_text)} chars, tokens: {total_tokens}")
-
-        # Parse JSON response
+        # Parse ranking results
         try:
-            # Try to extract JSON from response
-            json_str = response_text.strip()
-            if json_str.startswith('```'):
-                json_str = json_str.split('\n', 1)[1].rsplit('```', 1)[0]
-            parsed = json.loads(json_str)
-        except json.JSONDecodeError:
-            # Try to find JSON in the response
-            import re
-            json_match = re.search(r'\{[\s\S]*\}', response_text)
-            if json_match:
-                parsed = json.loads(json_match.group())
-            else:
-                raise HTTPException(status_code=500, detail="AI returned invalid response format")
+            parsed = parse_json_response(step2_result["text"])
+        except Exception as e:
+            logger.error(f"[EVAL] Ranking parse failed: {e}")
+            raise HTTPException(status_code=500, detail="Failed to parse ranking results")
 
-        # Update evaluation record
+        logger.info(f"[EVAL] Step 2 complete: ranked candidates, tokens: {step2_result['total_tokens']}")
+
+        # Track Step 2 token usage
+        db.add(TokenUsage(
+            feature="cv_evaluation",
+            reference_id=evaluation.id,
+            model=step2_result["model"],
+            input_tokens=step2_result["input_tokens"],
+            output_tokens=step2_result["output_tokens"],
+            total_tokens=step2_result["total_tokens"],
+            prompt_name="ranking",
+            num_cvs=len(files),
+        ))
+
+        # ═══════════════════════════════════════
+        # Save Results
+        # ═══════════════════════════════════════
+        total_all = total_input_tokens + total_output_tokens
+
         evaluation.status = "completed"
         evaluation.job_description_summary = parsed.get("job_summary", "")[:500]
         evaluation.ranked_results = parsed.get("ranked_candidates", [])
-        evaluation.input_tokens = input_tokens
-        evaluation.output_tokens = output_tokens
-        evaluation.total_tokens = total_tokens
-        evaluation.model_used = model_used
-        from datetime import datetime, timezone
+        evaluation.input_tokens = total_input_tokens
+        evaluation.output_tokens = total_output_tokens
+        evaluation.total_tokens = total_all
+        evaluation.model_used = step2_result["model"]
         evaluation.completed_at = datetime.now(timezone.utc)
         db.commit()
 
-        # Track token usage
-        token_record = TokenUsage(
-            feature="cv_evaluation",
-            reference_id=evaluation.id,
-            model=model_used,
-            input_tokens=input_tokens,
-            output_tokens=output_tokens,
-            total_tokens=total_tokens,
-            prompt_name="evaluator",
-            num_cvs=len(files),
-        )
-        db.add(token_record)
-        db.commit()
-
         elapsed = time.time() - start_time
-        logger.info(f"[EVAL] Completed in {elapsed:.1f}s | tokens: {total_tokens}")
+        logger.info(f"[EVAL] ✅ Completed in {elapsed:.1f}s | Total tokens: {total_all} (input: {total_input_tokens}, output: {total_output_tokens})")
 
         return {
             "evaluation_id": evaluation.id,
             "job_description_summary": parsed.get("job_summary", ""),
+            "jd_parsed": parsed.get("jd_parsed", {}),
             "total_cvs": len(files),
+            "candidate_profiles": profiles,
             "ranked_candidates": parsed.get("ranked_candidates", []),
             "token_usage": {
-                "input_tokens": input_tokens,
-                "output_tokens": output_tokens,
-                "total_tokens": total_tokens,
+                "input_tokens": total_input_tokens,
+                "output_tokens": total_output_tokens,
+                "total_tokens": total_all,
+                "step1_tokens": step1_result["total_tokens"],
+                "step2_tokens": step2_result["total_tokens"],
             },
         }
 

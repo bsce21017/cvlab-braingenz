@@ -20,9 +20,15 @@ interface ScoreBreakdown {
 interface RankedCandidate {
   rank: number;
   filename: string;
+  candidate_name?: string;
   score: number;
+  confidence?: number;
   score_breakdown?: ScoreBreakdown;
+  skills_matched?: string[];
+  skills_missing?: string[];
   reasoning: string;
+  why_selected?: string[];
+  why_not_others?: string[];
   strengths: string[];
   gaps?: string[];
   hire_recommendation?: string;
@@ -31,12 +37,20 @@ interface RankedCandidate {
 interface EvalResult {
   evaluation_id: number;
   job_description_summary: string;
+  jd_parsed?: {
+    required_skills?: string[];
+    preferred_skills?: string[];
+    min_experience_years?: number;
+    education_requirement?: string;
+  };
   total_cvs: number;
   ranked_candidates: RankedCandidate[];
   token_usage: {
     input_tokens: number;
     output_tokens: number;
     total_tokens: number;
+    step1_tokens?: number;
+    step2_tokens?: number;
   };
 }
 
@@ -120,27 +134,34 @@ export default function EvalResultsPage() {
 
                     {/* Content */}
                     <div className="flex-1 space-y-5">
-                      {/* Header: filename + score + recommendation */}
+                      {/* Header: name + filename + score + badges */}
                       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                         <div>
-                          <div className="flex items-center gap-2 mb-1">
+                          {candidate.candidate_name && (
+                            <h3 className="text-lg font-bold text-foreground">{candidate.candidate_name}</h3>
+                          )}
+                          <div className="flex items-center gap-2">
                             <FileText className="w-4 h-4 text-brand-blue" />
-                            <span className="text-sm text-muted-foreground">{t('cvEval.results.filename')}</span>
+                            <span className="text-sm text-muted-foreground">{candidate.filename}</span>
                           </div>
-                          <h3 className="text-lg font-bold text-foreground">{candidate.filename}</h3>
                         </div>
-                        <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-3">
                           {candidate.hire_recommendation && (
-                            <span className={`text-xs font-bold px-3 py-1 rounded-full ${
+                            <span className={`text-xs font-bold px-3 py-1.5 rounded-full ${
                               candidate.hire_recommendation.toLowerCase().includes('strong') ? 'bg-green-100 text-green-700' :
                               candidate.hire_recommendation.toLowerCase().includes('no') ? 'bg-red-100 text-red-700' :
+                              candidate.hire_recommendation.toLowerCase().includes('lean') ? 'bg-yellow-100 text-yellow-700' :
                               'bg-blue-100 text-blue-700'
                             }`}>
                               {candidate.hire_recommendation}
                             </span>
                           )}
+                          {candidate.confidence !== undefined && (
+                            <span className="text-[10px] text-muted-foreground bg-gray-100 px-2 py-1 rounded-full">
+                              Confidence: {candidate.confidence}%
+                            </span>
+                          )}
                           <div className="text-right">
-                            <span className="text-xs text-muted-foreground block">{t('cvEval.results.score')}</span>
                             <span className={`text-3xl font-black ${
                               candidate.score >= 80 ? 'text-brand-green' :
                               candidate.score >= 60 ? 'text-brand-yellow' : 'text-red-500'
@@ -175,6 +196,68 @@ export default function EvalResultsPage() {
                               </div>
                             ))}
                           </div>
+                        </div>
+                      )}
+
+                      {/* Skills Matched & Missing */}
+                      {(candidate.skills_matched?.length || candidate.skills_missing?.length) && (
+                        <div className="grid sm:grid-cols-2 gap-4">
+                          {candidate.skills_matched && candidate.skills_matched.length > 0 && (
+                            <div>
+                              <h4 className="text-sm font-semibold text-foreground mb-2">Skills Matched</h4>
+                              <div className="flex flex-wrap gap-1.5">
+                                {candidate.skills_matched.map((s, j) => (
+                                  <span key={j} className="px-2.5 py-1 rounded-full bg-green-50 border border-green-200 text-[11px] font-medium text-green-700">
+                                    {s}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          {candidate.skills_missing && candidate.skills_missing.length > 0 && (
+                            <div>
+                              <h4 className="text-sm font-semibold text-foreground mb-2">Skills Missing</h4>
+                              <div className="flex flex-wrap gap-1.5">
+                                {candidate.skills_missing.map((s, j) => (
+                                  <span key={j} className="px-2.5 py-1 rounded-full bg-red-50 border border-red-200 text-[11px] font-medium text-red-600">
+                                    {s}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Why Selected */}
+                      {candidate.why_selected && candidate.why_selected.length > 0 && (
+                        <div>
+                          <h4 className="text-sm font-semibold text-brand-green mb-2">Why This Candidate</h4>
+                          <ul className="space-y-1.5">
+                            {candidate.why_selected.map((w, j) => (
+                              <li key={j} className="flex items-start gap-2 text-sm text-muted-foreground">
+                                <CheckCircle className="w-4 h-4 text-brand-green flex-shrink-0 mt-0.5" />
+                                {w}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {/* Why Not Others */}
+                      {candidate.why_not_others && candidate.why_not_others.length > 0 && (
+                        <div>
+                          <h4 className="text-sm font-semibold text-brand-blue mb-2">Compared to Others</h4>
+                          <ul className="space-y-1.5">
+                            {candidate.why_not_others.map((w, j) => (
+                              <li key={j} className="flex items-start gap-2 text-sm text-muted-foreground">
+                                <span className="w-4 h-4 rounded-full bg-brand-blue/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                                  <span className="text-[10px] font-bold text-brand-blue">vs</span>
+                                </span>
+                                {w}
+                              </li>
+                            ))}
+                          </ul>
                         </div>
                       )}
 
