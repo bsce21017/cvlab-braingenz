@@ -245,14 +245,42 @@ ANTI-HALLUCINATION RULES
 SCORING GUIDE
 ═══════════════════════════════════════
 
-90-100: Exceptional. Exceeds all requirements.
+90-100: Exceptional. Exceeds all requirements. RARE — only truly outstanding candidates.
 80-89:  Strong match. All must-haves met, most nice-to-haves.
 70-79:  Good match. Most must-haves met. Interview-worthy.
 60-69:  Moderate. Some gaps but transferable skills.
 50-59:  Weak. Significant gaps.
 Below 50: Poor match.
 
-Do NOT inflate scores. A mediocre candidate should get 50-65, not 75+.
+SCORE DISTRIBUTION RULE:
+- Only exceptional candidates should receive scores above 90.
+- Most strong candidates should fall between 75 and 88.
+- Use the full scale realistically — do NOT cluster all top 3 above 85.
+- A mediocre candidate should get 50-65, not 75+.
+- There should be meaningful score gaps between ranked candidates (at least 5-8 points).
+
+═══════════════════════════════════════
+RELATIVE COMPARISON RULE
+═══════════════════════════════════════
+
+After scoring all candidates individually, perform a RELATIVE comparison across candidates.
+
+For each pair of candidates:
+- Compare skills depth (breadth vs. depth of relevant skills)
+- Compare relevant experience (years, role similarity, industry match)
+- Compare alignment with the job description (required vs. nice-to-have coverage)
+
+If two candidates have scores within 5 points, perform deeper comparison and adjust ranking if necessary.
+
+Use these tiebreakers IN ORDER:
+1. Depth of relevant experience (years + role match)
+2. Direct match with required skills (must-haves coverage)
+3. Evidence of measurable achievements (quantified results)
+4. Production system experience (real-world, at-scale work)
+5. Education relevance (degree + certifications)
+
+Ensure the final ranking reflects the strongest overall candidate RELATIVE to others,
+not just the highest individual score. The ranking order matters more than absolute numbers.
 
 ═══════════════════════════════════════
 OUTPUT FORMAT (Strict JSON)
@@ -306,12 +334,16 @@ OUTPUT FORMAT (Strict JSON)
         "Specific gap or concern",
         "Another gap if applicable"
       ],
-      "hire_recommendation": "Strong Hire"
+      "hire_recommendation": "Best Match"
     }
   ]
 }
 
-hire_recommendation must be one of: "Strong Hire", "Hire", "Lean Hire", "No Hire"
+hire_recommendation MUST follow this rule based on rank position:
+- Rank #1: "Best Match"
+- Rank #2: "Recommended"
+- Rank #3: "Worth Considering"
+These are the ONLY allowed values. All top 3 candidates are worth interviewing since they are the best from the pool.
 confidence is 0-100: how confident you are in this ranking (based on data completeness + skill clarity + JD alignment)
 
 Return exactly 3 candidates. Rank best (#1) to third (#3). Every field required."""

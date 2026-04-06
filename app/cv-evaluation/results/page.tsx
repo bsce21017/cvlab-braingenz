@@ -148,10 +148,10 @@ export default function EvalResultsPage() {
                         <div className="flex items-center gap-3">
                           {candidate.hire_recommendation && (
                             <span className={`text-xs font-bold px-3 py-1.5 rounded-full ${
-                              candidate.hire_recommendation.toLowerCase().includes('strong') ? 'bg-green-100 text-green-700' :
-                              candidate.hire_recommendation.toLowerCase().includes('no') ? 'bg-red-100 text-red-700' :
-                              candidate.hire_recommendation.toLowerCase().includes('lean') ? 'bg-yellow-100 text-yellow-700' :
-                              'bg-blue-100 text-blue-700'
+                              candidate.hire_recommendation.toLowerCase().includes('best') ? 'bg-green-100 text-green-700' :
+                              candidate.hire_recommendation.toLowerCase().includes('recommended') ? 'bg-blue-100 text-blue-700' :
+                              candidate.hire_recommendation.toLowerCase().includes('worth') ? 'bg-amber-100 text-amber-700' :
+                              'bg-gray-100 text-gray-700'
                             }`}>
                               {candidate.hire_recommendation}
                             </span>

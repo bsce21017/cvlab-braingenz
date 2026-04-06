@@ -239,15 +239,35 @@ class GathererAgent:
             if max_tokens is None:
                 max_tokens = settings.MAX_TOKENS
 
-            # Call LLM
+            # Call LLM with token tracking
             print(f"[GATHERER] Calling LLM (max_tokens={max_tokens})...", flush=True)
             llm_start = time.time()
-            response = self.llm_handler.generate(
+            llm_result = self.llm_handler.generate_with_usage(
                 prompt=prompt,
                 max_tokens=max_tokens
             )
+            response = llm_result["text"]
             llm_elapsed = time.time() - llm_start
-            print(f"[GATHERER] LLM returned {len(response)} chars in {llm_elapsed:.1f}s", flush=True)
+            print(f"[GATHERER] LLM returned {len(response)} chars in {llm_elapsed:.1f}s | tokens: {llm_result['total_tokens']}", flush=True)
+
+            # Save token usage
+            try:
+                from app.db.database import SessionLocal
+                from app.models.cv_evaluation import TokenUsage
+                _db = SessionLocal()
+                _db.add(TokenUsage(
+                    feature="cv_optimization",
+                    model=llm_result.get("model"),
+                    input_tokens=llm_result.get("input_tokens", 0),
+                    output_tokens=llm_result.get("output_tokens", 0),
+                    total_tokens=llm_result.get("total_tokens", 0),
+                    prompt_name="gatherer",
+                    num_cvs=1,
+                ))
+                _db.commit()
+                _db.close()
+            except Exception as tok_err:
+                print(f"[GATHERER] Token tracking failed (non-fatal): {tok_err}", flush=True)
 
             # Parse response
             parse_start = time.time()

@@ -182,47 +182,60 @@ export default function CVEvaluationPage() {
                 </div>
               </div>
 
-              {/* Right side - Upload Card */}
-              <div className="bg-white rounded-2xl border border-gray-100 shadow-lg shadow-brand-blue/5 p-6 space-y-5">
-                {/* Upload CVs section */}
-                <div>
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="w-10 h-10 rounded-xl bg-brand-blue/10 flex items-center justify-center">
-                      <FileText className="w-5 h-5 text-brand-blue" />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-foreground">{t('cvEval.uploadCVs')}</h3>
-                      <p className="text-xs text-muted-foreground">{t('cvEval.uploadCVsDesc')}</p>
-                    </div>
+              {/* Right side - Upload Card (matching CV Optimization style) */}
+              <div className="relative">
+                <div className="absolute -inset-1 bg-gradient-to-br from-brand-blue/20 via-brand-yellow/10 to-brand-green/10 rounded-3xl blur-xl opacity-60" />
+                <div className="relative bg-white rounded-2xl shadow-xl shadow-brand-blue/5 border border-gray-100 p-6 space-y-5">
+                {/* Upload CVs header */}
+                <div className="flex items-center gap-3 mb-5">
+                  <div className="w-10 h-10 rounded-xl bg-brand-blue flex items-center justify-center">
+                    <FileText className="w-5 h-5 text-white" />
                   </div>
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">{t('cvEval.uploadCVs')}</p>
+                    <p className="text-xs text-muted-foreground">{t('cvEval.uploadCVsDesc')}</p>
+                  </div>
+                </div>
 
-                  <div
-                    onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
-                    onDragLeave={() => setIsDragging(false)}
-                    onDrop={handleDrop}
-                    onClick={() => fileInputRef.current?.click()}
-                    className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all duration-300 ${
-                      isDragging
-                        ? 'border-brand-blue bg-brand-blue/5'
-                        : 'border-gray-200 hover:border-brand-blue/40 hover:bg-gray-50/50'
-                    }`}
-                  >
-                    <Upload className={`w-8 h-8 mx-auto mb-2 ${isDragging ? 'text-brand-blue' : 'text-gray-400'}`} />
-                    <p className="text-sm font-medium text-foreground">{t('cvEval.dropCVs')}</p>
-                    <p className="text-xs text-muted-foreground mt-1">{t('cvEval.supportedFormats')}</p>
-                    <Button variant="outline" size="sm" className="mt-3 text-brand-blue border-brand-blue/30 hover:bg-brand-blue/5 px-6 py-2">
+                {/* Drop zone */}
+                <div
+                  onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                  onDragLeave={() => setIsDragging(false)}
+                  onDrop={handleDrop}
+                  className={`border-2 border-dashed rounded-xl p-8 transition-all duration-300 flex flex-col items-center justify-center text-center cursor-pointer ${
+                    isDragging
+                      ? 'border-brand-blue bg-brand-blue/5 scale-[1.02]'
+                      : 'border-gray-200 hover:border-brand-blue/40 hover:bg-gray-50/50'
+                  }`}
+                  style={{ minHeight: '180px' }}
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <div className="space-y-4">
+                    <div className="mx-auto w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center">
+                      <Upload className={`w-7 h-7 ${isDragging ? 'text-brand-blue' : 'text-gray-400'} animate-float`} />
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium text-foreground">{t('cvEval.dropCVs')}</p>
+                      <p className="text-xs text-muted-foreground">{t('cvEval.supportedFormats')}</p>
+                    </div>
+                    <Button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
+                      className="btn-magnetic bg-brand-blue hover:bg-brand-blue-light text-white px-8 py-2.5 h-auto rounded-xl text-sm font-semibold"
+                    >
                       {t('cvEval.selectFiles')}
                     </Button>
                   </div>
+                </div>
 
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    multiple
-                    accept=".pdf,.doc,.docx"
-                    className="hidden"
-                    onChange={handleFileSelect}
-                  />
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  accept=".pdf,.doc,.docx"
+                  className="hidden"
+                  onChange={handleFileSelect}
+                />
 
                   {/* File list */}
                   {files.length > 0 && (
@@ -248,7 +261,6 @@ export default function CVEvaluationPage() {
                       </div>
                     </div>
                   )}
-                </div>
 
                 {/* Job Description */}
                 <div>
@@ -294,6 +306,7 @@ export default function CVEvaluationPage() {
                     </>
                   )}
                 </Button>
+              </div>
               </div>
             </div>
           </div>
