@@ -52,7 +52,6 @@ export default function Header() {
     { href: '/', label: t('home') },
     { href: '/about-us', label: t('about') },
     { href: '/contact-us', label: t('contact') },
-    { href: '/terms-of-service', label: t('termsOfService') },
   ];
 
   return (

@@ -7,6 +7,7 @@ import ContactInfo from '@/components/contact/ContactInfo';
 import FAQSection from '@/components/contact/FAQSection';
 import ContactForm from '@/components/contact/ContactForm';
 import { MessageCircle } from 'lucide-react';
+import { ContactFaqJsonLd } from '@/components/ContactFaqJsonLd';
 
 export default function ContactUsPage() {
   const { t, language } = useLanguage();
@@ -14,6 +15,7 @@ export default function ContactUsPage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-white">
+      <ContactFaqJsonLd />
       <Header />
       <main className="flex-1">
         {/* Hero */}
@@ -53,10 +55,6 @@ export default function ContactUsPage() {
                     <div>
                       <p className="text-xs font-bold text-brand-yellow uppercase tracking-wider mb-1">{t('contact.email')}</p>
                       <p className="text-blue-100/80 text-sm">{t('contact.emailValue')}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs font-bold text-brand-yellow uppercase tracking-wider mb-1">{t('contact.address')}</p>
-                      <p className="text-blue-100/80 text-sm">{t('contact.addressFull')}</p>
                     </div>
                   </div>
                 </div>

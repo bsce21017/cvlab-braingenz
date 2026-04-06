@@ -55,11 +55,6 @@ export default function Footer() {
                   {t('privacyPolicy')}
                 </Link>
               </li>
-              <li>
-                <Link href="/terms-of-service" className="text-blue-200/60 hover:text-white text-sm transition-colors duration-300">
-                  {t('termsOfService')}
-                </Link>
-              </li>
             </ul>
           </div>
 
@@ -68,7 +63,6 @@ export default function Footer() {
             <h4 className="text-xs font-bold tracking-[0.15em] uppercase text-brand-yellow">Contact</h4>
             <div className="space-y-3 text-sm text-blue-200/60">
               <p>{t('contact.emailValue')}</p>
-              <p>{t('contact.addressFull')}</p>
             </div>
           </div>
         </div>

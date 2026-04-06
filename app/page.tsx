@@ -9,6 +9,7 @@ import Header from '@/components/Header';
 import HeroSection from '@/components/HeroSection';
 import HowItWorks from '@/components/HowItWorks';
 import Footer from '@/components/Footer';
+import { ProductJsonLd } from '@/components/JsonLd';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 function EmailVerifiedModal({ isOpen, onClose, t }: { isOpen: boolean; onClose: () => void; t: (key: string) => string }) {
@@ -86,6 +87,7 @@ export default function Home() {
 
   return (
     <div className="flex flex-col min-h-screen bg-white">
+      <ProductJsonLd />
       <EmailVerifiedModal isOpen={showVerifiedModal} onClose={() => setShowVerifiedModal(false)} t={t} />
       <Suspense fallback={null}>
         <VerificationHandler onVerified={handleVerified} />

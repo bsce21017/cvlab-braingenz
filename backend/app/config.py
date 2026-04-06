@@ -58,6 +58,7 @@ class Settings(BaseSettings):
         "http://127.0.0.1:8001",
         # Azure VM
         "http://172.172.160.62:8001",
+        "https://cvsummit.braingenz.com",
     ]
 
     # File Storage

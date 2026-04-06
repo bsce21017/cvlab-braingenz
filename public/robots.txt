@@ -1,0 +1,18 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+Disallow: /signin
+Disallow: /signup
+Disallow: /forgot-password
+Disallow: /reset-password
+Disallow: /verify-email
+Disallow: /processing
+Disallow: /questions
+Disallow: /payment
+Disallow: /profile
+Disallow: /prompt-management
+Disallow: /resume-preview
+Disallow: /template-test
+
+Sitemap: https://cvsummit.com/sitemap.xml
