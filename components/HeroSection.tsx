@@ -180,8 +180,8 @@ export default function HeroSection() {
                     <FileText className="w-5 h-5 text-white" />
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-foreground">Upload Resume</p>
-                    <p className="text-xs text-muted-foreground">PDF, DOCX up to 10MB</p>
+                    <p className="text-sm font-semibold text-foreground">{t('uploadResume')}</p>
+                    <p className="text-xs text-muted-foreground">{t('supportedFormats')}</p>
                   </div>
                 </div>
 

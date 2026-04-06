@@ -149,31 +149,34 @@ export default function CVEvaluationPage() {
             <div className="grid lg:grid-cols-2 gap-12 items-start">
               {/* Left side - Text */}
               <div className="space-y-6">
-                <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-brand-blue/5 border border-brand-blue/10 text-brand-blue text-sm font-medium">
-                  <Target className="w-4 h-4" />
+                <span className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full bg-brand-blue/[0.06] border border-brand-blue/10 text-brand-blue text-sm font-medium">
+                  <span className="flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-brand-green opacity-75" />
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-brand-green" />
+                  </span>
                   {t('cvEval.badge')}
                 </span>
 
-                <h1 className="text-4xl md:text-5xl lg:text-[56px] font-bold leading-[1.1] tracking-tight text-foreground">
+                <h1 className={`text-4xl md:text-5xl lg:text-[56px] font-bold tracking-tight text-foreground ${isRTL ? 'leading-[1.6]' : 'leading-[1.1]'}`}>
                   {t('cvEval.heroTitle')}{' '}
                   <span className="text-brand-blue">{t('cvEval.heroTitleHighlight')}</span>
                 </h1>
 
-                <p className="text-lg text-muted-foreground max-w-lg leading-relaxed">
+                <p className={`text-lg text-muted-foreground max-w-lg ${isRTL ? 'leading-[2]' : 'leading-relaxed'}`}>
                   {t('cvEval.heroSubtitle')}
                 </p>
 
-                <div className="flex items-center gap-6 pt-2">
+                <div className={`flex items-center gap-6 pt-2 ${isRTL ? 'flex-wrap' : ''}`}>
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <div className="w-2 h-2 rounded-full bg-brand-green" />
+                    <div className="w-2 h-2 rounded-full bg-brand-green flex-shrink-0" />
                     {t('cvEval.features.ats')}
                   </div>
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Zap className="w-4 h-4 text-brand-yellow" />
+                    <Zap className="w-4 h-4 text-brand-yellow flex-shrink-0" />
                     {t('cvEval.features.ai')}
                   </div>
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <BarChart3 className="w-4 h-4 text-brand-blue" />
+                    <BarChart3 className="w-4 h-4 text-brand-blue flex-shrink-0" />
                     {t('cvEval.features.ranking')}
                   </div>
                 </div>
@@ -207,7 +210,7 @@ export default function CVEvaluationPage() {
                     <Upload className={`w-8 h-8 mx-auto mb-2 ${isDragging ? 'text-brand-blue' : 'text-gray-400'}`} />
                     <p className="text-sm font-medium text-foreground">{t('cvEval.dropCVs')}</p>
                     <p className="text-xs text-muted-foreground mt-1">{t('cvEval.supportedFormats')}</p>
-                    <Button variant="outline" size="sm" className="mt-3 text-brand-blue border-brand-blue/30 hover:bg-brand-blue/5">
+                    <Button variant="outline" size="sm" className="mt-3 text-brand-blue border-brand-blue/30 hover:bg-brand-blue/5 px-6 py-2">
                       {t('cvEval.selectFiles')}
                     </Button>
                   </div>
@@ -277,17 +280,17 @@ export default function CVEvaluationPage() {
                 <Button
                   onClick={handleEvaluate}
                   disabled={isEvaluating || files.length < 3 || !jobDescription.trim()}
-                  className="w-full h-12 bg-brand-blue hover:bg-brand-blue-light text-white font-semibold rounded-xl btn-magnetic transition-all duration-300 disabled:opacity-50"
+                  className={`w-full h-14 bg-brand-blue hover:bg-brand-blue-light text-white font-semibold rounded-xl btn-magnetic transition-all duration-300 disabled:opacity-50 flex items-center justify-center ${isRTL ? 'gap-3' : 'gap-2'}`}
                 >
                   {isEvaluating ? (
                     <>
-                      <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                      {t('cvEval.evaluating')}
+                      <Loader2 className="w-5 h-5 animate-spin flex-shrink-0" />
+                      <span>{t('cvEval.evaluating')}</span>
                     </>
                   ) : (
                     <>
-                      <Trophy className="w-5 h-5 mr-2" />
-                      {t('cvEval.evaluateBtn')}
+                      <Trophy className="w-5 h-5 flex-shrink-0" />
+                      <span>{t('cvEval.evaluateBtn')}</span>
                     </>
                   )}
                 </Button>

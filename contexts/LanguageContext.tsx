@@ -763,7 +763,7 @@ const translations = {
     'cvEval.jobDescription': 'نوکری کی تفصیل',
     'cvEval.jobDescPlaceholder': 'نوکری کی تفصیل یہاں پیسٹ کریں...',
     'cvEval.filesSelected': 'فائلیں منتخب ہیں',
-    'cvEval.evaluateBtn': 'CVs کی تشخیص اور درجہ بندی کریں',
+    'cvEval.evaluateBtn': 'CVs کی تشخیص کریں',
     'cvEval.evaluating': 'تشخیص ہو رہی ہے...',
     'cvEval.minFiles': 'کم از کم 3 CVs اپ لوڈ کریں',
     'cvEval.maxFiles': 'زیادہ سے زیادہ 10 CVs کی اجازت ہے',

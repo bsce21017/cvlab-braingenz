@@ -32,6 +32,56 @@ html[dir="rtl"] *,
   font-family: var(--font-gulzar), 'Gulzar', sans-serif !important;
 }
 
+/* Urdu Nastaliq line-height fix — Nastaliq fonts have tall ascenders/descenders */
+html[lang="ur"] h1,
+html[lang="ur"] h2,
+html[dir="rtl"] h1,
+html[dir="rtl"] h2 {
+  line-height: 1.6 !important;
+}
+
+html[lang="ur"] h3,
+html[lang="ur"] h4,
+html[dir="rtl"] h3,
+html[dir="rtl"] h4 {
+  line-height: 1.5 !important;
+}
+
+html[lang="ur"] p,
+html[lang="ur"] span,
+html[lang="ur"] label,
+html[lang="ur"] a,
+html[dir="rtl"] p,
+html[dir="rtl"] span,
+html[dir="rtl"] label,
+html[dir="rtl"] a {
+  line-height: 1.8 !important;
+}
+
+/* Nav pill buttons — ensure Urdu text fits */
+html[lang="ur"] nav a,
+html[dir="rtl"] nav a {
+  line-height: 1.6 !important;
+  padding-top: 0.625rem !important;
+  padding-bottom: 0.625rem !important;
+  padding-left: 1.25rem !important;
+  padding-right: 1.25rem !important;
+}
+
+/* Buttons — more spacing for Urdu text + icons */
+html[lang="ur"] button,
+html[dir="rtl"] button {
+  line-height: 1.6 !important;
+  gap: 0.75rem !important;
+}
+
+html[lang="ur"] button svg,
+html[dir="rtl"] button svg {
+  flex-shrink: 0;
+  margin-inline-start: 0.25rem;
+  margin-inline-end: 0.25rem;
+}
+
 /* Force Jameel Noori Nastaleeq on specific elements — must come after Gulzar rule, with higher specificity */
 html .font-almarai,
 html[lang="ur"] .font-almarai,
