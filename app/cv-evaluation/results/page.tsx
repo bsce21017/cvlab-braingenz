@@ -2,18 +2,30 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Trophy, Star, ArrowLeft, FileText, CheckCircle, Medal } from 'lucide-react';
+import { Trophy, Star, ArrowLeft, FileText, CheckCircle, Medal, AlertCircle } from 'lucide-react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
 
+interface ScoreBreakdown {
+  hard_skills: number;
+  experience: number;
+  education: number;
+  ats_keywords: number;
+  presentation: number;
+  cultural_fit: number;
+}
+
 interface RankedCandidate {
   rank: number;
   filename: string;
   score: number;
+  score_breakdown?: ScoreBreakdown;
   reasoning: string;
   strengths: string[];
+  gaps?: string[];
+  hire_recommendation?: string;
 }
 
 interface EvalResult {
@@ -107,7 +119,8 @@ export default function EvalResultsPage() {
                     </div>
 
                     {/* Content */}
-                    <div className="flex-1 space-y-4">
+                    <div className="flex-1 space-y-5">
+                      {/* Header: filename + score + recommendation */}
                       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                         <div>
                           <div className="flex items-center gap-2 mb-1">
@@ -116,16 +129,54 @@ export default function EvalResultsPage() {
                           </div>
                           <h3 className="text-lg font-bold text-foreground">{candidate.filename}</h3>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm text-muted-foreground">{t('cvEval.results.score')}:</span>
-                          <span className={`text-2xl font-black ${
-                            candidate.score >= 80 ? 'text-brand-green' :
-                            candidate.score >= 60 ? 'text-brand-yellow' : 'text-red-500'
-                          }`}>
-                            {candidate.score}%
-                          </span>
+                        <div className="flex items-center gap-4">
+                          {candidate.hire_recommendation && (
+                            <span className={`text-xs font-bold px-3 py-1 rounded-full ${
+                              candidate.hire_recommendation.toLowerCase().includes('strong') ? 'bg-green-100 text-green-700' :
+                              candidate.hire_recommendation.toLowerCase().includes('no') ? 'bg-red-100 text-red-700' :
+                              'bg-blue-100 text-blue-700'
+                            }`}>
+                              {candidate.hire_recommendation}
+                            </span>
+                          )}
+                          <div className="text-right">
+                            <span className="text-xs text-muted-foreground block">{t('cvEval.results.score')}</span>
+                            <span className={`text-3xl font-black ${
+                              candidate.score >= 80 ? 'text-brand-green' :
+                              candidate.score >= 60 ? 'text-brand-yellow' : 'text-red-500'
+                            }`}>
+                              {candidate.score}%
+                            </span>
+                          </div>
                         </div>
                       </div>
+
+                      {/* Score Breakdown */}
+                      {candidate.score_breakdown && (
+                        <div>
+                          <h4 className="text-sm font-semibold text-foreground mb-3">Score Breakdown</h4>
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                            {[
+                              { label: 'Hard Skills', value: candidate.score_breakdown.hard_skills, color: 'bg-brand-blue' },
+                              { label: 'Experience', value: candidate.score_breakdown.experience, color: 'bg-brand-green' },
+                              { label: 'Education', value: candidate.score_breakdown.education, color: 'bg-purple-500' },
+                              { label: 'ATS Keywords', value: candidate.score_breakdown.ats_keywords, color: 'bg-brand-yellow' },
+                              { label: 'Presentation', value: candidate.score_breakdown.presentation, color: 'bg-pink-500' },
+                              { label: 'Cultural Fit', value: candidate.score_breakdown.cultural_fit, color: 'bg-cyan-500' },
+                            ].map((item, k) => (
+                              <div key={k} className="bg-white rounded-lg border border-gray-100 p-3">
+                                <div className="flex items-center justify-between mb-1.5">
+                                  <span className="text-[11px] text-muted-foreground">{item.label}</span>
+                                  <span className="text-xs font-bold text-foreground">{item.value}</span>
+                                </div>
+                                <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                                  <div className={`h-full rounded-full ${item.color}`} style={{ width: `${item.value}%` }} />
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
 
                       {/* Reasoning */}
                       <div>
@@ -144,13 +195,28 @@ export default function EvalResultsPage() {
                         </h4>
                         <div className="flex flex-wrap gap-2">
                           {candidate.strengths.map((s, j) => (
-                            <span key={j} className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-white border border-gray-200 text-xs font-medium text-foreground">
-                              <CheckCircle className="w-3 h-3 text-brand-green" />
+                            <span key={j} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-gray-200 text-xs font-medium text-foreground">
+                              <CheckCircle className="w-3 h-3 text-brand-green flex-shrink-0" />
                               {s}
                             </span>
                           ))}
                         </div>
                       </div>
+
+                      {/* Gaps */}
+                      {candidate.gaps && candidate.gaps.length > 0 && (
+                        <div>
+                          <h4 className="text-sm font-semibold text-foreground mb-2">Gaps & Concerns</h4>
+                          <div className="flex flex-wrap gap-2">
+                            {candidate.gaps.map((g, j) => (
+                              <span key={j} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-red-50 border border-red-100 text-xs font-medium text-red-700">
+                                <AlertCircle className="w-3 h-3 flex-shrink-0" />
+                                {g}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
