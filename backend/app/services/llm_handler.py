@@ -275,5 +275,90 @@ class LLMHandler:
                 )
 
 
+    def generate_with_usage(
+        self,
+        prompt: str,
+        max_tokens: int = None,
+        system_prompt: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Generate response and return both text and token usage.
+        Returns: {"text": str, "input_tokens": int, "output_tokens": int, "total_tokens": int, "model": str}
+        """
+        if max_tokens is None:
+            max_tokens = settings.MAX_TOKENS
+
+        current_provider = (settings.DEFAULT_LLM_PROVIDER or self.llm_provider).lower()
+        current_model = (
+            settings.CLAUDE_MODEL if current_provider == "claude"
+            else settings.OPENAI_MODEL
+        )
+        if current_provider != self.llm_provider or current_model != self.model:
+            self.llm_provider = current_provider
+            self.model = current_model
+            self._initialize_clients()
+
+        messages = []
+        if system_prompt:
+            messages.append({"role": "system", "content": system_prompt})
+        messages.append({"role": "user", "content": prompt})
+
+        if self.llm_provider == "claude":
+            return self._call_claude_with_usage(messages, max_tokens)
+        else:
+            return self._call_openai_with_usage(messages, max_tokens)
+
+    def _call_claude_with_usage(self, messages: list, max_tokens: int) -> Dict[str, Any]:
+        if not self.claude_client:
+            raise Exception("Claude client not initialized.")
+
+        system_message = ""
+        user_messages = []
+        for msg in messages:
+            if msg["role"] == "system":
+                system_message = msg["content"]
+            else:
+                user_messages.append({"role": msg["role"], "content": msg["content"]})
+        if not user_messages:
+            user_messages = [{"role": "user", "content": messages[0]["content"]}]
+
+        kwargs = {"model": self.model, "max_tokens": max_tokens, "messages": user_messages}
+        if system_message:
+            kwargs["system"] = system_message
+
+        response = self.claude_client.messages.create(**kwargs)
+        text = response.content[0].text
+        input_tokens = getattr(response.usage, 'input_tokens', 0)
+        output_tokens = getattr(response.usage, 'output_tokens', 0)
+
+        return {
+            "text": text,
+            "input_tokens": input_tokens,
+            "output_tokens": output_tokens,
+            "total_tokens": input_tokens + output_tokens,
+            "model": self.model,
+        }
+
+    def _call_openai_with_usage(self, messages: list, max_tokens: int) -> Dict[str, Any]:
+        if not self.openai_client:
+            raise Exception("OpenAI client not initialized.")
+
+        response = self.openai_client.chat.completions.create(
+            model=self.model, messages=messages, max_tokens=max_tokens, temperature=0.3
+        )
+        text = response.choices[0].message.content
+        usage = response.usage
+        input_tokens = getattr(usage, 'prompt_tokens', 0) if usage else 0
+        output_tokens = getattr(usage, 'completion_tokens', 0) if usage else 0
+
+        return {
+            "text": text,
+            "input_tokens": input_tokens,
+            "output_tokens": output_tokens,
+            "total_tokens": input_tokens + output_tokens,
+            "model": self.model,
+        }
+
+
 # Global instance
 llm_handler = LLMHandler()

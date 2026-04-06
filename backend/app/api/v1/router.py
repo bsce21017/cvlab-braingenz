@@ -4,7 +4,7 @@ Aggregates all API endpoints
 """
 from fastapi import APIRouter
 
-from app.api.v1 import upload, status, questions, answers, download, claims, notifications
+from app.api.v1 import upload, status, questions, answers, download, claims, notifications, evaluate
 
 # Create main router
 router = APIRouter()
@@ -28,3 +28,4 @@ router.include_router(answers.router, tags=["Answers"])
 router.include_router(download.router, tags=["Download"])
 router.include_router(claims.router, tags=["Claims"])
 router.include_router(notifications.router, tags=["Notifications"])
+router.include_router(evaluate.router, tags=["CV Evaluation"])

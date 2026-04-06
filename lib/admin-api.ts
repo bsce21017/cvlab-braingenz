@@ -413,3 +413,39 @@ export interface AnalyticsResponse {
 export async function getAnalytics(months: number = 12): Promise<AnalyticsResponse> {
   return fetchAdminAPI<AnalyticsResponse>(`/analytics?months=${months}`);
 }
+
+// Token Usage
+export interface FeatureTokenStats {
+  requests: number;
+  input_tokens: number;
+  output_tokens: number;
+  total_tokens: number;
+  total_cvs: number;
+}
+
+export interface RecentTokenUsage {
+  id: number;
+  feature: string;
+  model: string;
+  input_tokens: number;
+  output_tokens: number;
+  total_tokens: number;
+  num_cvs: number;
+  prompt_name: string;
+  created_at: string;
+}
+
+export interface TokenUsageResponse {
+  grand_total_tokens: number;
+  total_requests: number;
+  by_feature: Record<string, FeatureTokenStats>;
+  recent_usage: RecentTokenUsage[];
+  evaluations: {
+    total: number;
+    completed: number;
+  };
+}
+
+export async function getTokenUsage(): Promise<TokenUsageResponse> {
+  return fetchAdminAPI<TokenUsageResponse>('/token-usage');
+}

@@ -49,7 +49,8 @@ export default function Header() {
   };
 
   const navLinks = [
-    { href: '/', label: t('home') },
+    { href: '/', label: t('cvOptimized') || 'CV Optimized' },
+    { href: '/cv-evaluation', label: t('cvEvaluation') || 'CV Evaluation' },
     { href: '/about-us', label: t('about') },
     { href: '/contact-us', label: t('contact') },
   ];
