@@ -92,9 +92,28 @@ CRITICAL RULES:
 - NEVER infer or assume skills based on job titles. Example: "Backend Developer" does NOT automatically mean Python or Node.js unless those words appear in the CV
 - If information is missing or unclear, set it to null or empty array
 - For skills, only list technologies/tools/frameworks that are explicitly named
-- For experience years, calculate from the actual date ranges mentioned, not from assumptions
 - Extract company names exactly as written
 - For education, extract degree, field, institution, and year if available
+
+EXPERIENCE CALCULATION RULES (VERY IMPORTANT):
+- Calculate experience ONLY from actual date ranges written in the CV
+- Classify each role as one of: "full_time", "internship", "freelance", "contract"
+- Rules for classification:
+  * Roles explicitly labeled "Intern" or "Internship" = internship
+  * Roles shorter than 3 months = treat as internship even if not labeled
+  * Roles labeled "Freelance", "Fiverr", "Upwork", or similar = freelance
+  * Roles labeled "Contract" or "Contract-Based" = contract (if < 3 months, treat as internship)
+  * Everything else = full_time
+- Calculate effective experience using weighted formula:
+  * Full-time: 100% weight
+  * Freelance/Part-time: 50% weight
+  * Internship: 25% weight
+  * Short contract < 3 months: 25% weight (same as internship)
+- NEVER simply subtract earliest date from latest date — calculate each role individually
+- IMPORTANT: Express ALL experience in HUMAN-READABLE format:
+  * Less than 1 year: use months (e.g., "3 months", "6 months", "10 months")
+  * 1 year or more: use years and months (e.g., "1 year 5 months", "2 years 3 months")
+  * NEVER use decimals like 0.25 or 1.4 — always convert to months/years
 
 OUTPUT FORMAT (Strict JSON array — no markdown, no text outside JSON):
 
@@ -102,7 +121,13 @@ OUTPUT FORMAT (Strict JSON array — no markdown, no text outside JSON):
   {
     "filename": "exact_filename.pdf",
     "name": "Candidate full name or null if not found",
-    "experience_years": 5,
+    "experience_summary": "1 year 5 months effective experience",
+    "experience_breakdown": {
+      "full_time": "3 months",
+      "internship": "7 months (weighted: 2 months)",
+      "freelance": "2 years (weighted: 1 year)",
+      "effective_total": "1 year 5 months"
+    },
     "current_role": "Most recent job title or null",
     "skills": {
       "programming_languages": ["Python", "JavaScript"],
@@ -124,7 +149,9 @@ OUTPUT FORMAT (Strict JSON array — no markdown, no text outside JSON):
       {
         "name": "Company Name",
         "role": "Software Engineer",
+        "type": "full_time",
         "duration": "2020-2023",
+        "months": 36,
         "key_achievements": ["Built X that improved Y by Z%"]
       }
     ],
@@ -203,11 +230,18 @@ Score each candidate 0-100 on these 6 dimensions:
    - Extra relevant skills = bonus points
 
 2. EXPERIENCE RELEVANCE & DEPTH (Weight: 25%)
-   - Years match vs. JD requirement
+   - Use the "effective_total" from experience_breakdown for comparison
+   - Compare effective experience vs. JD requirement (e.g., JD asks 2 years, candidate has "6 months" = significant gap)
+   - Full-time roles carry much more weight than internships or freelance
+   - A candidate with 3 internships of 2 months each is NOT the same as 6 months full-time
    - Role relevance (same domain, similar responsibilities)
    - Career progression (promotions, increasing scope)
    - Quantified achievements (count from profile)
-   - Red flags: gaps, job-hopping (<1 year/role)
+   - Red flags: mostly internships, no full-time experience, gaps, job-hopping (<3 months/role)
+   - IMPORTANT: In all output text (reasoning, why_selected, why_not_others), express experience in human-readable format:
+     * "3 months full-time experience" NOT "0.25 years"
+     * "1 year 5 months total" NOT "1.4 years"
+     * "6 months effective experience" NOT "0.5 years"
 
 3. EDUCATION & CERTIFICATIONS (Weight: 15%)
    - Degree relevance and level
@@ -314,14 +348,14 @@ OUTPUT FORMAT (Strict JSON)
       "skills_missing": ["Kubernetes"],
       "reasoning": "3-5 sentences with SPECIFIC evidence from profile. Reference exact companies, skills, years, achievements.",
       "why_selected": [
-        "5 years Python backend at Systems Limited — directly relevant",
+        "1 year 8 months full-time Python backend at Systems Limited — directly relevant",
         "Built microservices handling 1M+ requests — proves scalability skills",
         "PostgreSQL + Redis experience matches tech stack exactly",
         "AWS certified — covers cloud requirement"
       ],
       "why_not_others": [
         "Candidate 2 lacks FastAPI experience (only Django)",
-        "Candidate 4 has only 1.5 years experience vs required 3"
+        "Candidate 4 has only 3 months internship experience vs required 1-2 years"
       ],
       "strengths": [
         "Specific strength with evidence",
@@ -531,3 +565,29 @@ Rank the top 3. Return strict JSON only."""
         evaluation.error_message = str(e)[:1000]
         db.commit()
         raise HTTPException(status_code=500, detail=f"Evaluation failed: {str(e)}")
+
+
+@router.post("/evaluate/report")
+async def generate_report(
+    evaluation_data: dict,
+):
+    """
+    Generate a PDF evaluation report from results.
+    Accepts the same data returned by /evaluate endpoint.
+    """
+    from fastapi.responses import StreamingResponse
+    from app.services.evaluation_report import generate_evaluation_report
+
+    try:
+        pdf_bytes = generate_evaluation_report(evaluation_data)
+
+        return StreamingResponse(
+            io.BytesIO(pdf_bytes),
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": f"attachment; filename=CV_Evaluation_Report_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf"
+            }
+        )
+    except Exception as e:
+        logger.error(f"[REPORT] PDF generation failed: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Report generation failed: {str(e)}")

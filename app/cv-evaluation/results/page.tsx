@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Trophy, Star, ArrowLeft, FileText, CheckCircle, Medal, AlertCircle } from 'lucide-react';
+import { Trophy, Star, ArrowLeft, FileText, CheckCircle, Medal, AlertCircle, Download, Loader2 } from 'lucide-react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -69,6 +69,7 @@ export default function EvalResultsPage() {
   const isRTL = language === 'ur';
   const router = useRouter();
   const [results, setResults] = useState<EvalResult | null>(null);
+  const [downloading, setDownloading] = useState(false);
 
   useEffect(() => {
     const stored = sessionStorage.getItem('evalResults');
@@ -307,10 +308,46 @@ export default function EvalResultsPage() {
             })}
           </div>
 
-          {/* Token usage tracked in admin dashboard only */}
+          {/* Action buttons */}
+          <div className="flex items-center justify-center gap-4">
+            <Button
+              onClick={async () => {
+                if (!results) return;
+                setDownloading(true);
+                try {
+                  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
+                  const res = await fetch(`${API_URL}/v1/evaluate/report`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(results),
+                  });
+                  if (!res.ok) throw new Error('Failed to generate report');
+                  const blob = await res.blob();
+                  const url = window.URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = `CV_Evaluation_Report_${new Date().toISOString().split('T')[0]}.pdf`;
+                  document.body.appendChild(a);
+                  a.click();
+                  window.URL.revokeObjectURL(url);
+                  document.body.removeChild(a);
+                } catch (err) {
+                  alert('Failed to download report. Please try again.');
+                } finally {
+                  setDownloading(false);
+                }
+              }}
+              className="gap-2 px-8 py-3 rounded-xl bg-brand-blue hover:bg-brand-blue-light text-white btn-magnetic"
+              disabled={downloading}
+            >
+              {downloading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Download className="w-4 h-4" />
+              )}
+              {downloading ? (t('cvEval.results.generating') || 'Generating...') : (t('cvEval.results.downloadReport') || 'Download Report (PDF)')}
+            </Button>
 
-          {/* Back button */}
-          <div className="text-center">
             <Button
               onClick={() => router.push('/cv-evaluation')}
               variant="outline"
