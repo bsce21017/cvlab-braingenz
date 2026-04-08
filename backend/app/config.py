@@ -73,6 +73,11 @@ class Settings(BaseSettings):
     OPENAI_MODEL: str = os.getenv("OPENAI_MODEL", "gpt-4o")
     MAX_TOKENS: int = int(os.getenv("MAX_TOKENS", "8000"))
 
+    # Custom LLM (Ollama / self-hosted)
+    CUSTOM_LLM_ENDPOINT: str = os.getenv("CUSTOM_LLM_ENDPOINT", "")
+    CUSTOM_LLM_API_KEY: str = os.getenv("CUSTOM_LLM_API_KEY", "not-needed")
+    CUSTOM_LLM_MODEL: str = os.getenv("CUSTOM_LLM_MODEL", "gemma4:31b")
+
     # AWS S3 Settings
     AWS_ACCESS_KEY_ID: str = os.getenv("AWS_ACCESS_KEY_ID", "")
     AWS_SECRET_ACCESS_KEY: str = os.getenv("AWS_SECRET_ACCESS_KEY", "")

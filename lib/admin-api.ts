@@ -201,7 +201,7 @@ export interface ClaimStats {
 }
 
 // LLM & Prompts
-export type LLMProvider = 'anthropic' | 'openai';
+export type LLMProvider = 'anthropic' | 'openai' | 'custom';
 export type PromptStatus = 'active' | 'draft';
 
 export interface LLMConfig {
@@ -448,4 +448,49 @@ export interface TokenUsageResponse {
 
 export async function getTokenUsage(): Promise<TokenUsageResponse> {
   return fetchAdminAPI<TokenUsageResponse>('/token-usage');
+}
+
+// Token History
+export interface TokenStep {
+  id: number;
+  prompt_name: string;
+  input_tokens: number;
+  output_tokens: number;
+  total_tokens: number;
+}
+
+export interface GroupedTokenRecord {
+  ids: number[];
+  feature: string;
+  model: string;
+  input_tokens: number;
+  output_tokens: number;
+  total_tokens: number;
+  num_cvs: number;
+  steps: TokenStep[];
+  step_count: number;
+  created_at: string;
+}
+
+export interface TokenHistoryResponse {
+  items: GroupedTokenRecord[];
+  total: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
+}
+
+export async function getTokenHistory(page: number = 1, pageSize: number = 20, feature?: string): Promise<TokenHistoryResponse> {
+  const params = new URLSearchParams({ page: String(page), page_size: String(pageSize) });
+  if (feature && feature !== 'all') params.set('feature', feature);
+  return fetchAdminAPI<TokenHistoryResponse>(`/token-history?${params.toString()}`);
+}
+
+export async function deleteTokenRecord(id: number): Promise<void> {
+  await fetchAdminAPI(`/token-history/${id}`, { method: 'DELETE' });
+}
+
+export async function deleteAllTokenHistory(feature?: string): Promise<{ message: string }> {
+  const params = feature && feature !== 'all' ? `?feature=${feature}` : '';
+  return fetchAdminAPI<{ message: string }>(`/token-history${params}`, { method: 'DELETE' });
 }

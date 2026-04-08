@@ -61,24 +61,66 @@ def extract_text_from_file(file_bytes: bytes, filename: str) -> str:
     return ''
 
 
-def parse_json_response(text: str) -> dict:
-    """Robustly parse JSON from AI response."""
+def parse_json_response(text: str):
+    """Robustly parse JSON from AI response. Handles extra text, markdown fences, etc."""
     text = text.strip()
+
     # Remove markdown code fences
-    if text.startswith('```'):
-        text = text.split('\n', 1)[1].rsplit('```', 1)[0].strip()
+    if '```' in text:
+        # Extract content between first ``` and last ```
+        parts = text.split('```')
+        for part in parts:
+            part = part.strip()
+            if part.startswith('json'):
+                part = part[4:].strip()
+            if part and (part.startswith('{') or part.startswith('[')):
+                try:
+                    return json.loads(part)
+                except json.JSONDecodeError:
+                    pass
+
+    # Try direct parse
     try:
         return json.loads(text)
     except json.JSONDecodeError:
-        # Try to find JSON object in text
-        match = re.search(r'\{[\s\S]*\}', text)
-        if match:
-            return json.loads(match.group())
-        # Try to find JSON array
-        match = re.search(r'\[[\s\S]*\]', text)
-        if match:
-            return json.loads(match.group())
-        raise ValueError("No valid JSON found in AI response")
+        pass
+
+    # Try to find and parse JSON object
+    # Use bracket counting for accurate extraction
+    for start_char, end_char in [('{', '}'), ('[', ']')]:
+        start_idx = text.find(start_char)
+        if start_idx == -1:
+            continue
+
+        depth = 0
+        in_string = False
+        escape_next = False
+
+        for i in range(start_idx, len(text)):
+            c = text[i]
+            if escape_next:
+                escape_next = False
+                continue
+            if c == '\\':
+                escape_next = True
+                continue
+            if c == '"':
+                in_string = not in_string
+                continue
+            if in_string:
+                continue
+            if c == start_char:
+                depth += 1
+            elif c == end_char:
+                depth -= 1
+                if depth == 0:
+                    candidate = text[start_idx:i + 1]
+                    try:
+                        return json.loads(candidate)
+                    except json.JSONDecodeError:
+                        break
+
+    raise ValueError("No valid JSON found in AI response")
 
 
 # ═══════════════════════════════════════════════════════════════

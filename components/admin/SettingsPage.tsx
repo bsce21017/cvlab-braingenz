@@ -77,7 +77,11 @@ export default function SettingsPage() {
     'gpt-3.5-turbo',
   ];
 
-  const availableModels = provider === 'anthropic' ? anthropicModels : openaiModels;
+  const customModels = [
+    'gemma4:31b',
+  ];
+
+  const availableModels = provider === 'anthropic' ? anthropicModels : provider === 'custom' ? customModels : openaiModels;
 
   if (loading) {
     return (
@@ -117,6 +121,7 @@ export default function SettingsPage() {
             >
               <option value="anthropic">Anthropic (Claude)</option>
               <option value="openai">OpenAI (GPT)</option>
+              <option value="custom">Custom (Gemma 4)</option>
             </select>
           </div>
 
@@ -139,6 +144,8 @@ export default function SettingsPage() {
             <p className={`mt-1 text-xs text-gray-500 ${isArabic ? 'text-right' : ''}`}>
               {provider === 'anthropic'
                 ? t('admin.settings.claudeDescription')
+                : provider === 'custom'
+                ? (t('admin.settings.customDescription') || 'Self-hosted model via Ollama endpoint')
                 : t('admin.settings.gptDescription')}
             </p>
           </div>

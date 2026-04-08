@@ -191,6 +191,7 @@ class LLMProvider(str, Enum):
     """Supported LLM providers"""
     ANTHROPIC = "anthropic"
     OPENAI = "openai"
+    CUSTOM = "custom"
 
 
 class LLMConfigResponse(BaseModel):
