@@ -207,7 +207,8 @@ class GathererAgent:
         self,
         cv_text: str,
         analysis_report: Dict[str, Any],
-        max_tokens: int = None
+        max_tokens: int = None,
+        reference_id: int | None = None,
     ) -> Dict[str, Any]:
         """
         Generate questions based on CV analysis
@@ -257,6 +258,7 @@ class GathererAgent:
                 _db = SessionLocal()
                 _db.add(TokenUsage(
                     feature="cv_optimization",
+                    reference_id=reference_id,
                     model=llm_result.get("model"),
                     input_tokens=llm_result.get("input_tokens", 0),
                     output_tokens=llm_result.get("output_tokens", 0),

@@ -201,7 +201,8 @@ class AnalystAgent:
     def analyze_cv(
         self,
         cv_text: str,
-        max_tokens: int = None
+        max_tokens: int = None,
+        reference_id: int | None = None,
     ) -> Dict[str, Any]:
         """
         Analyze CV and generate comprehensive report
@@ -252,6 +253,7 @@ class AnalystAgent:
                 _db = SessionLocal()
                 _db.add(TokenUsage(
                     feature="cv_optimization",
+                    reference_id=reference_id,
                     model=llm_result.get("model"),
                     input_tokens=llm_result.get("input_tokens", 0),
                     output_tokens=llm_result.get("output_tokens", 0),
