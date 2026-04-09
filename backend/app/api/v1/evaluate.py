@@ -487,11 +487,14 @@ Return a JSON array with one profile per CV.
 
 {cv_block}"""
 
-        logger.info(f"[EVAL] Step 1: Extracting profiles ({len(extraction_prompt)} chars)")
+        # Scale max_tokens based on CV count; no cap for custom/local models
+        is_custom = settings.DEFAULT_LLM_PROVIDER.lower() == "custom"
+        step1_max_tokens = len(cv_texts) * 3000 if is_custom else max(6000, len(cv_texts) * 2000)
+        logger.info(f"[EVAL] Step 1: Extracting profiles ({len(extraction_prompt)} chars) | max_tokens={step1_max_tokens}")
         step1_result = llm_handler.generate_with_usage(
             prompt=extraction_prompt,
             system_prompt=EXTRACTION_SYSTEM_PROMPT,
-            max_tokens=6000,
+            max_tokens=step1_max_tokens,
         )
 
         total_input_tokens += step1_result["input_tokens"]
@@ -499,13 +502,17 @@ Return a JSON array with one profile per CV.
 
         # Parse extracted profiles
         try:
-            profiles = parse_json_response(step1_result["text"])
+            raw_text = step1_result["text"]
+            logger.info(f"[EVAL] Step 1 raw response: {len(raw_text)} chars, first 500: {raw_text[:500]}")
+            logger.info(f"[EVAL] Step 1 raw response last 500: {raw_text[-500:]}")
+            profiles = parse_json_response(raw_text)
             if isinstance(profiles, dict) and "profiles" in profiles:
                 profiles = profiles["profiles"]
             if not isinstance(profiles, list):
                 profiles = [profiles]
         except Exception as e:
             logger.error(f"[EVAL] Profile extraction parse failed: {e}")
+            logger.error(f"[EVAL] Raw LLM response ({len(step1_result['text'])} chars): {step1_result['text'][:1000]}...")
             raise HTTPException(status_code=500, detail="Failed to extract candidate profiles")
 
         logger.info(f"[EVAL] Step 1 complete: extracted {len(profiles)} profiles, tokens: {step1_result['total_tokens']}")
@@ -534,11 +541,12 @@ EXTRACTED CANDIDATE PROFILES ({len(profiles)} candidates):
 Evaluate all {len(profiles)} candidates against the job description.
 Rank the top 3. Return strict JSON only."""
 
-        logger.info(f"[EVAL] Step 2: Ranking candidates ({len(ranking_prompt)} chars)")
+        step2_max_tokens = 16000 if is_custom else 8000
+        logger.info(f"[EVAL] Step 2: Ranking candidates ({len(ranking_prompt)} chars) | max_tokens={step2_max_tokens}")
         step2_result = llm_handler.generate_with_usage(
             prompt=ranking_prompt,
             system_prompt=RANKING_SYSTEM_PROMPT,
-            max_tokens=8000,
+            max_tokens=step2_max_tokens,
         )
 
         total_input_tokens += step2_result["input_tokens"]

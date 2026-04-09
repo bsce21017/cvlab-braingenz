@@ -68,6 +68,7 @@ async def get_llm_config(
         "claude": LLMProvider.ANTHROPIC,
         "anthropic": LLMProvider.ANTHROPIC,
         "openai": LLMProvider.OPENAI,
+        "custom": LLMProvider.CUSTOM,
     }
 
     current_provider = provider_map.get(
@@ -80,6 +81,8 @@ async def get_llm_config(
         current_model = settings.CLAUDE_MODEL
     elif current_provider == LLMProvider.OPENAI:
         current_model = settings.OPENAI_MODEL
+    elif current_provider == LLMProvider.CUSTOM:
+        current_model = settings.CUSTOM_LLM_MODEL
     else:
         current_model = settings.CLAUDE_MODEL
 
