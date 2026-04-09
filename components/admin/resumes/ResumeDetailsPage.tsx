@@ -76,7 +76,7 @@ export default function ResumeDetailsPage({ resumeId: propResumeId }: ResumeDeta
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-[#F7F9FC] flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="w-8 h-8 animate-spin text-gray-900" />
           <p className="text-gray-600">Loading resume details...</p>
@@ -87,7 +87,7 @@ export default function ResumeDetailsPage({ resumeId: propResumeId }: ResumeDeta
 
   if (error || !resume) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-[#F7F9FC] flex items-center justify-center">
         <div className="flex flex-col items-center gap-4 text-center">
           <p className="text-red-600">{error || 'Resume not found'}</p>
           <Button onClick={() => router.push('/admin/resumes')} variant="outline">
@@ -99,7 +99,7 @@ export default function ResumeDetailsPage({ resumeId: propResumeId }: ResumeDeta
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[#F7F9FC]">
       <AdminSectionHeader
         title={`${t('admin.resumeDetails.title')}: ${resume.original_filename}`}
         subtitle={t('admin.resumeDetails.subtitle')}

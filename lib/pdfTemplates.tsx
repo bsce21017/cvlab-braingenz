@@ -12,6 +12,7 @@ import {
   Font,
 } from '@react-pdf/renderer';
 import { ResumeData } from './resumeDataTypes';
+import { classicStyle, modernStyle, executiveStyle } from './templateStyles';
 
 // Register fonts using runtime fetch (works with both webpack and Turbopack)
 const isBrowser = typeof window !== 'undefined';
@@ -106,8 +107,16 @@ if (isBrowser) {
 }
 
 // ============================================================================
-// CLASSIC TEMPLATE - Serif font, black colors, bullet separators
+// CLASSIC TEMPLATE - Serif font, navy blue accents (matching web preview)
 // ============================================================================
+
+const CLASSIC_COLORS = {
+  name: classicStyle.colors.name,
+  sectionHeading: classicStyle.colors.sectionHeading,
+  divider: classicStyle.colors.divider,
+  bodyText: classicStyle.colors.bodyText,
+  subtleText: classicStyle.colors.subtleText,
+};
 
 const classicStyles = StyleSheet.create({
   page: {
@@ -117,7 +126,7 @@ const classicStyles = StyleSheet.create({
     paddingRight: 54,
     fontFamily: 'Times-Roman',
     fontSize: 10,
-    color: '#000000',
+    color: CLASSIC_COLORS.bodyText,
     lineHeight: 1.35,
   },
   headerSection: {
@@ -127,14 +136,14 @@ const classicStyles = StyleSheet.create({
   name: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#000000',
+    color: CLASSIC_COLORS.name,
     textTransform: 'uppercase',
     letterSpacing: 2,
     marginBottom: 12,
   },
   contactLine: {
     fontSize: 10,
-    color: '#000000',
+    color: CLASSIC_COLORS.subtleText,
   },
   section: {
     marginTop: 12,
@@ -142,18 +151,18 @@ const classicStyles = StyleSheet.create({
   sectionHeading: {
     fontSize: 11,
     fontWeight: 'bold',
-    color: '#000000',
+    color: CLASSIC_COLORS.sectionHeading,
     textTransform: 'uppercase',
     marginBottom: 2,
   },
   sectionUnderline: {
     height: 1,
-    backgroundColor: '#000000',
+    backgroundColor: CLASSIC_COLORS.divider,
     marginBottom: 6,
   },
   bodyText: {
     fontSize: 10,
-    color: '#000000',
+    color: CLASSIC_COLORS.bodyText,
     lineHeight: 1.35,
   },
   experienceItem: {
@@ -166,15 +175,15 @@ const classicStyles = StyleSheet.create({
   expTitle: {
     fontSize: 10,
     fontWeight: 'bold',
-    color: '#000000',
+    color: CLASSIC_COLORS.bodyText,
   },
   expPeriod: {
     fontSize: 10,
-    color: '#000000',
+    color: CLASSIC_COLORS.subtleText,
   },
   expCompany: {
     fontSize: 10,
-    color: '#000000',
+    color: CLASSIC_COLORS.subtleText,
     fontStyle: 'italic',
     marginBottom: 2,
   },
@@ -185,12 +194,12 @@ const classicStyles = StyleSheet.create({
   bulletChar: {
     width: 12,
     fontSize: 10,
-    color: '#000000',
+    color: CLASSIC_COLORS.bodyText,
   },
   bulletText: {
     flex: 1,
     fontSize: 10,
-    color: '#000000',
+    color: CLASSIC_COLORS.bodyText,
     lineHeight: 1.35,
   },
 });
@@ -368,12 +377,20 @@ export function ClassicPDFTemplate({ data }: { data: ResumeData }) {
 // MODERN TEMPLATE - Serif font, section heading with gray line
 // ============================================================================
 
+const MODERN_COLORS = {
+  name: modernStyle.colors.name,
+  sectionHeading: modernStyle.colors.sectionHeading,
+  bodyText: modernStyle.colors.bodyText,
+  subtleText: modernStyle.colors.subtleText,
+  divider: modernStyle.colors.divider,
+};
+
 const modernStyles = StyleSheet.create({
   page: {
     padding: 45,
     fontFamily: 'Times-Roman',
     fontSize: 10,
-    color: '#333333',
+    color: MODERN_COLORS.bodyText,
     lineHeight: 1.35,
   },
   headerSection: {
@@ -383,12 +400,12 @@ const modernStyles = StyleSheet.create({
   name: {
     fontSize: 22,
     fontWeight: 'bold',
-    color: '#000000',
+    color: MODERN_COLORS.name,
     marginBottom: 16,
   },
   contactLine: {
     fontSize: 9,
-    color: '#666666',
+    color: MODERN_COLORS.subtleText,
   },
   section: {
     marginBottom: 16,
@@ -401,18 +418,18 @@ const modernStyles = StyleSheet.create({
   sectionHeadingText: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#000000',
+    color: MODERN_COLORS.sectionHeading,
     marginRight: 10,
     letterSpacing: 0.5,
   },
   sectionHeadingLine: {
     flex: 1,
     height: 0.75,
-    backgroundColor: '#CCCCCC',
+    backgroundColor: MODERN_COLORS.divider,
   },
   summaryText: {
     fontSize: 10,
-    color: '#333333',
+    color: MODERN_COLORS.bodyText,
     lineHeight: 1.4,
     textAlign: 'justify',
   },
@@ -428,16 +445,16 @@ const modernStyles = StyleSheet.create({
   titleText: {
     fontSize: 11,
     fontWeight: 'bold',
-    color: '#000000',
+    color: MODERN_COLORS.name,
   },
   dateText: {
     fontSize: 10,
-    color: '#666666',
+    color: MODERN_COLORS.subtleText,
   },
   companyLine: {
     fontSize: 10,
     fontStyle: 'italic',
-    color: '#000000',
+    color: MODERN_COLORS.name,
     marginBottom: 2,
   },
   bulletRow: {
@@ -448,12 +465,12 @@ const modernStyles = StyleSheet.create({
   bulletChar: {
     width: 14,
     fontSize: 8,
-    color: '#333333',
+    color: MODERN_COLORS.bodyText,
   },
   bulletText: {
     flex: 1,
     fontSize: 9,
-    color: '#333333',
+    color: MODERN_COLORS.bodyText,
     lineHeight: 1.3,
   },
   educationItem: {
@@ -467,16 +484,16 @@ const modernStyles = StyleSheet.create({
   degreeText: {
     fontSize: 11,
     fontWeight: 'bold',
-    color: '#000000',
+    color: MODERN_COLORS.name,
   },
   yearText: {
     fontSize: 10,
-    color: '#666666',
+    color: MODERN_COLORS.subtleText,
   },
   institutionLine: {
     fontSize: 10,
     fontStyle: 'italic',
-    color: '#000000',
+    color: MODERN_COLORS.name,
   },
   additionalRow: {
     flexDirection: 'row',
@@ -485,12 +502,12 @@ const modernStyles = StyleSheet.create({
   additionalLabel: {
     fontSize: 10,
     fontWeight: 'bold',
-    color: '#333333',
+    color: MODERN_COLORS.bodyText,
   },
   additionalValue: {
     flex: 1,
     fontSize: 10,
-    color: '#333333',
+    color: MODERN_COLORS.bodyText,
   },
 });
 
@@ -600,9 +617,9 @@ export function ModernPDFTemplate({ data }: { data: ResumeData }) {
 // ============================================================================
 
 const EXEC_COLORS = {
-  navy: '#003366',
-  black: '#000000',
-  darkGray: '#444444',
+  navy: executiveStyle.colors.primary,
+  black: executiveStyle.colors.bodyText,
+  darkGray: executiveStyle.colors.subtleText,
 };
 
 const executiveStyles = StyleSheet.create({

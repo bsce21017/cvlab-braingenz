@@ -5,12 +5,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      args:
-        - NEXT_PUBLIC_SITE_URL=${NEXT_PUBLIC_SITE_URL}
-        - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
-        - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
-        - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
-        - NEXT_PUBLIC_UPLOAD_API_URL=${NEXT_PUBLIC_UPLOAD_API_URL}
     container_name: cvlab-app
     restart: unless-stopped
     ports:

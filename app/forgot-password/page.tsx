@@ -64,7 +64,7 @@ export default function ForgotPasswordPage() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#f7f9fb]">
+      <div className="min-h-screen flex items-center justify-center bg-[#F7F9FC]">
         <Loader2 className="h-8 w-8 animate-spin text-gray-600" />
       </div>
     );
@@ -73,15 +73,15 @@ export default function ForgotPasswordPage() {
   // Success state - email sent
   if (emailSent) {
     return (
-      <div className="min-h-screen flex flex-col bg-[#f7f9fb]">
+      <div className="min-h-screen flex flex-col bg-[#F7F9FC]">
         {/* Header */}
         <header className="p-6">
           <Link href="/" className="flex items-center w-fit">
             <Image
-              src="/assets/Main_logo.svg"
-              alt="CVLab Logo"
+              src="/assets/Main logo.svg"
+              alt="CV Summit Logo"
               width={200}
-              height={200}
+              height={120}
               className="h-20 w-auto"
             />
           </Link>
@@ -101,13 +101,13 @@ export default function ForgotPasswordPage() {
 
             {/* Title & Description */}
             <div className="space-y-3">
-              <h1 className="text-3xl font-semibold text-gray-900">
+              <h1 className="text-3xl font-semibold text-foreground">
                 {t('checkYourInbox') || 'Check Your Inbox'}
               </h1>
               <p className="text-gray-600 text-lg">
                 {t('resetLinkOnWay') || "We've sent you an email with a link to reset your password:"}
               </p>
-              <p className="font-semibold text-gray-900 text-lg break-all">
+              <p className="font-semibold text-foreground text-lg break-all">
                 {email}
               </p>
             </div>
@@ -145,7 +145,7 @@ export default function ForgotPasswordPage() {
             <div className="pt-4 border-t border-gray-100">
               <Link
                 href="/signin"
-                className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900 transition-colors"
+                className="inline-flex items-center text-sm text-gray-600 hover:text-brand-blue transition-colors"
               >
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 {t('backToSignIn') || 'Back to Sign In'}
@@ -171,7 +171,7 @@ export default function ForgotPasswordPage() {
             backgroundSize: 'cover',
           }}
         />
-        <div className="absolute inset-0 bg-black/70" />
+        <div className="absolute inset-0 bg-brand-blue/85" />
         <div className="relative z-10 flex h-full flex-col justify-center px-14 text-white space-y-4">
           <h1 className="text-5xl font-normal leading-tight max-w-xl">
             {t('forgotPasswordHero') || 'Forgot Your Password?'}
@@ -183,20 +183,20 @@ export default function ForgotPasswordPage() {
       </div>
 
       {/* Right form panel */}
-      <div className="flex items-center justify-center bg-[#f7f9fb] px-6 py-12">
+      <div className="flex items-center justify-center bg-[#F7F9FC] px-6 py-12">
         <div className="w-full max-w-xl space-y-8">
           <div className="flex items-center justify-center">
             <Image
-              src="/assets/Main_logo.svg"
-              alt="CVLab Logo"
+              src="/assets/Main logo.svg"
+              alt="CV Summit Logo"
               width={200}
-              height={200}
+              height={120}
               className="h-20 w-auto"
             />
           </div>
 
           <div className="text-center space-y-2">
-            <h2 className="text-4xl font-normal text-gray-900">
+            <h2 className="text-4xl font-bold text-foreground">
               {t('resetPasswordTitle') || 'Reset Password'}
             </h2>
             <p className="text-base text-gray-600">
@@ -204,7 +204,7 @@ export default function ForgotPasswordPage() {
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5 bg-[#f7f9fb] rounded-2xl p-6 shadow-sm">
+          <form onSubmit={handleSubmit} className="space-y-5 bg-[#F7F9FC] rounded-2xl p-6 shadow-sm">
             {error && (
               <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg">
                 {error}
@@ -232,7 +232,7 @@ export default function ForgotPasswordPage() {
             <Button
               type="submit"
               disabled={isSubmitting}
-              className="w-full h-12 bg-black hover:bg-gray-900 text-white font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full h-12 bg-brand-blue hover:bg-brand-blue-light text-white btn-magnetic font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSubmitting ? (
                 <>
@@ -247,7 +247,7 @@ export default function ForgotPasswordPage() {
             <div className="text-center pt-4">
               <Link
                 href="/signin"
-                className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900 transition-colors"
+                className="inline-flex items-center text-sm text-gray-600 hover:text-brand-blue transition-colors"
               >
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 {t('backToSignIn') || 'Back to Sign In'}
@@ -257,7 +257,7 @@ export default function ForgotPasswordPage() {
 
           <div className="text-center text-sm text-gray-600">
             {t('dontHaveAccount') || "Don't have an account?"}{' '}
-            <Link href="/signup" className="font-medium text-gray-900 hover:underline">
+            <Link href="/signup" className="font-medium text-brand-blue hover:underline">
               {t('signUp') || 'Sign Up'}
             </Link>
           </div>

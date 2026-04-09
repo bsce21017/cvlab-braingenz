@@ -201,7 +201,8 @@ class AnalystAgent:
     def analyze_cv(
         self,
         cv_text: str,
-        max_tokens: int = None
+        max_tokens: int = None,
+        reference_id: int | None = None,
     ) -> Dict[str, Any]:
         """
         Analyze CV and generate comprehensive report
@@ -227,20 +228,48 @@ class AnalystAgent:
         try:
             # Format prompt
             prompt = self._format_prompt(cv_text)
+            prompt_len = len(prompt)
+            print(f"[ANALYST] Prompt prepared: {prompt_len} chars (~{prompt_len//4} tokens) | CV: {len(cv_text)} chars", flush=True)
 
             # Get max tokens
             if max_tokens is None:
                 max_tokens = settings.MAX_TOKENS
 
-            # Call LLM
-            logger.info(f"Calling LLM for analysis (max_tokens={max_tokens})")
-            response = self.llm_handler.generate(
+            # Call LLM with token tracking
+            print(f"[ANALYST] Calling LLM (max_tokens={max_tokens})...", flush=True)
+            llm_start = time.time()
+            llm_result = self.llm_handler.generate_with_usage(
                 prompt=prompt,
                 max_tokens=max_tokens
             )
+            response = llm_result["text"]
+            llm_elapsed = time.time() - llm_start
+            print(f"[ANALYST] LLM returned {len(response)} chars in {llm_elapsed:.1f}s | tokens: {llm_result['total_tokens']}", flush=True)
+
+            # Save token usage
+            try:
+                from app.db.database import SessionLocal
+                from app.models.cv_evaluation import TokenUsage
+                _db = SessionLocal()
+                _db.add(TokenUsage(
+                    feature="cv_optimization",
+                    reference_id=reference_id,
+                    model=llm_result.get("model"),
+                    input_tokens=llm_result.get("input_tokens", 0),
+                    output_tokens=llm_result.get("output_tokens", 0),
+                    total_tokens=llm_result.get("total_tokens", 0),
+                    prompt_name="analyst",
+                    num_cvs=1,
+                ))
+                _db.commit()
+                _db.close()
+            except Exception as tok_err:
+                print(f"[ANALYST] Token tracking failed (non-fatal): {tok_err}", flush=True)
 
             # Parse response
+            parse_start = time.time()
             analysis_data = self._parse_analysis_response(response)
+            print(f"[ANALYST] Response parsed in {time.time()-parse_start:.2f}s", flush=True)
 
             # Add duration
             duration = int(time.time() - start_time)

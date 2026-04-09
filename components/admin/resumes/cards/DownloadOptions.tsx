@@ -5,7 +5,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { getResumeDownloadUrl } from '@/lib/admin-api';
-import { createClient } from '@/lib/supabase/client';
+import { getToken } from '@/lib/auth';
 
 interface DownloadOptionsProps {
   resumeId: number;
@@ -17,9 +17,7 @@ export default function DownloadOptions({ resumeId }: DownloadOptionsProps) {
   const handleDownload = async (type: 'original' | 'optimized') => {
     try {
       const downloadUrl = getResumeDownloadUrl(resumeId, type);
-      const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
-      const token = session?.access_token;
+      const token = getToken();
 
       // Fetch with authentication
       const response = await fetch(downloadUrl, {
@@ -148,7 +146,7 @@ export default function DownloadOptions({ resumeId }: DownloadOptionsProps) {
 
           <Button 
             onClick={handleDownloadOptimized}
-            className="flex items-center gap-3 px-6 py-6 bg-black hover:bg-gray-800 text-white h-auto"
+            className="flex items-center gap-3 px-6 py-6 bg-brand-blue hover:bg-brand-blue-light text-white h-auto"
           >
             <Wand2 className="w-5 h-5" />
             <div className="text-left">

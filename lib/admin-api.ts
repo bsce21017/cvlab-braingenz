@@ -3,7 +3,7 @@
  * Handles all admin backend API communication
  */
 
-import { createClient } from './supabase/client';
+import { getToken } from './auth';
 
 // Production API URL
 // NEXT_PUBLIC_API_URL should be like: https://api.cvlab.sa/api
@@ -15,12 +15,10 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL
   : 'http://localhost:8002/api/admin';
 
 /**
- * Get current auth token from Supabase session
+ * Get current auth token from localStorage
  */
 async function getAuthToken(): Promise<string | null> {
-  const supabase = createClient();
-  const { data: { session } } = await supabase.auth.getSession();
-  return session?.access_token ?? null;
+  return getToken();
 }
 
 /**
@@ -117,6 +115,7 @@ export interface AdminResumeListItem {
   user_status: UserStatus | null;  // User's active/inactive status
   created_at: string;
   file_size: number | null;
+  location: string | null;  // "City, Country" from IP geo
 }
 
 export interface ResumeListResponse {
@@ -202,7 +201,7 @@ export interface ClaimStats {
 }
 
 // LLM & Prompts
-export type LLMProvider = 'anthropic' | 'openai';
+export type LLMProvider = 'anthropic' | 'openai' | 'custom';
 export type PromptStatus = 'active' | 'draft';
 
 export interface LLMConfig {
@@ -279,8 +278,10 @@ export async function getResume(resumeId: number): Promise<AdminResumeDetail> {
   return fetchAdminAPI<AdminResumeDetail>(`/resumes/${resumeId}`);
 }
 
-export async function deleteResume(resumeId: number): Promise<void> {
-  await fetchAdminAPI(`/resumes/${resumeId}`, { method: 'DELETE' });
+export type DeleteType = 'original' | 'optimized' | 'both';
+
+export async function deleteResume(resumeId: number, deleteType: DeleteType = 'both'): Promise<void> {
+  await fetchAdminAPI(`/resumes/${resumeId}?delete_type=${deleteType}`, { method: 'DELETE' });
 }
 
 export async function exportResumes(): Promise<Blob> {
@@ -316,7 +317,7 @@ export async function getClaims(params: ClaimListParams = {}): Promise<ClaimList
 export async function updateClaimStatus(claimId: number, status: ClaimStatus): Promise<AdminClaim> {
   return fetchAdminAPI<AdminClaim>(`/claims/${claimId}/status`, {
     method: 'PATCH',
-    body: JSON.stringify({ status }),
+    body: JSON.stringify({ status: status.toLowerCase() }),
   });
 }
 
@@ -387,4 +388,109 @@ export async function markAllNotificationsRead(): Promise<{ count: number }> {
   return fetchAdminAPI<{ count: number }>('/notifications/read-all', {
     method: 'PATCH',
   });
+}
+
+// Analytics
+export interface MonthlyData {
+  year: number;
+  month: number;
+  count: number;
+}
+
+export interface GeoData {
+  location: string;
+  count: number;
+}
+
+export interface AnalyticsResponse {
+  monthly: MonthlyData[];
+  geography: GeoData[];
+  total_resumes: number;
+  with_location: number;
+  without_location: number;
+}
+
+export async function getAnalytics(months: number = 12): Promise<AnalyticsResponse> {
+  return fetchAdminAPI<AnalyticsResponse>(`/analytics?months=${months}`);
+}
+
+// Token Usage
+export interface FeatureTokenStats {
+  requests: number;
+  input_tokens: number;
+  output_tokens: number;
+  total_tokens: number;
+  total_cvs: number;
+}
+
+export interface RecentTokenUsage {
+  id: number;
+  feature: string;
+  model: string;
+  input_tokens: number;
+  output_tokens: number;
+  total_tokens: number;
+  num_cvs: number;
+  prompt_name: string;
+  created_at: string;
+}
+
+export interface TokenUsageResponse {
+  grand_total_tokens: number;
+  total_requests: number;
+  by_feature: Record<string, FeatureTokenStats>;
+  recent_usage: RecentTokenUsage[];
+  evaluations: {
+    total: number;
+    completed: number;
+  };
+}
+
+export async function getTokenUsage(): Promise<TokenUsageResponse> {
+  return fetchAdminAPI<TokenUsageResponse>('/token-usage');
+}
+
+// Token History
+export interface TokenStep {
+  id: number;
+  prompt_name: string;
+  input_tokens: number;
+  output_tokens: number;
+  total_tokens: number;
+}
+
+export interface GroupedTokenRecord {
+  ids: number[];
+  feature: string;
+  model: string;
+  input_tokens: number;
+  output_tokens: number;
+  total_tokens: number;
+  num_cvs: number;
+  steps: TokenStep[];
+  step_count: number;
+  created_at: string;
+}
+
+export interface TokenHistoryResponse {
+  items: GroupedTokenRecord[];
+  total: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
+}
+
+export async function getTokenHistory(page: number = 1, pageSize: number = 20, feature?: string): Promise<TokenHistoryResponse> {
+  const params = new URLSearchParams({ page: String(page), page_size: String(pageSize) });
+  if (feature && feature !== 'all') params.set('feature', feature);
+  return fetchAdminAPI<TokenHistoryResponse>(`/token-history?${params.toString()}`);
+}
+
+export async function deleteTokenRecord(id: number): Promise<void> {
+  await fetchAdminAPI(`/token-history/${id}`, { method: 'DELETE' });
+}
+
+export async function deleteAllTokenHistory(feature?: string): Promise<{ message: string }> {
+  const params = feature && feature !== 'all' ? `?feature=${feature}` : '';
+  return fetchAdminAPI<{ message: string }>(`/token-history${params}`, { method: 'DELETE' });
 }

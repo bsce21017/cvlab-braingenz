@@ -29,10 +29,10 @@ async def lifespan(app: FastAPI):
     logger.info("Starting CV Build AI Backend...")
     logger.info(f"Version: {settings.VERSION}")
     logger.info(f"Debug mode: {settings.DEBUG}")
-    if not settings.OPENAI_API_KEY:
+    if not settings.CUSTOM_LLM_ENDPOINT and not settings.OPENAI_API_KEY:
         logger.warning(
-            "OPENAI_API_KEY is not configured. Resume processing OCR fallback will fail. "
-            "Set OPENAI_API_KEY in backend environment to enable analysis pipeline."
+            "No OCR backend is configured. "
+            "Set CUSTOM_LLM_ENDPOINT/CUSTOM_LLM_MODEL or OPENAI_API_KEY in backend environment to enable analysis pipeline."
         )
 
     # Initialize database
@@ -101,6 +101,10 @@ app.include_router(api_v1_router, prefix="/api/v1")
 # Admin API router
 from app.api.admin.router import router as admin_router
 app.include_router(admin_router, prefix="/api/admin")
+
+# Auth API router
+from app.api.auth.router import router as auth_router
+app.include_router(auth_router, prefix="/api/auth", tags=["Authentication"])
 
 
 # Global exception handler

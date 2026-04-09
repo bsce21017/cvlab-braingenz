@@ -61,7 +61,7 @@ const sampleResumeData: ResumeData = {
 
 export function ResumePreview({ optimizedText, template = 'classic', onResumeDataReady }: ResumePreviewProps) {
   const { t, language } = useLanguage();
-  const isRTL = language === 'ar';
+  const isRTL = language === 'ur';
   const [zoom, setZoom] = useState(100);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const templateRef = useRef<HTMLDivElement>(null);
@@ -390,6 +390,7 @@ export function ResumePreview({ optimizedText, template = 'classic', onResumeDat
           ref={templateRef}
           key={`card-${template}`}
           className="overflow-hidden shadow-lg inline-block"
+          dir="ltr"
           style={{
             transform: isFullscreen ? 'scale(1)' : `scale(${zoom / 100})`,
             transformOrigin: isFullscreen ? 'top center' : 'top left',

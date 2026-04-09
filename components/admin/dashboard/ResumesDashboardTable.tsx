@@ -2,19 +2,28 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Search, FileText, ChevronLeft, ChevronRight, Loader2, RefreshCw } from 'lucide-react';
+import { Search, FileText, ChevronLeft, ChevronRight, Loader2, RefreshCw, Trash2 } from 'lucide-react';
 import Image from 'next/image';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { getResumes, AdminResumeListItem, ResumeStatus } from '@/lib/admin-api';
+import { getResumes, deleteResume, AdminResumeListItem, ResumeStatus, DeleteType } from '@/lib/admin-api';
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogFooter,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogCancel,
+} from '@/components/ui/alert-dialog';
 
 const REFRESH_INTERVAL = 30000; // 30 seconds auto-refresh
 
 export default function ResumesDashboardTable() {
   const { t, language } = useLanguage();
   const router = useRouter();
-  const isRTL = language === 'ar';
+  const isRTL = language === 'ur';
 
   const [resumes, setResumes] = useState<AdminResumeListItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -28,6 +37,12 @@ export default function ResumesDashboardTable() {
   const [statusFilter, setStatusFilter] = useState<'all' | ResumeStatus>('all');
   const [sortBy, setSortBy] = useState<'newest' | 'oldest'>('newest');
   const [currentPage, setCurrentPage] = useState(1);
+
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<AdminResumeListItem | null>(null);
+  const [deleteType, setDeleteType] = useState<DeleteType>('both');
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const pageSize = 10;
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -128,6 +143,29 @@ export default function ResumesDashboardTable() {
         date: format(d, 'MMM d, yyyy'),
         time: format(d, 'HH:mm a'),
       };
+    }
+  };
+
+  const handleDeleteClick = (resume: AdminResumeListItem) => {
+    setDeleteTarget(resume);
+    setDeleteType('both');
+    setDeleteError(null);
+    setDeleteModalOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      await deleteResume(deleteTarget.id, deleteType);
+      setDeleteModalOpen(false);
+      setDeleteTarget(null);
+      fetchResumes();
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : 'Failed to delete resume');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -282,7 +320,7 @@ export default function ResumesDashboardTable() {
                   isRTL ? 'flex-row-reverse' : ''
                 }`}
               >
-                <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded bg-black">
+                <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded bg-brand-blue">
                   <FileText size={20} className="text-white" />
                 </div>
 
@@ -305,9 +343,11 @@ export default function ResumesDashboardTable() {
                       {t('admin.dashboard.columns.user')}
                     </div>
                     <div className={`text-sm font-medium text-gray-900 ${isRTL ? 'text-right' : ''}`}>
-                      {resume.user_name || 'Unknown'}
+                      {resume.user_name || resume.location || 'Unknown'}
                     </div>
-                    <div className={`text-xs text-gray-500 ${isRTL ? 'text-right' : ''}`}>{resume.user_email || '-'}</div>
+                    <div className={`text-xs text-gray-500 ${isRTL ? 'text-right' : ''}`}>
+                      {resume.user_email || (resume.location ? 'Guest' : '-')}
+                    </div>
                   </div>
 
                   <div>
@@ -346,6 +386,17 @@ export default function ResumesDashboardTable() {
                       />
                       <span>{t('admin.dashboard.view')}</span>
                     </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteClick(resume);
+                      }}
+                      className="flex items-center text-red-500 hover:text-red-700 transition-colors"
+                      title={isRTL ? 'حذف' : 'Delete'}
+                    >
+                      <Trash2 size={16} />
+                    </button>
                   </div>
                 </div>
               </div>
@@ -381,7 +432,7 @@ export default function ResumesDashboardTable() {
                   onClick={() => setCurrentPage(page)}
                   className={`h-8 w-8 rounded-md text-sm ${
                     page === currentPage
-                      ? 'bg-black text-white'
+                      ? 'bg-brand-blue text-white'
                       : 'text-gray-600 hover:bg-gray-100'
                   }`}
                   disabled={loading}
@@ -407,6 +458,57 @@ export default function ResumesDashboardTable() {
           </button>
         </div>
       )}
+
+      <AlertDialog open={deleteModalOpen} onOpenChange={setDeleteModalOpen}>
+        <AlertDialogContent dir={isRTL ? 'rtl' : 'ltr'}>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {isRTL ? 'حذف السيرة الذاتية' : 'Delete Resume'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {isRTL
+                ? `ماذا تريد أن تحذف من "${deleteTarget?.request_number}"؟`
+                : `What would you like to delete from ${deleteTarget?.request_number}?`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="flex flex-col gap-3 py-4">
+            {(['original', 'optimized', 'both'] as const).map((type) => (
+              <label key={type} className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="radio"
+                  name="deleteType"
+                  value={type}
+                  checked={deleteType === type}
+                  onChange={() => setDeleteType(type)}
+                  className="h-4 w-4 text-red-600 accent-red-600"
+                />
+                <span className="text-sm">
+                  {type === 'original' && (isRTL ? 'السيرة الأصلية فقط' : 'Original CV only')}
+                  {type === 'optimized' && (isRTL ? 'السيرة المحسنة فقط' : 'Optimized CV only')}
+                  {type === 'both' && (isRTL ? 'كلاهما (حذف كامل)' : 'Both (full delete)')}
+                </span>
+              </label>
+            ))}
+          </div>
+          {deleteError && (
+            <p className="text-sm text-red-600 bg-red-50 rounded p-2">{deleteError}</p>
+          )}
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>
+              {isRTL ? 'إلغاء' : 'Cancel'}
+            </AlertDialogCancel>
+            <button
+              onClick={handleDeleteConfirm}
+              disabled={deleting}
+              className="inline-flex items-center justify-center rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
+            >
+              {deleting
+                ? (isRTL ? 'جاري الحذف...' : 'Deleting...')
+                : (isRTL ? 'حذف' : 'Delete')}
+            </button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -50,7 +50,7 @@ export default function UserManagementTable({
 }) {
   const router = useRouter();
   const { t, language } = useLanguage();
-  const isArabic = language === 'ar';
+  const isArabic = language === 'ur';
 
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
@@ -466,7 +466,7 @@ export default function UserManagementTable({
                 onClick={() => setCurrentPage(page)}
                 className={`w-8 h-8 flex items-center justify-center rounded text-sm font-medium ${
                   page === currentPage
-                    ? 'bg-gray-900 text-white'
+                    ? 'bg-brand-blue text-white'
                     : 'text-gray-700 hover:bg-gray-100'
                 }`}
                 disabled={loading}

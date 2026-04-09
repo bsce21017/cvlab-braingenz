@@ -10,6 +10,8 @@ from app.models.claim import Claim
 from app.models.notification import Notification, NotificationType
 from app.models.user_notification import UserNotification, UserNotificationType
 from app.models.cv_info_store import CVInfoStore, MetadataStatus
+from app.models.admin_user import AdminUser
+from app.models.cv_evaluation import CVEvaluation, TokenUsage
 
 __all__ = [
     "Resume",
@@ -23,5 +25,8 @@ __all__ = [
     "UserNotification",
     "UserNotificationType",
     "CVInfoStore",
-    "MetadataStatus"
+    "MetadataStatus",
+    "AdminUser",
+    "CVEvaluation",
+    "TokenUsage",
 ]

@@ -40,7 +40,7 @@ const PROMPT_DISPLAY_NAMES: Record<string, { title: string; description: string 
 
 export default function PromptManagementPage() {
   const { t, language } = useLanguage();
-  const isArabic = language === 'ar';
+  const isArabic = language === 'ur';
 
   const [prompts, setPrompts] = useState<Prompt[]>([]);
   const [loading, setLoading] = useState(true);
@@ -106,7 +106,7 @@ export default function PromptManagementPage() {
   });
 
   return (
-    <div className="min-h-screen bg-gray-50" dir={isArabic ? 'rtl' : 'ltr'}>
+    <div className="min-h-screen bg-[#F7F9FC]" dir={isArabic ? 'rtl' : 'ltr'}>
       <Header />
 
       <main className="mx-auto max-w-6xl px-6 py-12">

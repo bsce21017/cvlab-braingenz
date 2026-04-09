@@ -7,7 +7,6 @@ import {
   BlobSASPermissions,
 } from '@azure/storage-blob';
 import { v4 as uuidv4 } from 'uuid';
-import { createClient } from '@supabase/supabase-js';
 
 // Force dynamic rendering for this API route
 export const dynamic = 'force-dynamic';
@@ -42,7 +41,7 @@ try {
   console.error('Failed to initialize Azure Blob Storage client:', error);
 }
 
-// Verify Supabase token
+// Verify auth token (JWT from custom backend)
 async function verifyAuth(req: NextRequest): Promise<{ userId: string } | null> {
   const authHeader = req.headers.get('authorization');
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -51,18 +50,14 @@ async function verifyAuth(req: NextRequest): Promise<{ userId: string } | null> 
 
   const token = authHeader.substring(7);
 
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
-
-  const { data: { user }, error } = await supabase.auth.getUser(token);
-
-  if (error || !user) {
+  // Decode JWT payload to get user ID (token is already verified by backend middleware)
+  try {
+    const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
+    if (payload.exp && payload.exp * 1000 < Date.now()) return null;
+    return { userId: payload.sub };
+  } catch {
     return null;
   }
-
-  return { userId: user.id };
 }
 
 export async function POST(req: NextRequest) {
@@ -148,11 +143,18 @@ export async function POST(req: NextRequest) {
     const fileUrl = blockBlobClient.url;
     const presignedUrl = `${fileUrl}?${sasToken}`;
 
+    // Extract client IP for geo-location
+    const clientIp = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+      || req.headers.get('x-real-ip')
+      || req.ip
+      || '';
+
     // Debug: Log the uploaded file URL
     console.log('File uploaded successfully!');
     console.log('File URL (direct):', fileUrl);
     console.log('Presigned URL (accessible):', presignedUrl);
     console.log('Original Name:', file.name);
+    console.log('Client IP:', clientIp);
 
     return NextResponse.json({
       success: true,
@@ -160,6 +162,7 @@ export async function POST(req: NextRequest) {
       presignedUrl,
       key: blobName,
       originalName: file.name,
+      clientIp,
     });
   } catch (error: any) {
     console.error('Upload error:', error);

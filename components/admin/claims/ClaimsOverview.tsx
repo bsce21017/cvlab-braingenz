@@ -7,7 +7,7 @@ import { Loader2 } from 'lucide-react';
 
 export default function ClaimsOverview() {
   const { t, language } = useLanguage();
-  const isRTL = language === 'ar';
+  const isRTL = language === 'ur';
   const [stats, setStats] = useState<ClaimStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

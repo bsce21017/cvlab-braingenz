@@ -83,6 +83,7 @@ class AdminResumeListItem(BaseModel):
     user_status: Optional[UserStatus] = None  # User's active/inactive status
     created_at: datetime
     file_size: Optional[int] = None
+    location: Optional[str] = None  # "City, Country" from IP geo
 
     class Config:
         from_attributes = True
@@ -190,6 +191,7 @@ class LLMProvider(str, Enum):
     """Supported LLM providers"""
     ANTHROPIC = "anthropic"
     OPENAI = "openai"
+    CUSTOM = "custom"
 
 
 class LLMConfigResponse(BaseModel):

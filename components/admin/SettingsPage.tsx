@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 
 export default function SettingsPage() {
   const { t, language } = useLanguage();
-  const isArabic = language === 'ar';
+  const isArabic = language === 'ur';
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [config, setConfig] = useState<LLMConfig | null>(null);
@@ -77,7 +77,11 @@ export default function SettingsPage() {
     'gpt-3.5-turbo',
   ];
 
-  const availableModels = provider === 'anthropic' ? anthropicModels : openaiModels;
+  const customModels = [
+    'gemma4:31b',
+  ];
+
+  const availableModels = provider === 'anthropic' ? anthropicModels : provider === 'custom' ? customModels : openaiModels;
 
   if (loading) {
     return (
@@ -117,6 +121,7 @@ export default function SettingsPage() {
             >
               <option value="anthropic">Anthropic (Claude)</option>
               <option value="openai">OpenAI (GPT)</option>
+              <option value="custom">Custom (Gemma 4)</option>
             </select>
           </div>
 
@@ -139,6 +144,8 @@ export default function SettingsPage() {
             <p className={`mt-1 text-xs text-gray-500 ${isArabic ? 'text-right' : ''}`}>
               {provider === 'anthropic'
                 ? t('admin.settings.claudeDescription')
+                : provider === 'custom'
+                ? (t('admin.settings.customDescription') || 'Self-hosted model via Ollama endpoint')
                 : t('admin.settings.gptDescription')}
             </p>
           </div>
@@ -166,7 +173,7 @@ export default function SettingsPage() {
             <Button
               onClick={handleSave}
               disabled={saving || !model}
-              className="bg-black hover:bg-gray-800"
+              className="bg-brand-blue hover:bg-brand-blue-light"
             >
               {saving ? (
                 <>

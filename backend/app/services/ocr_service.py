@@ -70,14 +70,41 @@ class OCRService:
     """OCR service for text extraction from documents"""
 
     def __init__(self):
-        """Initialize OCR service with OpenAI client"""
+        """Initialize OCR service with custom/OpenAI-compatible OCR client"""
         self.openai_client = None
+        self.custom_client = None
+        self.ocr_client = None
+        self.ocr_model = None
+
+        if settings.CUSTOM_LLM_ENDPOINT:
+            try:
+                self.custom_client = OpenAI(
+                    base_url=settings.CUSTOM_LLM_ENDPOINT,
+                    api_key=settings.CUSTOM_LLM_API_KEY or "not-needed"
+                )
+                self.ocr_client = self.custom_client
+                self.ocr_model = settings.CUSTOM_LLM_MODEL
+                logger.info(f"Custom OCR client initialized: {settings.CUSTOM_LLM_ENDPOINT} / {self.ocr_model}")
+            except Exception as e:
+                logger.warning(f"Failed to initialize custom OCR client: {e}")
+
         if settings.OPENAI_API_KEY:
             try:
                 self.openai_client = OpenAI(api_key=settings.OPENAI_API_KEY)
-                logger.info("OpenAI client initialized for OCR")
+                logger.info("OpenAI client initialized for OCR fallback")
+                if not self.ocr_client:
+                    self.ocr_client = self.openai_client
+                    self.ocr_model = "gpt-4o"
             except Exception as e:
                 logger.warning(f"Failed to initialize OpenAI client for OCR: {e}")
+
+    def _get_vision_model(self) -> str:
+        return self.ocr_model or "gpt-4o"
+
+    def _get_fast_vision_model(self) -> str:
+        if self.custom_client and self.ocr_client is self.custom_client:
+            return self.ocr_model or settings.CUSTOM_LLM_MODEL
+        return "gpt-4o-mini"
 
     def detect_file_type(self, file_path: str) -> Tuple[str, str]:
         """
@@ -318,8 +345,8 @@ class OCRService:
         Returns:
             str: Extracted text
         """
-        if not self.openai_client:
-            logger.info("OpenAI client not available for image OCR")
+        if not self.ocr_client:
+            logger.info("No OCR client available for image OCR")
             return ""
 
         try:
@@ -338,8 +365,8 @@ class OCRService:
                 '.webp': 'image/webp',
             }.get(ext, 'image/png')
 
-            response = self.openai_client.chat.completions.create(
-                model="gpt-4o-mini",
+            response = self.ocr_client.chat.completions.create(
+                model=self._get_fast_vision_model(),
                 messages=[
                     {
                         "role": "user",
@@ -362,11 +389,11 @@ class OCRService:
 
             text = response.choices[0].message.content
             if text:
-                logger.info(f"Extracted {len(text)} chars from image using OpenAI Vision")
+                logger.info(f"Extracted {len(text)} chars from image using OCR client")
                 return text.strip()
 
         except Exception as e:
-            logger.info(f"OpenAI image OCR not successful: {e}")
+            logger.info(f"Image OCR not successful: {e}")
 
         return ""
 
@@ -455,12 +482,12 @@ class OCRService:
         Returns:
             str: Extracted text
         """
-        if not self.openai_client:
-            logger.info("OpenAI client not available for PDF extraction")
+        if not self.ocr_client:
+            logger.info("No OCR client available for PDF extraction")
             return ""
 
         try:
-            logger.info("Extracting PDF text using OpenAI direct file upload...")
+            logger.info("Extracting PDF text using configured OCR client...")
 
             # Read PDF file and encode as base64
             with open(file_path, 'rb') as f:
@@ -468,9 +495,8 @@ class OCRService:
 
             pdf_base64 = base64.b64encode(pdf_data).decode('utf-8')
 
-            # Use GPT-4o which can process PDFs directly via base64
-            response = self.openai_client.chat.completions.create(
-                model="gpt-4o",  # GPT-4o can handle PDF files
+            response = self.ocr_client.chat.completions.create(
+                model=self._get_vision_model(),
                 messages=[
                     {
                         "role": "user",
@@ -501,12 +527,11 @@ Instructions:
 
             text = response.choices[0].message.content
             if text:
-                logger.info(f"OpenAI direct PDF extraction successful: {len(text)} chars")
+                logger.info(f"OCR direct PDF extraction successful: {len(text)} chars")
                 return text.strip()
 
         except Exception as e:
-            logger.warning(f"OpenAI direct PDF extraction failed: {e}")
-            # Fall back to Vision API with pdf2image if available
+            logger.warning(f"Direct PDF extraction failed: {e}")
             return self.extract_text_from_pdf_openai_vision(file_path)
 
         return ""
@@ -522,8 +547,8 @@ Instructions:
         Returns:
             str: Extracted text
         """
-        if not self.openai_client:
-            logger.info("OpenAI client not available for Vision OCR")
+        if not self.ocr_client:
+            logger.info("No OCR client available for Vision OCR")
             return ""
 
         if not PDF2IMAGE_AVAILABLE:
@@ -532,7 +557,7 @@ Instructions:
 
         try:
             # Convert PDF to images
-            logger.info("Converting PDF to images for OpenAI Vision OCR...")
+            logger.info("Converting PDF to images for OCR vision extraction...")
             images = pdf2image.convert_from_path(file_path, dpi=150, first_page=1, last_page=5)  # Limit to 5 pages
 
             if not images:
@@ -548,10 +573,9 @@ Instructions:
                 image.save(buffered, format="PNG")
                 img_base64 = base64.b64encode(buffered.getvalue()).decode("utf-8")
 
-                # Call OpenAI Vision API
-                logger.info(f"Processing page {i+1}/{len(images)} with OpenAI Vision...")
-                response = self.openai_client.chat.completions.create(
-                    model="gpt-4o-mini",  # Use mini for cost efficiency
+                logger.info(f"Processing page {i+1}/{len(images)} with OCR vision model...")
+                response = self.ocr_client.chat.completions.create(
+                    model=self._get_fast_vision_model(),
                     messages=[
                         {
                             "role": "user",
@@ -578,11 +602,11 @@ Instructions:
                     logger.info(f"Page {i+1}: Extracted {len(page_text)} characters")
 
             combined_text = "\n\n".join(all_text)
-            logger.info(f"OpenAI Vision OCR complete: {len(combined_text)} total characters")
+            logger.info(f"OCR vision extraction complete: {len(combined_text)} total characters")
             return combined_text.strip()
 
         except Exception as e:
-            logger.warning(f"OpenAI Vision OCR failed: {e}")
+            logger.warning(f"OCR vision extraction failed: {e}")
             return ""
 
     def extract_text(self, file_path: str, file_type: str) -> str:
@@ -590,7 +614,7 @@ Instructions:
         Extract text from document using appropriate method.
         Handles multiple file formats with robust fallback mechanisms.
 
-        Priority for PDF: OpenAI Vision OCR > pdfplumber > PyPDF2
+        Priority for PDF: configured OCR client > local fallbacks where available
 
         Args:
             file_path: Path to file
@@ -621,21 +645,21 @@ Instructions:
             text = self._extract_from_pdf(file_path)
 
         elif file_type == "docx":
+            logger.info("DOCX: Trying local DOCX parser first (primary)...")
             text = self.extract_text_from_docx(file_path)
-            # If docx extraction fails, try as PDF (might be misnamed)
             if not text or len(text) < 50:
-                logger.info("DOCX extraction failed, trying as PDF...")
-                text = self._extract_from_pdf(file_path)
+                logger.info("DOCX parser returned insufficient text, trying generic fallbacks...")
+                text = self._try_all_extraction_methods(file_path)
 
         elif file_type == "doc":
+            logger.info("DOC: Trying local DOC parser first (primary)...")
             text = self.extract_text_from_doc(file_path)
-            # If doc extraction fails, try as docx then PDF
             if not text or len(text) < 50:
-                logger.info("DOC extraction failed, trying as DOCX...")
+                logger.info("DOC fallback failed, trying as DOCX...")
                 text = self.extract_text_from_docx(file_path)
             if not text or len(text) < 50:
-                logger.info("DOCX fallback failed, trying as PDF...")
-                text = self._extract_from_pdf(file_path)
+                logger.info("DOC parser returned insufficient text, trying generic fallbacks...")
+                text = self._try_all_extraction_methods(file_path)
 
         elif file_type == "rtf":
             text = self.extract_text_from_rtf(file_path)
@@ -671,8 +695,7 @@ Instructions:
 
     def _extract_from_pdf(self, file_path: str) -> str:
         """
-        Extract text from PDF using OpenAI as the primary method.
-        Uses OpenAI direct PDF extraction (no fallbacks unless OpenAI fails).
+        Extract text from PDF using the configured OCR client as the primary method.
 
         Args:
             file_path: Path to PDF file
@@ -682,30 +705,27 @@ Instructions:
         """
         text = ""
 
-        # Primary method: OpenAI direct PDF extraction
-        if self.openai_client:
-            logger.info("Using OpenAI for PDF text extraction (primary method)...")
+        if self.ocr_client:
+            logger.info(f"Using OCR client for PDF text extraction (model={self._get_vision_model()})...")
             text = self.extract_text_from_pdf_openai_direct(file_path)
             if text and len(text) >= 50:
-                logger.info(f"OpenAI PDF extraction successful: {len(text)} chars")
+                logger.info(f"OCR PDF extraction successful: {len(text)} chars")
                 return text
             else:
-                logger.warning(f"OpenAI PDF extraction returned insufficient text: {len(text) if text else 0} chars")
+                logger.warning(f"OCR PDF extraction returned insufficient text: {len(text) if text else 0} chars")
 
-        # If OpenAI is not available or failed, raise an error (no fallbacks)
-        if not self.openai_client:
-            raise Exception("OpenAI API key not configured. OpenAI is required for PDF text extraction.")
+        if not self.ocr_client:
+            raise Exception("No OCR model is configured. Set CUSTOM_LLM_ENDPOINT/CUSTOM_LLM_MODEL or OPENAI_API_KEY.")
 
-        # If we get here, OpenAI failed - raise an error
         raise Exception(
-            f"OpenAI PDF extraction failed or returned insufficient content. "
+            f"OCR PDF extraction failed or returned insufficient content. "
             f"Please ensure the PDF contains readable text and try again."
         )
 
     def _try_all_extraction_methods(self, file_path: str) -> str:
         """
         Try extraction methods for unknown file types.
-        Uses OpenAI as the primary method.
+        Uses the configured OCR client as the primary method.
 
         Args:
             file_path: Path to file

@@ -38,7 +38,7 @@ class LLMHandler:
         Initialize LLM Handler
 
         Args:
-            llm_provider: "claude" or "openai" (defaults to settings)
+            llm_provider: "claude", "openai", or "custom" (defaults to settings)
             model: Specific model to use (if None, uses default for provider)
             claude_api_key: Claude API key (if None, reads from settings)
             openai_api_key: OpenAI API key (if None, reads from settings)
@@ -49,18 +49,26 @@ class LLMHandler:
         self.claude_api_key = claude_api_key or settings.ANTHROPIC_API_KEY
         self.openai_api_key = openai_api_key or settings.OPENAI_API_KEY
 
+        # Custom LLM settings
+        self.custom_endpoint = settings.CUSTOM_LLM_ENDPOINT
+        self.custom_api_key = settings.CUSTOM_LLM_API_KEY
+        self.custom_model = settings.CUSTOM_LLM_MODEL
+
         # Initialize clients
         self.claude_client = None
         self.openai_client = None
+        self.custom_client = None
 
         # Set model
         if model:
             self.model = model
         else:
-            self.model = (
-                settings.CLAUDE_MODEL if self.llm_provider == "claude"
-                else settings.OPENAI_MODEL
-            )
+            if self.llm_provider == "claude":
+                self.model = settings.CLAUDE_MODEL
+            elif self.llm_provider == "custom":
+                self.model = self.custom_model
+            else:
+                self.model = settings.OPENAI_MODEL
 
         # Initialize primary client
         self._initialize_clients()
@@ -86,6 +94,18 @@ class LLMHandler:
             except Exception as e:
                 logger.warning(f"Failed to initialize OpenAI client: {str(e)}")
                 self.openai_client = None
+
+        # Try to initialize Custom LLM client (OpenAI-compatible endpoint)
+        if self.custom_endpoint:
+            try:
+                self.custom_client = OpenAI(
+                    base_url=self.custom_endpoint,
+                    api_key=self.custom_api_key or "not-needed"
+                )
+                logger.info(f"Custom LLM client initialized: {self.custom_endpoint} / {self.custom_model}")
+            except Exception as e:
+                logger.warning(f"Failed to initialize Custom LLM client: {str(e)}")
+                self.custom_client = None
 
     def _call_claude(self, messages: list, max_tokens: int = 8000) -> str:
         """
@@ -188,6 +208,61 @@ class LLMHandler:
             print(f"[LLM_HANDLER] OpenAI FAILED: {e}", flush=True)
             raise
 
+    def _call_custom(self, messages: list, max_tokens: int = 8000) -> str:
+        """Call Custom LLM (Ollama / self-hosted OpenAI-compatible endpoint)"""
+        if not self.custom_client:
+            raise Exception("Custom LLM client not initialized. Check CUSTOM_LLM_ENDPOINT.")
+
+        try:
+            import time as _time
+            t0 = _time.time()
+            model = self.custom_model if self.llm_provider == "custom" else self.model
+            logger.info(f"[LLM] Calling Custom LLM | endpoint={self.custom_endpoint} | model={model} | max_tokens={max_tokens}")
+            print(f"[LLM_HANDLER] Calling Custom: model={model} max_tokens={max_tokens}", flush=True)
+
+            response = self.custom_client.chat.completions.create(
+                model=model,
+                messages=messages,
+                max_tokens=max_tokens,
+                temperature=0.3,
+            )
+
+            result = response.choices[0].message.content.strip()
+            elapsed = _time.time() - t0
+            logger.info(f"[LLM] Custom LLM response: {len(result)} chars in {elapsed:.1f}s")
+            print(f"[LLM_HANDLER] Custom SUCCESS: {len(result)} chars in {elapsed:.1f}s", flush=True)
+            return result
+
+        except Exception as e:
+            logger.error(f"[LLM] Custom LLM call failed: {str(e)}")
+            print(f"[LLM_HANDLER] Custom FAILED: {e}", flush=True)
+            raise
+
+    def _call_custom_with_usage(self, messages: list, max_tokens: int) -> Dict[str, Any]:
+        """Call Custom LLM and return text + token usage."""
+        if not self.custom_client:
+            raise Exception("Custom LLM client not initialized.")
+
+        model = self.custom_model if self.llm_provider == "custom" else self.model
+        response = self.custom_client.chat.completions.create(
+            model=model,
+            messages=messages,
+            max_tokens=max_tokens,
+            temperature=0.3,
+        )
+        text = response.choices[0].message.content.strip()
+        usage = response.usage
+        input_tokens = getattr(usage, 'prompt_tokens', 0) if usage else 0
+        output_tokens = getattr(usage, 'completion_tokens', 0) if usage else 0
+
+        return {
+            "text": text,
+            "input_tokens": input_tokens,
+            "output_tokens": output_tokens,
+            "total_tokens": input_tokens + output_tokens,
+            "model": model,
+        }
+
     def generate(
         self,
         prompt: str,
@@ -211,10 +286,12 @@ class LLMHandler:
 
         # Read current settings dynamically (supports runtime config changes)
         current_provider = (settings.DEFAULT_LLM_PROVIDER or self.llm_provider).lower()
-        current_model = (
-            settings.CLAUDE_MODEL if current_provider == "claude"
-            else settings.OPENAI_MODEL
-        )
+        if current_provider == "claude":
+            current_model = settings.CLAUDE_MODEL
+        elif current_provider == "custom":
+            current_model = settings.CUSTOM_LLM_MODEL
+        else:
+            current_model = settings.OPENAI_MODEL
         
         # Update provider and model if settings changed
         if current_provider != self.llm_provider or current_model != self.model:
@@ -237,6 +314,8 @@ class LLMHandler:
         try:
             if self.llm_provider == "claude":
                 return self._call_claude(messages, max_tokens)
+            elif self.llm_provider == "custom":
+                return self._call_custom(messages, max_tokens)
             else:
                 return self._call_openai(messages, max_tokens)
 
@@ -273,6 +352,96 @@ class LLMHandler:
                     f"Both primary and fallback LLM providers failed. "
                     f"Primary: {str(e)}, Fallback: {str(fallback_error)}"
                 )
+
+
+    def generate_with_usage(
+        self,
+        prompt: str,
+        max_tokens: int = None,
+        system_prompt: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Generate response and return both text and token usage.
+        Returns: {"text": str, "input_tokens": int, "output_tokens": int, "total_tokens": int, "model": str}
+        """
+        if max_tokens is None:
+            max_tokens = settings.MAX_TOKENS
+
+        current_provider = (settings.DEFAULT_LLM_PROVIDER or self.llm_provider).lower()
+        if current_provider == "claude":
+            current_model = settings.CLAUDE_MODEL
+        elif current_provider == "custom":
+            current_model = settings.CUSTOM_LLM_MODEL
+        else:
+            current_model = settings.OPENAI_MODEL
+
+        if current_provider != self.llm_provider or current_model != self.model:
+            self.llm_provider = current_provider
+            self.model = current_model
+            self._initialize_clients()
+
+        messages = []
+        if system_prompt:
+            messages.append({"role": "system", "content": system_prompt})
+        messages.append({"role": "user", "content": prompt})
+
+        if self.llm_provider == "claude":
+            return self._call_claude_with_usage(messages, max_tokens)
+        elif self.llm_provider == "custom":
+            return self._call_custom_with_usage(messages, max_tokens)
+        else:
+            return self._call_openai_with_usage(messages, max_tokens)
+
+    def _call_claude_with_usage(self, messages: list, max_tokens: int) -> Dict[str, Any]:
+        if not self.claude_client:
+            raise Exception("Claude client not initialized.")
+
+        system_message = ""
+        user_messages = []
+        for msg in messages:
+            if msg["role"] == "system":
+                system_message = msg["content"]
+            else:
+                user_messages.append({"role": msg["role"], "content": msg["content"]})
+        if not user_messages:
+            user_messages = [{"role": "user", "content": messages[0]["content"]}]
+
+        kwargs = {"model": self.model, "max_tokens": max_tokens, "messages": user_messages}
+        if system_message:
+            kwargs["system"] = system_message
+
+        response = self.claude_client.messages.create(**kwargs)
+        text = response.content[0].text
+        input_tokens = getattr(response.usage, 'input_tokens', 0)
+        output_tokens = getattr(response.usage, 'output_tokens', 0)
+
+        return {
+            "text": text,
+            "input_tokens": input_tokens,
+            "output_tokens": output_tokens,
+            "total_tokens": input_tokens + output_tokens,
+            "model": self.model,
+        }
+
+    def _call_openai_with_usage(self, messages: list, max_tokens: int) -> Dict[str, Any]:
+        if not self.openai_client:
+            raise Exception("OpenAI client not initialized.")
+
+        response = self.openai_client.chat.completions.create(
+            model=self.model, messages=messages, max_tokens=max_tokens, temperature=0.3
+        )
+        text = response.choices[0].message.content
+        usage = response.usage
+        input_tokens = getattr(usage, 'prompt_tokens', 0) if usage else 0
+        output_tokens = getattr(usage, 'completion_tokens', 0) if usage else 0
+
+        return {
+            "text": text,
+            "input_tokens": input_tokens,
+            "output_tokens": output_tokens,
+            "total_tokens": input_tokens + output_tokens,
+            "model": self.model,
+        }
 
 
 # Global instance

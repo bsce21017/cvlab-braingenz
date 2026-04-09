@@ -5,7 +5,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 
 export default function ResumesDashboardHeader() {
   const { t, language } = useLanguage();
-  const isRTL = language === 'ar';
+  const isRTL = language === 'ur';
 
   return (
     <div
@@ -14,7 +14,7 @@ export default function ResumesDashboardHeader() {
       }`}
     >
       <button
-        className={`flex items-center gap-2 rounded-md bg-black px-4 py-2 text-sm text-white transition-colors hover:bg-gray-800 ${
+        className={`flex items-center gap-2 rounded-md bg-brand-blue px-4 py-2 text-sm text-white transition-colors hover:bg-brand-blue-light ${
           isRTL ? 'flex-row-reverse' : ''
         }`}
         type="button"

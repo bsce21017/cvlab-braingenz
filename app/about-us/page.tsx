@@ -8,139 +8,91 @@ import Image from 'next/image';
 
 export default function AboutUsPage() {
   const { t, language } = useLanguage();
-  const isRTL = language === 'ar';
+  const isRTL = language === 'ur';
+
+  const steps = [
+    { iconSrc: '/assets/upload icon.png', icon: null, title: t('aboutUsStep1Title'), desc: t('aboutUsStep1Desc'), color: 'bg-brand-blue' },
+    { iconSrc: '/assets/ai analyses brain icon.png', icon: null, title: t('aboutUsStep2Title'), desc: t('aboutUsStep2Desc'), color: 'bg-brand-green' },
+    { iconSrc: null, icon: HelpCircle, title: t('aboutUsStep3Title'), desc: t('aboutUsStep3Desc'), color: 'bg-brand-yellow' },
+    { iconSrc: null, icon: FileEdit, title: t('aboutUsStep4Title'), desc: t('aboutUsStep4Desc'), color: 'bg-brand-blue' },
+  ];
 
   return (
     <div className="flex flex-col min-h-screen bg-white" dir={isRTL ? 'rtl' : 'ltr'}>
       <Header />
       <main className="flex-1">
-        {/* Hero Section */}
-        <section className="pt-12 pb-16 px-4 sm:px-6 lg:px-8 bg-white">
-          <div className="max-w-6xl mx-auto text-center">
-            <div className="inline-flex items-center justify-center w-20 h-20 bg-black rounded-2xl mb-6">
-              <Sparkles className="w-10 h-10 text-white" />
-            </div>
-            <h1 className="text-4xl font-bold text-gray-900 mb-4">
-              {t('aboutUsTitle')}
-            </h1>
-            <p className="text-base text-gray-600 max-w-2xl mx-auto">
-              {t('aboutUsSubtitle')}
-            </p>
-          </div>
-        </section>
-
-        {/* Who We Are Section */}
-        <section className="pt-0 pb-16 px-4 sm:px-6 lg:px-8 bg-white">
+        {/* Hero — editorial asymmetric */}
+        <section className="pt-12 pb-24 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-brand-blue/[0.03] rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none" />
           <div className="max-w-6xl mx-auto">
-            <div className="text-center space-y-4">
-              <h2 className="text-3xl font-bold text-gray-900">
-                {t('aboutUsWhoWeAreTitle')}
-              </h2>
-              <p className="text-lg text-gray-600 leading-relaxed max-w-3xl mx-auto">
-                {t('aboutUsWhoWeAreText')}
-              </p>
-            </div>
-          </div>
-        </section>
-
-        {/* How It Works Section */}
-        <section className="pt-0 pb-20 px-4 sm:px-6 lg:px-8 bg-white">
-          <div className="max-w-6xl mx-auto">
-            <div className="text-center space-y-2 mb-12">
-              <h2 className="text-4xl font-bold text-gray-900">
-                {t('aboutUsHowItWorksTitle')}
-              </h2>
-              <p className="text-base text-gray-600">{t('aboutUsHowItWorksSubtitle')}</p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-              <div className="flex flex-col items-center text-center space-y-4">
-                <div className="w-20 h-20 bg-black rounded-2xl flex items-center justify-center">
-                  <Image 
-                    src="/assets/upload icon.png"
-                    alt="Upload"
-                    width={40}
-                    height={40}
-                    className="w-10 h-10"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <h3 className="text-lg font-normal text-gray-900 leading-tight">
-                    1. {t('aboutUsStep1Title')}
-                  </h3>
-                  <p className="text-sm text-gray-600 leading-relaxed">
-                    {t('aboutUsStep1Desc')}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex flex-col items-center text-center space-y-4">
-                <div className="w-20 h-20 bg-black rounded-2xl flex items-center justify-center">
-                  <Image 
-                    src="/assets/ai analyses brain icon.png"
-                    alt="AI Analysis"
-                    width={40}
-                    height={40}
-                    className="w-10 h-10"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <h3 className="text-lg font-normal text-gray-900 leading-tight">
-                    2. {t('aboutUsStep2Title')}
-                  </h3>
-                  <p className="text-sm text-gray-600 leading-relaxed">
-                    {t('aboutUsStep2Desc')}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex flex-col items-center text-center space-y-4">
-                <div className="w-20 h-20 bg-black rounded-2xl flex items-center justify-center">
-                  <HelpCircle className="w-10 h-10 text-white" />
-                </div>
-                <div className="space-y-2">
-                  <h3 className="text-lg font-normal text-gray-900 leading-tight">
-                    3. {t('aboutUsStep3Title')}
-                  </h3>
-                  <p className="text-sm text-gray-600 leading-relaxed">
-                    {t('aboutUsStep3Desc')}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex flex-col items-center text-center space-y-4">
-                <div className="w-20 h-20 bg-black rounded-2xl flex items-center justify-center">
-                  <FileEdit className="w-10 h-10 text-white" />
-                </div>
-                <div className="space-y-2">
-                  <h3 className="text-lg font-normal text-gray-900 leading-tight">
-                    4. {t('aboutUsStep4Title')}
-                  </h3>
-                  <p className="text-sm text-gray-600 leading-relaxed">
-                    {t('aboutUsStep4Desc')}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Our Mission Section */}
-        <section className="pt-0 pb-20 px-4 sm:px-6 lg:px-8 bg-white">
-          <div className="max-w-4xl mx-auto">
-            <div className="flex flex-col md:flex-row items-center md:items-start gap-6 text-center md:text-left">
-              <div className="w-16 h-16 bg-black rounded-2xl flex items-center justify-center flex-shrink-0">
-                <Target className="w-8 h-8 text-white" />
-              </div>
-              <div className="space-y-4 flex-1">
-                <h2 className="text-3xl font-bold text-gray-900">
-                  {t('aboutUsMissionTitle')}
-                </h2>
-                <p className="text-lg text-gray-600 leading-relaxed">
-                  {t('aboutUsMissionText')}
+            <div className="grid lg:grid-cols-2 gap-16 items-center">
+              <div className="space-y-6 animate-fade-up">
+                {!isRTL && <span className="inline-block text-xs font-bold text-brand-blue tracking-[0.2em] uppercase">{t('about')}</span>}
+                <h1 className="text-5xl lg:text-6xl font-bold text-foreground leading-tight">
+                  {t('aboutUsTitle')}
+                </h1>
+                <p className="text-lg text-muted-foreground leading-relaxed">
+                  {t('aboutUsWhoWeAreText')}
                 </p>
               </div>
+              <div className="animate-fade-up-delay-1">
+                <div className="relative">
+                  <div className="absolute -inset-4 bg-gradient-to-br from-brand-blue/10 via-brand-yellow/5 to-brand-green/5 rounded-3xl blur-2xl" />
+                  <div className="relative bg-white rounded-2xl border border-gray-100 shadow-xl shadow-brand-blue/5 p-10 text-center">
+                    <div className="w-20 h-20 bg-brand-blue rounded-2xl flex items-center justify-center mx-auto mb-6">
+                      <Sparkles className="w-10 h-10 text-brand-yellow" />
+                    </div>
+                    <h3 className="text-xl font-bold text-foreground mb-2">{t('aboutUsSubtitle')}</h3>
+                    <p className="text-sm text-muted-foreground">{isRTL ? 'AI سے چلنے والا CV بہتری پلیٹ فارم' : 'AI-Powered CV Enhancement Platform'}</p>
+                  </div>
+                </div>
+              </div>
             </div>
+          </div>
+        </section>
+
+        {/* How It Works — numbered list, editorial */}
+        <section className="py-24 px-4 sm:px-6 lg:px-8 bg-gray-50/50">
+          <div className="max-w-6xl mx-auto">
+            <div className="max-w-lg mb-16">
+              {!isRTL && <span className="inline-block text-xs font-bold text-brand-blue tracking-[0.2em] uppercase mb-4">Our Process</span>}
+              <h2 className="text-4xl font-bold text-foreground mb-4">{t('aboutUsHowItWorksTitle')}</h2>
+              <p className="text-muted-foreground">{t('aboutUsHowItWorksSubtitle')}</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {steps.map((step, index) => (
+                <div key={index} className="group relative">
+                  <div className="absolute -inset-px bg-gradient-to-br from-gray-200 via-transparent to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                  <div className="relative bg-white border border-gray-100 rounded-2xl p-7 flex gap-5 transition-all duration-500 group-hover:shadow-lg group-hover:-translate-y-0.5">
+                    <div className={`w-12 h-12 ${step.color} rounded-xl flex items-center justify-center flex-shrink-0 transition-transform duration-500 group-hover:scale-110`}>
+                      {step.iconSrc ? (
+                        <Image src={step.iconSrc} alt={step.title} width={24} height={24} className="w-6 h-6" />
+                      ) : step.icon ? (
+                        <step.icon className="w-6 h-6 text-white" />
+                      ) : null}
+                    </div>
+                    <div>
+                      <span className="text-xs font-bold text-brand-blue mb-1 block">Step {index + 1}</span>
+                      <h3 className="text-lg font-bold text-foreground mb-1">{step.title}</h3>
+                      <p className="text-sm text-muted-foreground leading-relaxed">{step.desc}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Mission — white band for contrast before dark footer */}
+        <section className="py-24 px-4 sm:px-6 lg:px-8 bg-white relative overflow-hidden">
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(9,61,127,0.03),transparent_60%)]" />
+          <div className="max-w-4xl mx-auto relative text-center space-y-6">
+            <div className="w-16 h-16 bg-brand-blue rounded-2xl flex items-center justify-center mx-auto">
+              <Target className="w-8 h-8 text-brand-yellow" />
+            </div>
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground">{t('aboutUsMissionTitle')}</h2>
+            <p className="text-lg text-muted-foreground leading-relaxed max-w-2xl mx-auto">{t('aboutUsMissionText')}</p>
           </div>
         </section>
       </main>

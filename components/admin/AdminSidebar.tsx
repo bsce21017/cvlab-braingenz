@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { MessageSquare } from 'lucide-react';
+import { MessageSquare, BarChart3 } from 'lucide-react';
 import ClaimsOverview from '@/components/admin/claims/ClaimsOverview';
 
 type MenuItem = {
@@ -46,23 +46,28 @@ export default function AdminSidebar() {
       customIcon: '/assets/claims.svg',
     },
     {
+      label: t('admin.analytics'),
+      href: '/admin/analytics',
+      icon: BarChart3,
+    },
+    {
       label: t('admin.settings'),
       href: '/admin/settings',
       customIcon: '/assets/settings.svg',
     },
   ];
 
-  const isRTL = language === 'ar';
+  const isRTL = language === 'ur';
 
   return (
     <aside className={`w-56 bg-white border-r border-gray-200 h-screen overflow-y-auto ${isRTL ? 'border-l border-r-0' : ''}`} dir={isRTL ? 'rtl' : 'ltr'}>
       <div className="p-6 border-b border-gray-200">
         <Link href="/admin/dashboard" className="flex items-center justify-center">
           <Image
-            src="/assets/Main_logo.svg"
-            alt="CVLab Logo"
+            src="/assets/Main logo.svg"
+            alt="CV Summit Logo"
             width={200}
-            height={200}
+            height={120}
             className="h-20 w-auto"
           />
         </Link>
@@ -90,7 +95,7 @@ export default function AdminSidebar() {
             }
             if (Icon) {
               // Prompts icon always black
-              return <Icon className="w-5 h-5 flex-shrink-0 text-gray-900" />;
+              return <Icon className="w-5 h-5 flex-shrink-0 text-brand-blue" />;
             }
             return null;
           };
@@ -101,8 +106,8 @@ export default function AdminSidebar() {
               href={item.href}
               className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-sm ${
                 isActive
-                  ? 'bg-gray-100 text-gray-900 font-bold'
-                  : 'text-gray-700 hover:bg-gray-100 font-medium'
+                  ? 'bg-brand-blue-muted text-brand-blue font-bold'
+                  : 'text-gray-600 hover:bg-brand-blue-muted/50 font-medium'
               }`}
               dir="ltr"
             >

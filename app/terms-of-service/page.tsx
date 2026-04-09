@@ -7,7 +7,7 @@ import { FileText } from 'lucide-react';
 
 export default function TermsOfServicePage() {
   const { t, language } = useLanguage();
-  const isRTL = language === 'ar';
+  const isRTL = language === 'ur';
 
   const sections = [
     { title: 'termsSection1Title', text: 'termsSection1Text' },
@@ -26,16 +26,16 @@ export default function TermsOfServicePage() {
   ];
 
   return (
-    <div className="flex flex-col min-h-screen bg-white" dir={isRTL ? 'rtl' : 'ltr'}>
+    <div className="flex flex-col min-h-screen bg-[#F7F9FC]" dir={isRTL ? 'rtl' : 'ltr'}>
       <Header />
       <main className="flex-1">
         {/* Hero Section */}
-        <section className="pt-12 pb-8 px-4 sm:px-6 lg:px-8 bg-white">
+        <section className="pt-16 pb-8 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-brand-blue-muted/40 to-white">
           <div className="max-w-4xl mx-auto text-center">
-            <div className="inline-flex items-center justify-center w-20 h-20 bg-black rounded-2xl mb-6">
-              <FileText className="w-10 h-10 text-white" />
+            <div className="inline-flex items-center justify-center w-20 h-20 bg-brand-blue rounded-2xl mb-6">
+              <FileText className="w-10 h-10 text-brand-yellow" />
             </div>
-            <h1 className="text-4xl font-bold text-gray-900 mb-4">
+            <h1 className="text-4xl font-bold text-foreground mb-4">
               {t('termsTitle')}
             </h1>
             <p className="text-base text-gray-600 mb-2">
@@ -53,7 +53,7 @@ export default function TermsOfServicePage() {
             <div className="space-y-8">
               {sections.map((section, index) => (
                 <div key={index} className="space-y-4">
-                  <h2 className="text-2xl font-bold text-gray-900">
+                  <h2 className="text-2xl font-bold text-foreground">
                     {t(section.title)}
                   </h2>
                   <div className="text-base text-gray-600 leading-relaxed whitespace-pre-line">

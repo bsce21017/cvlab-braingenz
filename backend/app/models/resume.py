@@ -58,6 +58,10 @@ class Resume(Base):
     # User identification (Supabase user UUID)
     user_id = Column(String(100), nullable=False, index=True)
 
+    # Client info
+    ip_address = Column(String(45), nullable=True)   # IPv4 or IPv6
+    location = Column(String(255), nullable=True)     # "City, Country"
+
     # Relationships
     analysis = relationship("Analysis", back_populates="resume", uselist=False)
     questions = relationship("Question", back_populates="resume", uselist=False)

@@ -9,7 +9,7 @@ export default function UsersPage() {
   const { t } = useLanguage();
   
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[#F7F9FC]">
       <AdminSectionHeader
         title={t('admin.users.pageTitle')}
         subtitle={t('admin.users.pageSubtitle')}

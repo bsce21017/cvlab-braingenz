@@ -111,3 +111,4 @@ postgres_data/
 redis_data/
 temp_auto_push.bat
 temp_interactive_push.bat
+backend/.env.example

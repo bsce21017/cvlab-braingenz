@@ -54,6 +54,11 @@ class Settings(BaseSettings):
         "http://127.0.0.1:3000",
         "http://localhost:3001",
         "http://127.0.0.1:3001",
+        "http://localhost:8001",
+        "http://127.0.0.1:8001",
+        # Azure VM
+        "http://172.172.160.62:8001",
+        "https://cvsummit.braingenz.com",
     ]
 
     # File Storage
@@ -67,6 +72,11 @@ class Settings(BaseSettings):
     CLAUDE_MODEL: str = os.getenv("CLAUDE_MODEL", "claude-sonnet-4-5-20250929")
     OPENAI_MODEL: str = os.getenv("OPENAI_MODEL", "gpt-4o")
     MAX_TOKENS: int = int(os.getenv("MAX_TOKENS", "8000"))
+
+    # Custom LLM (Ollama / self-hosted)
+    CUSTOM_LLM_ENDPOINT: str = os.getenv("CUSTOM_LLM_ENDPOINT", "")
+    CUSTOM_LLM_API_KEY: str = os.getenv("CUSTOM_LLM_API_KEY", "not-needed")
+    CUSTOM_LLM_MODEL: str = os.getenv("CUSTOM_LLM_MODEL", "gemma4:31b")
 
     # AWS S3 Settings
     AWS_ACCESS_KEY_ID: str = os.getenv("AWS_ACCESS_KEY_ID", "")
@@ -84,6 +94,11 @@ class Settings(BaseSettings):
     SUPABASE_URL: str = os.getenv("SUPABASE_URL", "")
     SUPABASE_ANON_KEY: str = os.getenv("SUPABASE_ANON_KEY", "")
     SUPABASE_SERVICE_ROLE_KEY: str = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
+
+    # JWT Auth
+    JWT_SECRET: str = os.getenv("JWT_SECRET", "your-secret-key-change-in-production")
+    JWT_ALGORITHM: str = "HS256"
+    JWT_EXPIRATION_HOURS: int = int(os.getenv("JWT_EXPIRATION_HOURS", "24"))
 
     # Celery
     CELERY_BROKER_URL: str = os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/0")

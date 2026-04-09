@@ -28,7 +28,7 @@ const templateColors = {
 
 export function TemplateSelector({ selectedTemplate, onTemplateChange }: TemplateSelectorProps) {
   const { t, language } = useLanguage();
-  const isRTL = language === 'ar';
+  const isRTL = language === 'ur';
 
   const templates: Template[] = ['classic', 'modern', 'executive'];
 
@@ -78,7 +78,7 @@ export function TemplateSelector({ selectedTemplate, onTemplateChange }: Templat
                       <p className="text-sm text-gray-500">{t(`templateSelector.${template}.description`)}</p>
                     </div>
                     {isSelected && (
-                      <div className="flex h-5 w-5 items-center justify-center rounded-full bg-black">
+                      <div className="flex h-5 w-5 items-center justify-center rounded-full bg-brand-blue">
                         <Check className="h-3 w-3 text-white" />
                       </div>
                     )}
@@ -100,7 +100,7 @@ export function TemplateSelector({ selectedTemplate, onTemplateChange }: Templat
 
       <Card className="border-2 border-black bg-gray-50 p-4">
         <div className="flex gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-black">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-blue">
             <Lightbulb className="h-5 w-5 text-white" />
           </div>
 

@@ -176,7 +176,7 @@ export default function StatsCards() {
         <button
           onClick={() => fetchStats(true)}
           disabled={refreshing}
-          className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 disabled:opacity-50"
+          className="flex items-center gap-2 text-sm text-gray-600 hover:text-brand-blue disabled:opacity-50"
         >
           <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
           {refreshing ? 'Refreshing...' : 'Refresh'}
@@ -189,13 +189,13 @@ export default function StatsCards() {
               className="flex items-center gap-4"
               style={{ flexDirection: isRTL ? 'row-reverse' : 'row' }}
             >
-              <div className="p-3 bg-gray-100 rounded-xl flex-shrink-0">{stat.icon}</div>
+              <div className="p-3 bg-brand-blue-muted rounded-xl flex-shrink-0">{stat.icon}</div>
               <div
                 className="flex-1 min-w-0"
                 style={{ textAlign: isRTL ? 'right' : 'left' }}
               >
                 <p className="text-gray-500 text-xs font-medium whitespace-nowrap overflow-hidden text-ellipsis">{stat.label}</p>
-                <p className="text-3xl font-bold text-gray-900">{stat.value}</p>
+                <p className="text-3xl font-bold text-foreground">{stat.value}</p>
               </div>
             </div>
           </div>
