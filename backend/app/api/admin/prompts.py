@@ -16,6 +16,10 @@ from app.schemas.admin import (
     LLMConfigResponse,
     LLMConfigUpdate,
     LLMProvider,
+    OCRConfigResponse,
+    OCRConfigUpdate,
+    OCRMethod,
+    OCRProvider,
     PromptResponse,
     PromptListResponse,
     PromptUpdate,
@@ -170,6 +174,91 @@ async def update_llm_config(
         provider=config_update.provider,
         model=config_update.model,
         max_tokens=settings.MAX_TOKENS
+    )
+
+
+# ── OCR Configuration ─────────────────────────────────────────────────────────
+
+@router.get("/ocr-config", response_model=OCRConfigResponse)
+async def get_ocr_config(
+    admin_user: AuthUser = Depends(get_admin_user)
+):
+    """Get current OCR configuration for both pipelines"""
+    logger.info(f"Admin {admin_user.id} fetching OCR config")
+
+    provider = settings.CV_OPTIMIZATION_OCR_PROVIDER.lower()
+    model = settings.CUSTOM_LLM_MODEL if provider == "custom" else "gpt-4o"
+
+    eval_method = settings.CV_EVALUATION_OCR.lower()
+    eval_provider = OCRProvider(settings.CV_EVALUATION_OCR_PROVIDER.lower()) if eval_method == "ai" else None
+
+    available = []
+    if settings.CUSTOM_LLM_ENDPOINT:
+        available.append("custom")
+    if settings.OPENAI_API_KEY:
+        available.append("openai")
+
+    return OCRConfigResponse(
+        cv_optimization_provider=OCRProvider(provider),
+        cv_optimization_model=model,
+        cv_evaluation=OCRMethod(eval_method),
+        cv_evaluation_provider=eval_provider,
+        available_providers=available,
+    )
+
+
+@router.put("/ocr-config", response_model=OCRConfigResponse)
+async def update_ocr_config(
+    config_update: OCRConfigUpdate,
+    admin_user: AuthUser = Depends(get_admin_user)
+):
+    """Update OCR configuration for both pipelines (runtime only)"""
+    logger.info(
+        f"Admin {admin_user.id} updating OCR config: "
+        f"optimization_provider={config_update.cv_optimization_provider}, "
+        f"evaluation={config_update.cv_evaluation}, "
+        f"evaluation_provider={config_update.cv_evaluation_provider}"
+    )
+
+    # Validate optimization provider
+    if config_update.cv_optimization_provider == OCRProvider.CUSTOM and not settings.CUSTOM_LLM_ENDPOINT:
+        raise HTTPException(status_code=400, detail="Custom LLM endpoint not configured (set CUSTOM_LLM_ENDPOINT)")
+    if config_update.cv_optimization_provider == OCRProvider.OPENAI and not settings.OPENAI_API_KEY:
+        raise HTTPException(status_code=400, detail="OpenAI API key not configured (set OPENAI_API_KEY)")
+
+    # Validate evaluation provider when AI is selected
+    if config_update.cv_evaluation == OCRMethod.AI:
+        eval_prov = config_update.cv_evaluation_provider
+        if not eval_prov:
+            raise HTTPException(status_code=400, detail="Must select an OCR provider when using AI mode for evaluation")
+        if eval_prov == OCRProvider.CUSTOM and not settings.CUSTOM_LLM_ENDPOINT:
+            raise HTTPException(status_code=400, detail="Custom LLM endpoint not configured")
+        if eval_prov == OCRProvider.OPENAI and not settings.OPENAI_API_KEY:
+            raise HTTPException(status_code=400, detail="OpenAI API key not configured")
+
+    settings.CV_OPTIMIZATION_OCR_PROVIDER = config_update.cv_optimization_provider.value
+    settings.CV_EVALUATION_OCR = config_update.cv_evaluation.value
+    if config_update.cv_evaluation_provider:
+        settings.CV_EVALUATION_OCR_PROVIDER = config_update.cv_evaluation_provider.value
+
+    provider = settings.CV_OPTIMIZATION_OCR_PROVIDER.lower()
+    model = settings.CUSTOM_LLM_MODEL if provider == "custom" else "gpt-4o"
+    eval_provider = OCRProvider(settings.CV_EVALUATION_OCR_PROVIDER.lower()) if config_update.cv_evaluation == OCRMethod.AI else None
+
+    available = []
+    if settings.CUSTOM_LLM_ENDPOINT:
+        available.append("custom")
+    if settings.OPENAI_API_KEY:
+        available.append("openai")
+
+    logger.info("OCR config updated successfully")
+
+    return OCRConfigResponse(
+        cv_optimization_provider=OCRProvider(provider),
+        cv_optimization_model=model,
+        cv_evaluation=config_update.cv_evaluation,
+        cv_evaluation_provider=eval_provider,
+        available_providers=available,
     )
 
 

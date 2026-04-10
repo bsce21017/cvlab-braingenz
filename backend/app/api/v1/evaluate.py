@@ -33,10 +33,14 @@ except ImportError:
     DocxDocument = None
 
 
-def extract_text_from_file(file_bytes: bytes, filename: str) -> str:
-    """Extract text from PDF or DOCX file bytes."""
+def _extract_local(file_bytes: bytes, filename: str) -> str:
+    """Extract text using local parsers — reuses ocr_service's local methods for .doc support."""
+    import tempfile
+    import os
+
     ext = filename.lower().rsplit('.', 1)[-1] if '.' in filename else ''
 
+    # For PDF, use pdfplumber directly from bytes (no temp file needed)
     if ext == 'pdf' and pdfplumber:
         try:
             with pdfplumber.open(io.BytesIO(file_bytes)) as pdf:
@@ -50,15 +54,68 @@ def extract_text_from_file(file_bytes: bytes, filename: str) -> str:
             logger.error(f"PDF extraction failed for {filename}: {e}")
             return ''
 
-    elif ext in ('doc', 'docx') and DocxDocument:
+    # For DOC/DOCX, write to temp file and use ocr_service's extractors
+    if ext in ('doc', 'docx'):
+        tmp_path = None
         try:
-            doc = DocxDocument(io.BytesIO(file_bytes))
-            return '\n'.join([p.text for p in doc.paragraphs if p.text.strip()])
+            with tempfile.NamedTemporaryFile(suffix=f'.{ext}', delete=False) as tmp:
+                tmp.write(file_bytes)
+                tmp_path = tmp.name
+            from app.services.ocr_service import ocr_service
+            # Try local parsers first
+            if ext == 'doc':
+                text = ocr_service.extract_text_from_doc(tmp_path)
+            else:
+                text = ocr_service.extract_text_from_docx(tmp_path)
+            if text and len(text) >= 50:
+                return text
+            # Local parsers failed — use full ocr_service (includes AI fallback)
+            logger.info(f"Local DOC extraction insufficient for {filename}, trying full OCR pipeline...")
+            text = ocr_service.extract_text(tmp_path, ext)
+            if text and len(text) >= 50:
+                return text
         except Exception as e:
-            logger.error(f"DOCX extraction failed for {filename}: {e}")
-            return ''
+            logger.error(f"DOC/DOCX extraction failed for {filename}: {e}")
+        finally:
+            if tmp_path:
+                os.unlink(tmp_path)
+        return ''
 
     return ''
+
+
+def extract_text_from_file(file_bytes: bytes, filename: str) -> str:
+    """Extract text from PDF or DOCX file, respecting CV_EVALUATION_OCR setting."""
+    use_ai = settings.CV_EVALUATION_OCR.lower() == "ai"
+
+    if use_ai:
+        # Temporarily set OCR provider to the evaluation-specific provider
+        original_provider = settings.CV_OPTIMIZATION_OCR_PROVIDER
+        eval_provider = settings.CV_EVALUATION_OCR_PROVIDER
+        try:
+            import tempfile
+            import os
+            settings.CV_OPTIMIZATION_OCR_PROVIDER = eval_provider
+            logger.info(f"[EVAL OCR] Using AI provider '{eval_provider}' for {filename}")
+            ext = filename.lower().rsplit('.', 1)[-1] if '.' in filename else 'pdf'
+            with tempfile.NamedTemporaryFile(suffix=f'.{ext}', delete=False) as tmp:
+                tmp.write(file_bytes)
+                tmp_path = tmp.name
+            try:
+                from app.services.ocr_service import ocr_service
+                text = ocr_service.extract_text(tmp_path, ext)
+                if text and len(text) >= 50:
+                    return text
+            finally:
+                os.unlink(tmp_path)
+        except Exception as e:
+            logger.warning(f"AI OCR failed for {filename}, falling back to local: {e}")
+        finally:
+            # Restore original optimization provider
+            settings.CV_OPTIMIZATION_OCR_PROVIDER = original_provider
+
+    # Local extraction (default or fallback)
+    return _extract_local(file_bytes, filename)
 
 
 def parse_json_response(text: str):
@@ -439,8 +496,8 @@ async def evaluate_cvs(
     start_time = time.time()
 
     # Validate
-    if len(files) < 3:
-        raise HTTPException(status_code=400, detail="Please upload at least 3 CVs")
+    if len(files) < 2:
+        raise HTTPException(status_code=400, detail="Please upload at least 2 CVs")
     if len(files) > 10:
         raise HTTPException(status_code=400, detail="Maximum 10 CVs allowed")
     if not job_description.strip():
@@ -463,17 +520,35 @@ async def evaluate_cvs(
 
     try:
         # ═══════════════════════════════════════
-        # PHASE 1: Text Extraction (no AI)
+        # PHASE 1: Text Extraction
         # ═══════════════════════════════════════
         cv_texts = []
+        extraction_results = []
         for f in files:
             content = await f.read()
             text = extract_text_from_file(content, f.filename or 'unknown.pdf')
-            if text.strip():
-                cv_texts.append({"filename": f.filename, "text": text[:6000]})
+            if text.strip() and len(text) >= 50:
+                cv_texts.append({"filename": f.filename, "text": text[:12000]})
+                extraction_results.append({"filename": f.filename, "status": "success", "chars": len(text)})
+                logger.info(f"[EVAL] Extracted {len(text)} chars from {f.filename}")
             else:
-                cv_texts.append({"filename": f.filename, "text": f"[Could not extract text from {f.filename}]"})
-            logger.info(f"[EVAL] Extracted {len(text)} chars from {f.filename}")
+                extraction_results.append({"filename": f.filename, "status": "failed", "chars": len(text) if text else 0})
+                logger.warning(f"[EVAL] Extraction FAILED for {f.filename} ({len(text) if text else 0} chars)")
+
+        # Save extraction report to DB
+        evaluation.extraction_report = extraction_results
+        db.commit()
+
+        failed_count = len([r for r in extraction_results if r["status"] == "failed"])
+        if failed_count > 0:
+            failed_names = [r["filename"] for r in extraction_results if r["status"] == "failed"]
+            logger.warning(f"[EVAL] {failed_count} CVs failed extraction: {', '.join(failed_names)}")
+
+        if len(cv_texts) < 2:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Only {len(cv_texts)} of {len(files)} CVs could be read. Need at least 2 readable CVs. Failed: {', '.join(r['filename'] for r in extraction_results if r['status'] == 'failed')}"
+            )
 
         # ═══════════════════════════════════════
         # PHASE 2: Batch Profile Extraction (1 LLM call)
@@ -487,7 +562,6 @@ Return a JSON array with one profile per CV.
 
 {cv_block}"""
 
-        # Scale max_tokens based on CV count; no cap for custom/local models
         is_custom = settings.DEFAULT_LLM_PROVIDER.lower() == "custom"
         step1_max_tokens = len(cv_texts) * 3000 if is_custom else max(6000, len(cv_texts) * 2000)
         logger.info(f"[EVAL] Step 1: Extracting profiles ({len(extraction_prompt)} chars) | max_tokens={step1_max_tokens}")
@@ -500,20 +574,76 @@ Return a JSON array with one profile per CV.
         total_input_tokens += step1_result["input_tokens"]
         total_output_tokens += step1_result["output_tokens"]
 
-        # Parse extracted profiles
+        # Parse extracted profiles (with truncated JSON repair)
+        profiles = None
+        raw_text = step1_result["text"]
+        logger.info(f"[EVAL] Step 1 raw response: {len(raw_text)} chars, first 500: {raw_text[:500]}")
+        logger.info(f"[EVAL] Step 1 raw response last 500: {raw_text[-500:]}")
+
+        # Attempt 1: direct parse
         try:
-            raw_text = step1_result["text"]
-            logger.info(f"[EVAL] Step 1 raw response: {len(raw_text)} chars, first 500: {raw_text[:500]}")
-            logger.info(f"[EVAL] Step 1 raw response last 500: {raw_text[-500:]}")
             profiles = parse_json_response(raw_text)
-            if isinstance(profiles, dict) and "profiles" in profiles:
-                profiles = profiles["profiles"]
-            if not isinstance(profiles, list):
-                profiles = [profiles]
-        except Exception as e:
-            logger.error(f"[EVAL] Profile extraction parse failed: {e}")
-            logger.error(f"[EVAL] Raw LLM response ({len(step1_result['text'])} chars): {step1_result['text'][:1000]}...")
-            raise HTTPException(status_code=500, detail="Failed to extract candidate profiles")
+        except Exception:
+            # Attempt 2: repair truncated JSON by closing open brackets
+            logger.warning("[EVAL] Direct parse failed, trying truncated JSON repair...")
+            try:
+                text = raw_text.strip()
+                if '```' in text:
+                    parts = text.split('```')
+                    for part in parts:
+                        part = part.strip()
+                        if part.startswith('json'):
+                            part = part[4:].strip()
+                        if part and (part.startswith('[') or part.startswith('{')):
+                            text = part
+                            break
+                # Count and close unclosed brackets
+                open_braces = text.count('{') - text.count('}')
+                open_brackets = text.count('[') - text.count(']')
+                repaired = text.rstrip(',\n ') + '}' * max(0, open_braces) + ']' * max(0, open_brackets)
+                profiles = json.loads(repaired)
+                logger.info(f"[EVAL] Truncated JSON repaired successfully")
+            except Exception as e2:
+                logger.error(f"[EVAL] JSON repair also failed: {e2}")
+
+        # Attempt 3: retry LLM call if both parse attempts failed
+        if profiles is None:
+            logger.warning("[EVAL] Retrying Step 1 with explicit JSON instruction...")
+            retry_result = llm_handler.generate_with_usage(
+                prompt=extraction_prompt + "\n\nIMPORTANT: Return ONLY valid, complete JSON. No markdown fences. No extra text.",
+                system_prompt=EXTRACTION_SYSTEM_PROMPT,
+                max_tokens=step1_max_tokens,
+            )
+            total_input_tokens += retry_result["input_tokens"]
+            total_output_tokens += retry_result["output_tokens"]
+            try:
+                profiles = parse_json_response(retry_result["text"])
+            except Exception as e3:
+                logger.error(f"[EVAL] Retry also failed: {e3}")
+                logger.error(f"[EVAL] Raw retry response: {retry_result['text'][:1000]}...")
+                raise HTTPException(status_code=500, detail="Failed to extract candidate profiles")
+
+        if isinstance(profiles, dict) and "profiles" in profiles:
+            profiles = profiles["profiles"]
+        if not isinstance(profiles, list):
+            profiles = [profiles]
+
+        # Detect which CVs the LLM dropped (extracted but no profile generated)
+        profile_filenames = {p.get("filename", "").lower() for p in profiles if isinstance(p, dict)}
+        for er in extraction_results:
+            if er["status"] == "success":
+                if er["filename"].lower() not in profile_filenames:
+                    er["status"] = "profile_missing"
+                    er["note"] = "Text extracted but LLM did not generate a profile for this CV"
+                    logger.warning(f"[EVAL] LLM dropped profile for: {er['filename']}")
+
+        # Update extraction report in DB with profile_missing status
+        evaluation.extraction_report = extraction_results
+        db.commit()
+
+        profile_missing_count = len([r for r in extraction_results if r.get("status") == "profile_missing"])
+        if profile_missing_count > 0:
+            logger.warning(f"[EVAL] LLM generated {len(profiles)} profiles from {len(cv_texts)} CVs — {profile_missing_count} CV(s) dropped")
 
         logger.info(f"[EVAL] Step 1 complete: extracted {len(profiles)} profiles, tokens: {step1_result['total_tokens']}")
 
@@ -598,6 +728,13 @@ Rank the top 3. Return strict JSON only."""
             "total_cvs": len(files),
             "candidate_profiles": profiles,
             "ranked_candidates": parsed.get("ranked_candidates", []),
+            "extraction_report": {
+                "total_uploaded": len(files),
+                "successfully_extracted": len(cv_texts),
+                "failed": failed_count,
+                "profiles_missing": profile_missing_count,
+                "details": extraction_results,
+            },
             "token_usage": {
                 "input_tokens": total_input_tokens,
                 "output_tokens": total_output_tokens,

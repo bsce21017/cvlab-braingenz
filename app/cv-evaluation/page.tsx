@@ -70,8 +70,8 @@ export default function CVEvaluationPage() {
   const handleEvaluate = async () => {
     setError(null);
 
-    if (files.length < 3) {
-      setError(t('cvEval.minFiles') || 'Please upload at least 3 CVs');
+    if (files.length < 2) {
+      setError(t('cvEval.minFiles') || 'Please upload at least 2 CVs');
       return;
     }
     if (!jobDescription.trim()) {
@@ -291,7 +291,7 @@ export default function CVEvaluationPage() {
                 {/* Evaluate Button */}
                 <Button
                   onClick={handleEvaluate}
-                  disabled={isEvaluating || files.length < 3 || !jobDescription.trim()}
+                  disabled={isEvaluating || files.length < 2 || !jobDescription.trim()}
                   className={`w-full h-14 bg-brand-blue hover:bg-brand-blue-light text-white font-semibold rounded-xl btn-magnetic transition-all duration-300 disabled:opacity-50 flex items-center justify-center ${isRTL ? 'gap-3' : 'gap-2'}`}
                 >
                   {isEvaluating ? (

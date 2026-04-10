@@ -207,6 +207,34 @@ class LLMConfigUpdate(BaseModel):
     model: str
 
 
+class OCRMethod(str, Enum):
+    """OCR extraction method for evaluation pipeline"""
+    AI = "ai"
+    LOCAL = "local"
+
+
+class OCRProvider(str, Enum):
+    """OCR provider for optimization pipeline"""
+    CUSTOM = "custom"
+    OPENAI = "openai"
+
+
+class OCRConfigResponse(BaseModel):
+    """Current OCR configuration for both pipelines"""
+    cv_optimization_provider: OCRProvider
+    cv_optimization_model: str
+    cv_evaluation: OCRMethod
+    cv_evaluation_provider: Optional[OCRProvider] = None
+    available_providers: List[str]
+
+
+class OCRConfigUpdate(BaseModel):
+    """Request to update OCR configuration"""
+    cv_optimization_provider: OCRProvider
+    cv_evaluation: OCRMethod
+    cv_evaluation_provider: Optional[OCRProvider] = None
+
+
 class PromptStatus(str, Enum):
     """Prompt status"""
     ACTIVE = "active"
