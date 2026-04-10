@@ -34,6 +34,19 @@ interface RankedCandidate {
   hire_recommendation?: string;
 }
 
+interface ExtractionDetail {
+  filename: string;
+  status: 'success' | 'failed';
+  chars: number;
+}
+
+interface ExtractionReport {
+  total_uploaded: number;
+  successfully_extracted: number;
+  failed: number;
+  details: ExtractionDetail[];
+}
+
 interface EvalResult {
   evaluation_id: number;
   job_description_summary: string;
@@ -45,6 +58,7 @@ interface EvalResult {
   };
   total_cvs: number;
   ranked_candidates: RankedCandidate[];
+  extraction_report?: ExtractionReport;
   token_usage: {
     input_tokens: number;
     output_tokens: number;
@@ -112,6 +126,37 @@ export default function EvalResultsPage() {
               {t('cvEval.results.subtitle')} — {results.total_cvs} {t('cvEval.results.cvsAnalyzed')}
             </p>
           </div>
+
+          {/* Extraction Report Banner */}
+          {results.extraction_report && (
+            <div className={`mb-8 rounded-xl border p-4 ${
+              results.extraction_report.failed === 0
+                ? 'bg-green-50 border-green-200'
+                : 'bg-amber-50 border-amber-200'
+            }`}>
+              <div className="flex items-start gap-3">
+                {results.extraction_report.failed === 0 ? (
+                  <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 shrink-0" />
+                ) : (
+                  <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5 shrink-0" />
+                )}
+                <div>
+                  <p className={`font-medium ${results.extraction_report.failed === 0 ? 'text-green-800' : 'text-amber-800'}`}>
+                    {results.extraction_report.successfully_extracted}/{results.extraction_report.total_uploaded} CVs processed successfully
+                  </p>
+                  {results.extraction_report.failed > 0 && (
+                    <p className="text-amber-700 text-sm mt-1">
+                      Could not read: {results.extraction_report.details
+                        .filter(d => d.status === 'failed')
+                        .map(d => d.filename)
+                        .join(', ')}
+                      . These CVs were excluded from ranking.
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Ranked Cards */}
           <div className="space-y-6 mb-12">

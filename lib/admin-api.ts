@@ -337,6 +337,33 @@ export async function updateLLMConfig(provider: LLMProvider, model: string): Pro
   });
 }
 
+// OCR Configuration
+export type OCRMethod = 'ai' | 'local';
+export type OCRProvider = 'custom' | 'openai';
+
+export interface OCRConfig {
+  cv_optimization_provider: OCRProvider;
+  cv_optimization_model: string;
+  cv_evaluation: OCRMethod;
+  cv_evaluation_provider: OCRProvider | null;
+  available_providers: string[];
+}
+
+export async function getOCRConfig(): Promise<OCRConfig> {
+  return fetchAdminAPI<OCRConfig>('/ocr-config');
+}
+
+export async function updateOCRConfig(
+  cv_optimization_provider: OCRProvider,
+  cv_evaluation: OCRMethod,
+  cv_evaluation_provider?: OCRProvider
+): Promise<OCRConfig> {
+  return fetchAdminAPI<OCRConfig>('/ocr-config', {
+    method: 'PUT',
+    body: JSON.stringify({ cv_optimization_provider, cv_evaluation, cv_evaluation_provider }),
+  });
+}
+
 export async function getPrompts(): Promise<PromptListResponse> {
   return fetchAdminAPI<PromptListResponse>('/prompts');
 }
@@ -443,6 +470,15 @@ export interface TokenUsageResponse {
   evaluations: {
     total: number;
     completed: number;
+    failed: number;
+    extraction_stats: {
+      total_cvs_uploaded: number;
+      total_cvs_extracted: number;
+      total_cvs_failed: number;
+      total_profiles_missing: number;
+      success_rate: number;
+      recent_failures: Array<{ filename: string; evaluation_id: number; type: string }>;
+    };
   };
 }
 
@@ -470,6 +506,8 @@ export interface GroupedTokenRecord {
   steps: TokenStep[];
   step_count: number;
   created_at: string;
+  extraction_failures: string[];
+  profile_missing: string[];
 }
 
 export interface TokenHistoryResponse {

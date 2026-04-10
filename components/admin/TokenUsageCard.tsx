@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Zap, FileText, Trophy, TrendingUp, Loader2, Trash2, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, AlertTriangle } from 'lucide-react';
+import { Zap, FileText, Trophy, TrendingUp, Loader2, Trash2, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, AlertTriangle, Info } from 'lucide-react';
 import { getTokenUsage, getTokenHistory, deleteTokenRecord, deleteAllTokenHistory, TokenUsageResponse, TokenHistoryResponse, GroupedTokenRecord } from '@/lib/admin-api';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { formatDistanceToNow } from 'date-fns';
@@ -117,14 +117,58 @@ export default function TokenUsageCard() {
   return (
     <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-brand-blue/10 flex items-center justify-center">
-          <Zap className="w-5 h-5 text-brand-blue" />
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-brand-blue/10 flex items-center justify-center">
+            <Zap className="w-5 h-5 text-brand-blue" />
+          </div>
+          <div>
+            <h3 className="text-lg font-bold text-foreground">{t('admin.tokenUsage.title') || 'Token Usage'}</h3>
+            <p className="text-xs text-muted-foreground">{t('admin.tokenUsage.subtitle') || 'AI token consumption across features'}</p>
+          </div>
         </div>
-        <div>
-          <h3 className="text-lg font-bold text-foreground">{t('admin.tokenUsage.title') || 'Token Usage'}</h3>
-          <p className="text-xs text-muted-foreground">{t('admin.tokenUsage.subtitle') || 'AI token consumption across features'}</p>
-        </div>
+        {data.evaluations?.extraction_stats && data.evaluations.extraction_stats.total_cvs_uploaded > 0 && (
+          <div className="relative group">
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center cursor-pointer ${
+              data.evaluations.extraction_stats.total_cvs_failed > 0 ? 'bg-amber-50' : 'bg-green-50'
+            }`}>
+              <Info className={`w-4 h-4 ${data.evaluations.extraction_stats.total_cvs_failed > 0 ? 'text-amber-500' : 'text-green-500'}`} />
+            </div>
+            <div className="absolute right-0 top-10 z-50 hidden group-hover:block w-72 bg-white border border-gray-200 rounded-xl shadow-lg p-4">
+              <p className="text-xs font-semibold text-foreground mb-3">CV Extraction Stats (Evaluation)</p>
+              <div className="space-y-2 text-xs">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Total CVs Uploaded</span>
+                  <span className="font-medium">{data.evaluations.extraction_stats.total_cvs_uploaded}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Successfully Extracted</span>
+                  <span className="font-medium text-green-600">{data.evaluations.extraction_stats.total_cvs_extracted}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Extraction Failed</span>
+                  <span className="font-medium text-red-500">{data.evaluations.extraction_stats.total_cvs_failed}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Profile Dropped by LLM</span>
+                  <span className="font-medium text-amber-500">{data.evaluations.extraction_stats.total_profiles_missing || 0}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Success Rate</span>
+                  <span className="font-medium">{data.evaluations.extraction_stats.success_rate}%</span>
+                </div>
+                {data.evaluations.extraction_stats.recent_failures.length > 0 && (
+                  <div className="pt-2 border-t border-gray-100">
+                    <p className="text-[10px] font-semibold text-amber-600 uppercase mb-1">Recent Failures</p>
+                    {data.evaluations.extraction_stats.recent_failures.map((f: any, i: number) => (
+                      <p key={i} className="text-[10px] text-amber-700 truncate">{f.filename}</p>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Stats Cards */}
@@ -222,6 +266,11 @@ export default function TokenUsageCard() {
                           <div className="flex items-center gap-2">
                             <FeatureIcon className={`w-4 h-4 ${getFeatureColor(group.feature)}`} />
                             <span className="text-xs font-medium text-foreground">{getFeatureLabel(group.feature)}</span>
+                            {(group.extraction_failures?.length > 0 || group.profile_missing?.length > 0) && (
+                              <span className="w-4 h-4 rounded-full bg-amber-100 flex items-center justify-center" title={`${(group.extraction_failures?.length || 0) + (group.profile_missing?.length || 0)} CV(s) had issues`}>
+                                <AlertTriangle className="w-2.5 h-2.5 text-amber-500" />
+                              </span>
+                            )}
                           </div>
                         </td>
                         <td className="px-4 py-3 text-xs text-muted-foreground">{group.model || '-'}</td>
@@ -260,6 +309,12 @@ export default function TokenUsageCard() {
                                         {si + 1}
                                       </span>
                                       <span className="font-medium text-foreground capitalize">{(step.prompt_name || 'unknown').replace('_', ' ')}</span>
+                                      {step.prompt_name === 'profile_extraction' && (group.extraction_failures?.length > 0 || group.profile_missing?.length > 0) && (
+                                        <span className="inline-flex items-center gap-1 text-[10px] bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full border border-amber-200">
+                                          <AlertTriangle className="w-3 h-3" />
+                                          {(group.extraction_failures?.length || 0) + (group.profile_missing?.length || 0)} CV{((group.extraction_failures?.length || 0) + (group.profile_missing?.length || 0)) > 1 ? 's' : ''} had issues
+                                        </span>
+                                      )}
                                     </div>
                                     <div className="flex items-center gap-4 text-muted-foreground">
                                       <span>In: {step.input_tokens.toLocaleString()}</span>
@@ -269,6 +324,22 @@ export default function TokenUsageCard() {
                                   </div>
                                 ))}
                               </div>
+                              {group.extraction_failures?.length > 0 && (
+                                <div className="mt-2 bg-red-50 rounded-lg px-3 py-2 border border-red-100">
+                                  <p className="text-[10px] font-semibold text-red-700 mb-1">Extraction Failed (could not read file):</p>
+                                  {group.extraction_failures.map((f, fi) => (
+                                    <p key={fi} className="text-[10px] text-red-600 truncate">• {f}</p>
+                                  ))}
+                                </div>
+                              )}
+                              {group.profile_missing?.length > 0 && (
+                                <div className="mt-2 bg-amber-50 rounded-lg px-3 py-2 border border-amber-100">
+                                  <p className="text-[10px] font-semibold text-amber-700 mb-1">Profile Not Generated (text extracted but LLM dropped):</p>
+                                  {group.profile_missing.map((f, fi) => (
+                                    <p key={fi} className="text-[10px] text-amber-600 truncate">• {f}</p>
+                                  ))}
+                                </div>
+                              )}
                             </div>
                           </td>
                         </tr>

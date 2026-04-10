@@ -78,6 +78,14 @@ class Settings(BaseSettings):
     CUSTOM_LLM_API_KEY: str = os.getenv("CUSTOM_LLM_API_KEY", "not-needed")
     CUSTOM_LLM_MODEL: str = os.getenv("CUSTOM_LLM_MODEL", "gemma4:31b")
 
+    # OCR settings
+    # CV Optimization OCR provider: "custom" (Gemma4/Ollama) or "openai" (OpenAI Vision)
+    CV_OPTIMIZATION_OCR_PROVIDER: str = os.getenv("CV_OPTIMIZATION_OCR_PROVIDER", "custom" if os.getenv("CUSTOM_LLM_ENDPOINT") else "openai")
+    # CV Evaluation OCR method: "ai" or "local" (pdfplumber/python-docx)
+    CV_EVALUATION_OCR: str = os.getenv("CV_EVALUATION_OCR", "local")
+    # CV Evaluation OCR provider (when method is "ai"): "custom" or "openai"
+    CV_EVALUATION_OCR_PROVIDER: str = os.getenv("CV_EVALUATION_OCR_PROVIDER", "custom" if os.getenv("CUSTOM_LLM_ENDPOINT") else "openai")
+
     # AWS S3 Settings
     AWS_ACCESS_KEY_ID: str = os.getenv("AWS_ACCESS_KEY_ID", "")
     AWS_SECRET_ACCESS_KEY: str = os.getenv("AWS_SECRET_ACCESS_KEY", "")

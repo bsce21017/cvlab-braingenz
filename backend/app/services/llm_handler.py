@@ -243,17 +243,27 @@ class LLMHandler:
         if not self.custom_client:
             raise Exception("Custom LLM client not initialized.")
 
+        import time as _time
         model = self.custom_model if self.llm_provider == "custom" else self.model
+        t0 = _time.time()
+        logger.info(f"[LLM] Calling Custom (with_usage) | model={model} | max_tokens={max_tokens}")
+        print(f"[LLM_HANDLER] Calling Custom (with_usage): model={model} max_tokens={max_tokens}", flush=True)
+
         response = self.custom_client.chat.completions.create(
             model=model,
             messages=messages,
             max_tokens=max_tokens,
             temperature=0.3,
         )
-        text = response.choices[0].message.content.strip()
+        content = response.choices[0].message.content
+        text = (content or "").strip()
         usage = response.usage
         input_tokens = getattr(usage, 'prompt_tokens', 0) if usage else 0
         output_tokens = getattr(usage, 'completion_tokens', 0) if usage else 0
+        elapsed = _time.time() - t0
+
+        logger.info(f"[LLM] Custom (with_usage) response: {len(text)} chars in {elapsed:.1f}s | tokens: {input_tokens + output_tokens}")
+        print(f"[LLM_HANDLER] Custom (with_usage) {'SUCCESS' if text else 'EMPTY'}: {len(text)} chars in {elapsed:.1f}s", flush=True)
 
         return {
             "text": text,
@@ -385,12 +395,46 @@ class LLMHandler:
             messages.append({"role": "system", "content": system_prompt})
         messages.append({"role": "user", "content": prompt})
 
-        if self.llm_provider == "claude":
-            return self._call_claude_with_usage(messages, max_tokens)
-        elif self.llm_provider == "custom":
-            return self._call_custom_with_usage(messages, max_tokens)
-        else:
-            return self._call_openai_with_usage(messages, max_tokens)
+        # Try primary provider with fallback
+        try:
+            if self.llm_provider == "claude":
+                return self._call_claude_with_usage(messages, max_tokens)
+            elif self.llm_provider == "custom":
+                return self._call_custom_with_usage(messages, max_tokens)
+            else:
+                return self._call_openai_with_usage(messages, max_tokens)
+
+        except Exception as e:
+            logger.warning(f"Primary LLM provider ({self.llm_provider}) failed (with_usage): {str(e)}")
+            logger.info("Attempting fallback (with_usage)...")
+
+            try:
+                if self.llm_provider == "claude" and self.openai_client:
+                    original_model = self.model
+                    self.model = self.DEFAULT_OPENAI_MODEL
+                    result = self._call_openai_with_usage(messages, max_tokens)
+                    self.model = original_model
+                    return result
+                elif self.llm_provider == "custom" and self.openai_client:
+                    original_model = self.model
+                    self.model = self.DEFAULT_OPENAI_MODEL
+                    result = self._call_openai_with_usage(messages, max_tokens)
+                    self.model = original_model
+                    return result
+                elif self.llm_provider == "openai" and self.claude_client:
+                    original_model = self.model
+                    self.model = self.DEFAULT_CLAUDE_MODEL
+                    result = self._call_claude_with_usage(messages, max_tokens)
+                    self.model = original_model
+                    return result
+                else:
+                    raise Exception("No fallback provider available")
+            except Exception as fallback_error:
+                logger.error(f"Fallback also failed (with_usage): {str(fallback_error)}")
+                raise Exception(
+                    f"Both primary and fallback LLM providers failed. "
+                    f"Primary: {str(e)}, Fallback: {str(fallback_error)}"
+                )
 
     def _call_claude_with_usage(self, messages: list, max_tokens: int) -> Dict[str, Any]:
         if not self.claude_client:

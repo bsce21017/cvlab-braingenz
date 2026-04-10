@@ -73,8 +73,6 @@ class OCRService:
         """Initialize OCR service with custom/OpenAI-compatible OCR client"""
         self.openai_client = None
         self.custom_client = None
-        self.ocr_client = None
-        self.ocr_model = None
 
         if settings.CUSTOM_LLM_ENDPOINT:
             try:
@@ -82,28 +80,51 @@ class OCRService:
                     base_url=settings.CUSTOM_LLM_ENDPOINT,
                     api_key=settings.CUSTOM_LLM_API_KEY or "not-needed"
                 )
-                self.ocr_client = self.custom_client
-                self.ocr_model = settings.CUSTOM_LLM_MODEL
-                logger.info(f"Custom OCR client initialized: {settings.CUSTOM_LLM_ENDPOINT} / {self.ocr_model}")
+                logger.info(f"Custom OCR client initialized: {settings.CUSTOM_LLM_ENDPOINT} / {settings.CUSTOM_LLM_MODEL}")
             except Exception as e:
                 logger.warning(f"Failed to initialize custom OCR client: {e}")
 
         if settings.OPENAI_API_KEY:
             try:
                 self.openai_client = OpenAI(api_key=settings.OPENAI_API_KEY)
-                logger.info("OpenAI client initialized for OCR fallback")
-                if not self.ocr_client:
-                    self.ocr_client = self.openai_client
-                    self.ocr_model = "gpt-4o"
+                logger.info("OpenAI client initialized for OCR")
             except Exception as e:
                 logger.warning(f"Failed to initialize OpenAI client for OCR: {e}")
 
+    @property
+    def ocr_client(self):
+        """Return the active OCR client based on runtime setting."""
+        client, _ = self._get_active_client()
+        return client
+
+    @property
+    def ocr_model(self):
+        """Return the active OCR model based on runtime setting."""
+        _, model = self._get_active_client()
+        return model
+
+    def _get_active_client(self):
+        """Get the active OCR client based on runtime setting."""
+        provider = settings.CV_OPTIMIZATION_OCR_PROVIDER.lower()
+        if provider == "custom" and self.custom_client:
+            return self.custom_client, settings.CUSTOM_LLM_MODEL
+        elif provider == "openai" and self.openai_client:
+            return self.openai_client, "gpt-4o"
+        # Fallback: return whichever is available
+        if self.custom_client:
+            return self.custom_client, settings.CUSTOM_LLM_MODEL
+        if self.openai_client:
+            return self.openai_client, "gpt-4o"
+        return None, None
+
     def _get_vision_model(self) -> str:
-        return self.ocr_model or "gpt-4o"
+        _, model = self._get_active_client()
+        return model or "gpt-4o"
 
     def _get_fast_vision_model(self) -> str:
-        if self.custom_client and self.ocr_client is self.custom_client:
-            return self.ocr_model or settings.CUSTOM_LLM_MODEL
+        client, model = self._get_active_client()
+        if client is self.custom_client:
+            return model or settings.CUSTOM_LLM_MODEL
         return "gpt-4o-mini"
 
     def detect_file_type(self, file_path: str) -> Tuple[str, str]:
@@ -697,6 +718,11 @@ Instructions:
         """
         Extract text from PDF using the configured OCR client as the primary method.
 
+        For custom/Ollama providers: skips direct PDF upload (not supported),
+        goes straight to page-by-page image vision extraction.
+
+        For OpenAI: uses direct PDF file upload (GPT-4o supports it natively).
+
         Args:
             file_path: Path to PDF file
 
@@ -704,18 +730,30 @@ Instructions:
             str: Extracted text
         """
         text = ""
+        provider = settings.CV_OPTIMIZATION_OCR_PROVIDER.lower()
 
-        if self.ocr_client:
-            logger.info(f"Using OCR client for PDF text extraction (model={self._get_vision_model()})...")
+        if not self.ocr_client:
+            raise Exception("No OCR model is configured. Set CUSTOM_LLM_ENDPOINT/CUSTOM_LLM_MODEL or OPENAI_API_KEY.")
+
+        if provider == "custom":
+            # Custom/Ollama doesn't support direct PDF upload — go straight to image extraction
+            logger.info(f"Custom OCR provider: skipping PDF direct upload, using page-by-page vision (model={self._get_vision_model()})...")
+            text = self.extract_text_from_pdf_openai_vision(file_path)
+            if text and len(text) >= 50:
+                logger.info(f"OCR vision extraction successful: {len(text)} chars")
+                return text
+        else:
+            # OpenAI supports direct PDF upload
+            logger.info(f"OpenAI OCR: using direct PDF extraction (model={self._get_vision_model()})...")
             text = self.extract_text_from_pdf_openai_direct(file_path)
             if text and len(text) >= 50:
                 logger.info(f"OCR PDF extraction successful: {len(text)} chars")
                 return text
             else:
-                logger.warning(f"OCR PDF extraction returned insufficient text: {len(text) if text else 0} chars")
-
-        if not self.ocr_client:
-            raise Exception("No OCR model is configured. Set CUSTOM_LLM_ENDPOINT/CUSTOM_LLM_MODEL or OPENAI_API_KEY.")
+                logger.warning(f"Direct PDF extraction insufficient ({len(text) if text else 0} chars), trying vision fallback...")
+                text = self.extract_text_from_pdf_openai_vision(file_path)
+                if text and len(text) >= 50:
+                    return text
 
         raise Exception(
             f"OCR PDF extraction failed or returned insufficient content. "

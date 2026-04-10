@@ -151,6 +151,27 @@ async def get_token_usage(
     # Evaluation stats
     total_evaluations = db.query(func.count(CVEvaluation.id)).scalar() or 0
     completed_evaluations = db.query(func.count(CVEvaluation.id)).filter(CVEvaluation.status == "completed").scalar() or 0
+    failed_evaluations = db.query(func.count(CVEvaluation.id)).filter(CVEvaluation.status == "failed").scalar() or 0
+
+    # Extraction failure stats from extraction_report JSON
+    evaluations_with_reports = db.query(CVEvaluation).filter(CVEvaluation.extraction_report.isnot(None)).all()
+    total_cvs_uploaded = 0
+    total_cvs_extracted = 0
+    total_cvs_failed = 0
+    total_profiles_missing = 0
+    failed_files = []
+    for ev in evaluations_with_reports:
+        if isinstance(ev.extraction_report, list):
+            for r in ev.extraction_report:
+                total_cvs_uploaded += 1
+                if r.get("status") == "success":
+                    total_cvs_extracted += 1
+                elif r.get("status") == "profile_missing":
+                    total_profiles_missing += 1
+                    failed_files.append({"filename": r.get("filename"), "evaluation_id": ev.id, "type": "profile_missing"})
+                else:
+                    total_cvs_failed += 1
+                    failed_files.append({"filename": r.get("filename"), "evaluation_id": ev.id, "type": "extraction_failed"})
 
     return {
         "grand_total_tokens": int(grand_total),
@@ -160,6 +181,15 @@ async def get_token_usage(
         "evaluations": {
             "total": total_evaluations,
             "completed": completed_evaluations,
+            "failed": failed_evaluations,
+            "extraction_stats": {
+                "total_cvs_uploaded": total_cvs_uploaded,
+                "total_cvs_extracted": total_cvs_extracted,
+                "total_cvs_failed": total_cvs_failed,
+                "total_profiles_missing": total_profiles_missing,
+                "success_rate": round(total_cvs_extracted / total_cvs_uploaded * 100, 1) if total_cvs_uploaded > 0 else 100,
+                "recent_failures": failed_files[-10:],
+            },
         },
     }
 
@@ -229,6 +259,18 @@ async def get_token_history(
             for r in sorted(group_records, key=lambda x: x.created_at or datetime.min)
         ]
 
+        # For CV Evaluation, include extraction/profile failures from the linked evaluation
+        extraction_failures = []
+        profile_missing = []
+        if record.feature == "cv_evaluation" and record.reference_id:
+            ev = db.query(CVEvaluation).filter(CVEvaluation.id == record.reference_id).first()
+            if ev and ev.extraction_report:
+                for r in ev.extraction_report:
+                    if r.get("status") == "failed":
+                        extraction_failures.append(r.get("filename", "unknown"))
+                    elif r.get("status") == "profile_missing":
+                        profile_missing.append(r.get("filename", "unknown"))
+
         groups.append({
             "ids": [r.id for r in group_records],
             "feature": record.feature,
@@ -240,6 +282,8 @@ async def get_token_history(
             "steps": steps,
             "step_count": len(group_records),
             "created_at": created_at.isoformat() if created_at else None,
+            "extraction_failures": extraction_failures,
+            "profile_missing": profile_missing,
         })
 
     total = len(groups)

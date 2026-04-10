@@ -9,6 +9,8 @@ RUN apt-get update && apt-get install -y \
     libpq-dev \
     curl \
     poppler-utils \
+    antiword \
+    catdoc \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements

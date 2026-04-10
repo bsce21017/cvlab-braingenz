@@ -92,7 +92,7 @@ const translations = {
     good: 'Good',
     strong: 'Strong',
     home: 'Home',
-    cvOptimized: 'CV Optimized',
+    cvOptimized: 'CV Optimization',
     cvEvaluation: 'CV Evaluation',
     about: 'About Us',
     contact: 'Contact Us',
