@@ -722,6 +722,11 @@ Instructions:
         1. pdfplumber (fast, free, works for text-based PDFs)
         2. If pdfplumber gets insufficient text → use OCR vision model
 
+        For custom/Ollama providers: skips direct PDF upload (not supported),
+        goes straight to page-by-page image vision extraction.
+
+        For OpenAI: uses direct PDF file upload (GPT-4o supports it natively).
+
         Args:
             file_path: Path to PDF file
 
@@ -754,7 +759,8 @@ Instructions:
             raise Exception("No OCR model is configured. Set CUSTOM_LLM_ENDPOINT/CUSTOM_LLM_MODEL or OPENAI_API_KEY.")
 
         if provider == "custom":
-            logger.info(f"Custom OCR provider: using page-by-page vision (model={self._get_vision_model()})...")
+            # Custom/Ollama doesn't support direct PDF upload — go straight to image extraction
+            logger.info(f"Custom OCR provider: skipping PDF direct upload, using page-by-page vision (model={self._get_vision_model()})...")
             text = self.extract_text_from_pdf_openai_vision(file_path)
             if text and len(text) >= 50:
                 logger.info(f"OCR vision extraction successful: {len(text)} chars")
