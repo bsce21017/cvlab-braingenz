@@ -661,6 +661,29 @@ function generateClassicTemplate(
     }
   }
 
+  // ==================== SKILLS SECTION (before Education to match preview) ====================
+  if (data.skills && data.skills.length > 0 && !(data as any).additionalInfo) {
+    createSection("SKILLS");
+    // 2-column bullet layout matching preview
+    const halfLen = Math.ceil(data.skills.length / 2);
+    for (let i = 0; i < halfLen; i++) {
+      const leftSkill = data.skills[i] || "";
+      const rightSkill = data.skills[i + halfLen] || "";
+      const runs = [classicText(`• ${leftSkill}`)];
+      if (rightSkill) {
+        runs.push(new TextRun({ children: [new Tab()] }));
+        runs.push(classicText(`• ${rightSkill}`));
+      }
+      children.push(
+        new Paragraph({
+          tabStops: [{ type: TabStopType.LEFT, position: convertInchesToTwip(3.5) }],
+          children: runs,
+          spacing: { after: 20 },
+        }),
+      );
+    }
+  }
+
   // ==================== EDUCATION SECTION ====================
   if (data.education && data.education.length > 0) {
     createSection("EDUCATION");
@@ -701,6 +724,19 @@ function generateClassicTemplate(
         );
       }
 
+      // Education details (GPA, coursework, awards, etc.)
+      if (edu.details && edu.details.length > 0) {
+        edu.details.forEach((detail) => {
+          children.push(
+            new Paragraph({
+              children: [classicText(`• ${detail}`)],
+              spacing: { after: 0 },
+              indent: { left: convertInchesToTwip(0.25) },
+            }),
+          );
+        });
+      }
+
       // Spacing between education items
       if (idx < data.education!.length - 1) {
         children.push(new Paragraph({ spacing: { after: SPACING.sm } }));
@@ -719,6 +755,54 @@ function generateClassicTemplate(
         }),
       );
     }
+  }
+
+  // ==================== PROJECTS SECTION ====================
+  if (data.projects && data.projects.length > 0) {
+    createSection("PROJECTS");
+
+    data.projects.forEach((project, idx) => {
+      // Project name with period on right
+      children.push(
+        createLeftRightLine(project.name, project.period || "", {
+          leftBold: true,
+          rightBold: false,
+          leftColor: CLASSIC_C.bodyText,
+          rightColor: CLASSIC_C.subtleText,
+          leftSize: CLASSIC_SIZES.body,
+          rightSize: CLASSIC_SIZES.body,
+          spacingAfter: 0,
+          font: FONT,
+        }),
+      );
+
+      // Organization
+      if ((project as any).organization) {
+        children.push(
+          new Paragraph({
+            children: [classicText((project as any).organization, { italic: true })],
+            spacing: { after: SPACING.xs },
+          }),
+        );
+      }
+
+      // Project details/bullets
+      if (project.details && project.details.length > 0) {
+        project.details.forEach((detail) => {
+          children.push(
+            new Paragraph({
+              children: [classicText(`• ${detail}`)],
+              spacing: { after: 0 },
+              indent: { left: convertInchesToTwip(0.25) },
+            }),
+          );
+        });
+      }
+
+      if (idx < data.projects!.length - 1) {
+        children.push(new Paragraph({ spacing: { after: SPACING.sm } }));
+      }
+    });
   }
 
   // ==================== ADDITIONAL INFORMATION SECTION ====================
@@ -751,17 +835,6 @@ function generateClassicTemplate(
 
   // Fallback: If no additionalInfo object but has old-style arrays
   if (!additionalInfo) {
-    // Skills section
-    if (data.skills && data.skills.length > 0) {
-      createSection("SKILLS");
-      children.push(
-        new Paragraph({
-          children: [classicText(data.skills.join("; "))],
-          spacing: { after: SPACING.xs },
-        }),
-      );
-    }
-
     // Certifications section
     if (data.certifications && data.certifications.length > 0) {
       createSection("CERTIFICATIONS");
@@ -981,6 +1054,34 @@ function generateModernTemplate(
     });
   }
 
+  // ==================== SKILLS SECTION (before Education, 3-column to match preview) ====================
+  if (data.skills && data.skills.length > 0) {
+    createSectionHeadingWithLine("Skills");
+    const cols = 3;
+    const rows = Math.ceil(data.skills.length / cols);
+    for (let r = 0; r < rows; r++) {
+      const rowSkills = [];
+      for (let c = 0; c < cols; c++) {
+        const idx = r * cols + c;
+        rowSkills.push(data.skills[idx] || "");
+      }
+      children.push(
+        new Paragraph({
+          tabStops: [
+            { type: TabStopType.LEFT, position: convertInchesToTwip(2.5) },
+            { type: TabStopType.LEFT, position: convertInchesToTwip(5.0) },
+          ],
+          children: [
+            modernText(rowSkills[0], { size: MODERN_SIZES.body, color: MODERN_COLORS.darkGray }),
+            ...(rowSkills[1] ? [new TextRun({ children: [new Tab()] }), modernText(rowSkills[1], { size: MODERN_SIZES.body, color: MODERN_COLORS.darkGray })] : []),
+            ...(rowSkills[2] ? [new TextRun({ children: [new Tab()] }), modernText(rowSkills[2], { size: MODERN_SIZES.body, color: MODERN_COLORS.darkGray })] : []),
+          ],
+          spacing: { after: 20 },
+        }),
+      );
+    }
+  }
+
   // ==================== EDUCATION SECTION ====================
   if (data.education && data.education.length > 0) {
     createSectionHeadingWithLine("Education");
@@ -1004,66 +1105,125 @@ function generateModernTemplate(
             new TextRun({ children: [new Tab()] }),
             modernText(edu.period || "", { size: MODERN_SIZES.title, color: MODERN_COLORS.mediumGray }),
           ],
-          spacing: { after: isLastEdu ? 0 : MODERN_SPACING.betweenEducationItems },
+          spacing: { after: (edu.details && edu.details.length > 0) ? 40 : (isLastEdu ? 0 : MODERN_SPACING.betweenEducationItems) },
           keepNext: true,
+        }),
+      );
+
+      // Education details
+      if (edu.details && edu.details.length > 0) {
+        edu.details.forEach((detail) => {
+          children.push(
+            new Paragraph({
+              children: [modernText(`• ${detail}`, { size: MODERN_SIZES.body, color: MODERN_COLORS.darkGray })],
+              spacing: { after: 20 },
+              indent: { left: convertInchesToTwip(0.25) },
+            }),
+          );
+        });
+      }
+    });
+  }
+
+  // ==================== PROJECTS SECTION ====================
+  if (data.projects && data.projects.length > 0) {
+    createSectionHeadingWithLine("Projects");
+
+    const contentWidth = convertInchesToTwip(7.27);
+
+    data.projects.forEach((project, idx) => {
+      children.push(
+        new Paragraph({
+          tabStops: [{ type: TabStopType.RIGHT, position: contentWidth }],
+          children: [
+            modernText(project.name, { bold: true, size: MODERN_SIZES.title, color: MODERN_COLORS.black }),
+            ...(project.period ? [new TextRun({ children: [new Tab()] }), modernText(project.period, { size: MODERN_SIZES.title, color: MODERN_COLORS.mediumGray })] : []),
+          ],
+          spacing: { after: 40 },
+          keepNext: true,
+        }),
+      );
+
+      if ((project as any).organization) {
+        children.push(
+          new Paragraph({
+            children: [modernText((project as any).organization, { italic: true, size: MODERN_SIZES.body, color: MODERN_COLORS.darkGray })],
+            spacing: { after: 40 },
+          }),
+        );
+      }
+
+      if (project.details && project.details.length > 0) {
+        project.details.forEach((detail) => {
+          children.push(
+            new Paragraph({
+              children: [modernText(`• ${detail}`, { size: MODERN_SIZES.body, color: MODERN_COLORS.darkGray })],
+              spacing: { after: 20 },
+              indent: { left: convertInchesToTwip(0.25) },
+            }),
+          );
+        });
+      }
+
+      if (idx < data.projects!.length - 1) {
+        children.push(new Paragraph({ spacing: { after: 60 } }));
+      }
+    });
+  }
+
+  // ==================== CERTIFICATIONS SECTION ====================
+  if (data.certifications && data.certifications.length > 0) {
+    createSectionHeadingWithLine("Certifications");
+    data.certifications.forEach((cert) => {
+      children.push(
+        new Paragraph({
+          children: [modernText(`• ${cert}`, { size: MODERN_SIZES.body, color: MODERN_COLORS.darkGray })],
+          spacing: { after: 20 },
+          indent: { left: convertInchesToTwip(0.15) },
         }),
       );
     });
   }
 
-  // ==================== ADDITIONAL SECTION ====================
-  createSectionHeadingWithLine("Additional");
-
-  // Board Roles
-  if ((data as any).boardRoles && (data as any).boardRoles.length > 0) {
-    children.push(
-      new Paragraph({
-        children: [
-          modernText("Board Roles: ", { bold: true, size: MODERN_SIZES.body, color: MODERN_COLORS.darkGray }),
-          modernText((data as any).boardRoles.join(" · "), { size: MODERN_SIZES.body, color: MODERN_COLORS.darkGray }),
-        ],
-        spacing: { after: 60 },
-      }),
-    );
-  }
-
-  // Certifications
-  if (data.certifications && data.certifications.length > 0) {
-    children.push(
-      new Paragraph({
-        children: [
-          modernText("Certifications: ", { bold: true, size: MODERN_SIZES.body, color: MODERN_COLORS.darkGray }),
-          modernText(data.certifications.join(" · "), { size: MODERN_SIZES.body, color: MODERN_COLORS.darkGray }),
-        ],
-        spacing: { after: 60 },
-      }),
-    );
-  }
-
-  // Speaking
-  if ((data as any).speaking && (data as any).speaking.length > 0) {
-    children.push(
-      new Paragraph({
-        children: [
-          modernText("Speaking: ", { bold: true, size: MODERN_SIZES.body, color: MODERN_COLORS.darkGray }),
-          modernText((data as any).speaking.join(" · "), { size: MODERN_SIZES.body, color: MODERN_COLORS.darkGray }),
-        ],
-        spacing: { after: 60 },
-      }),
-    );
-  }
-
-  // Languages
+  // ==================== LANGUAGES SECTION ====================
   if (data.languages && data.languages.length > 0) {
+    createSectionHeadingWithLine("Languages");
     children.push(
       new Paragraph({
-        children: [
-          modernText("Languages: ", { bold: true, size: MODERN_SIZES.body, color: MODERN_COLORS.darkGray }),
-          modernText(Array.isArray(data.languages) ? data.languages.join(" · ") : data.languages, { size: MODERN_SIZES.body, color: MODERN_COLORS.darkGray }),
-        ],
+        children: [modernText(Array.isArray(data.languages) ? data.languages.join(", ") : data.languages, { size: MODERN_SIZES.body, color: MODERN_COLORS.darkGray })],
         spacing: { after: 60 },
       }),
     );
+  }
+
+  // ==================== ADDITIONAL SECTION (only if has extra data) ====================
+  const hasAdditional = ((data as any).boardRoles?.length > 0) || ((data as any).speaking?.length > 0);
+  if (hasAdditional) {
+    createSectionHeadingWithLine("Additional");
+
+    if ((data as any).boardRoles && (data as any).boardRoles.length > 0) {
+      children.push(
+        new Paragraph({
+          children: [
+            modernText("Board Roles: ", { bold: true, size: MODERN_SIZES.body, color: MODERN_COLORS.darkGray }),
+            modernText((data as any).boardRoles.join(" · "), { size: MODERN_SIZES.body, color: MODERN_COLORS.darkGray }),
+          ],
+          spacing: { after: 60 },
+        }),
+      );
+    }
+
+    if ((data as any).speaking && (data as any).speaking.length > 0) {
+      children.push(
+        new Paragraph({
+          children: [
+            modernText("Speaking: ", { bold: true, size: MODERN_SIZES.body, color: MODERN_COLORS.darkGray }),
+            modernText((data as any).speaking.join(" · "), { size: MODERN_SIZES.body, color: MODERN_COLORS.darkGray }),
+          ],
+          spacing: { after: 60 },
+        }),
+      );
+    }
   }
 }
 
@@ -1181,26 +1341,7 @@ function generateExecutiveTemplate(
     );
   }
 
-  // CORE COMPETENCIES (left-aligned, pipe separated, no hanging indent on wrap)
-  if (data.skills && data.skills.length > 0) {
-    createSectionHeading("Core Competencies");
-    children.push(
-      new Paragraph({
-        children: [
-          createTextRun(data.skills.join(" | "), {
-            size: EXEC_SIZES.body,
-            color: EXEC_COLORS.black,
-            font: EXEC_FONT,
-          }),
-        ],
-        alignment: AlignmentType.LEFT,  // Left aligned per spec
-        spacing: { after: 200 },
-        indent: { left: 0, hanging: 0 },  // No indent on wrapped lines
-      }),
-    );
-  }
-
-  // PROFESSIONAL EXPERIENCE
+  // PROFESSIONAL EXPERIENCE — before Core Competencies to match preview order
   if (data.experience && data.experience.length > 0) {
     createSectionHeading("Professional Experience");
 
@@ -1276,6 +1417,25 @@ function generateExecutiveTemplate(
     });
   }
 
+  // CORE COMPETENCIES — after Experience to match preview order
+  if (data.skills && data.skills.length > 0) {
+    createSectionHeading("Core Competencies");
+    children.push(
+      new Paragraph({
+        children: [
+          createTextRun(data.skills.join(" | "), {
+            size: EXEC_SIZES.body,
+            color: EXEC_COLORS.black,
+            font: EXEC_FONT,
+          }),
+        ],
+        alignment: AlignmentType.LEFT,
+        spacing: { after: 200 },
+        indent: { left: 0, hanging: 0 },
+      }),
+    );
+  }
+
   // KEY PROJECT ACHIEVEMENTS (Executive specific)
   const extData = data as any;
   if (extData.keyProjectAchievements && extData.keyProjectAchievements.length > 0) {
@@ -1329,9 +1489,81 @@ function generateExecutiveTemplate(
                 font: EXEC_FONT,
               }),
             ],
-            spacing: { after: idx < data.education!.length - 1 ? 120 : 200 },
+            spacing: { after: (edu.details && edu.details.length > 0) ? 40 : (idx < data.education!.length - 1 ? 120 : 200) },
           }),
         );
+      }
+
+      // Education details
+      if (edu.details && edu.details.length > 0) {
+        edu.details.forEach((detail) => {
+          children.push(
+            createBulletParagraph(detail, {
+              size: EXEC_SIZES.body,
+              color: EXEC_COLORS.black,
+              spacingAfter: 20,
+              font: EXEC_FONT,
+            }),
+          );
+        });
+      }
+    });
+  }
+
+  // PROJECTS
+  if (data.projects && data.projects.length > 0) {
+    createSectionHeading("Projects");
+    data.projects.forEach((project, idx) => {
+      children.push(
+        new Paragraph({
+          children: [
+            createTextRun(project.name, {
+              bold: true,
+              size: EXEC_SIZES.jobTitle,
+              color: EXEC_COLORS.black,
+              font: EXEC_FONT,
+            }),
+            ...(project.period ? [createTextRun(` | ${project.period}`, {
+              size: EXEC_SIZES.body,
+              color: EXEC_COLORS.black,
+              font: EXEC_FONT,
+            })] : []),
+          ],
+          spacing: { after: 40 },
+          keepNext: true,
+        }),
+      );
+
+      if ((project as any).organization) {
+        children.push(
+          new Paragraph({
+            children: [
+              createTextRun((project as any).organization, {
+                size: EXEC_SIZES.body,
+                color: EXEC_COLORS.black,
+                font: EXEC_FONT,
+              }),
+            ],
+            spacing: { after: 40 },
+          }),
+        );
+      }
+
+      if (project.details && project.details.length > 0) {
+        project.details.forEach((detail) => {
+          children.push(
+            createBulletParagraph(detail, {
+              size: EXEC_SIZES.body,
+              color: EXEC_COLORS.black,
+              spacingAfter: 20,
+              font: EXEC_FONT,
+            }),
+          );
+        });
+      }
+
+      if (idx < data.projects!.length - 1) {
+        children.push(new Paragraph({ spacing: { after: 100 } }));
       }
     });
   }
@@ -1368,95 +1600,59 @@ function generateExecutiveTemplate(
     });
   }
 
-  // LANGUAGES & TECHNICAL SKILLS
-  if (data.languages || extData.technicalSkills) {
-    createSectionHeading("Languages & Technical Skills");
+  // LANGUAGES
+  if (data.languages && data.languages.length > 0) {
+    createSectionHeading("Languages");
+    const languagesText = Array.isArray(data.languages) ? data.languages.join(" | ") : data.languages;
+    children.push(
+      new Paragraph({
+        children: [
+          createTextRun(languagesText, {
+            size: EXEC_SIZES.body,
+            color: EXEC_COLORS.black,
+            font: EXEC_FONT,
+          }),
+        ],
+        spacing: { after: 200 },
+      }),
+    );
+  }
 
-    // Languages
-    if (data.languages) {
-      const languagesText = Array.isArray(data.languages) ? data.languages.join(" | ") : data.languages;
+  // TECHNICAL SKILLS — only if extData has this specific field
+  if (extData.technicalSkills && (extData.technicalSkills.projectSoftware || extData.technicalSkills.technical || extData.technicalSkills.standards)) {
+    createSectionHeading("Technical Skills");
+    if (extData.technicalSkills.projectSoftware) {
       children.push(
         new Paragraph({
           children: [
-            createTextRun("Languages: ", {
-              bold: true,
-              size: EXEC_SIZES.body,
-              color: EXEC_COLORS.black,
-              font: EXEC_FONT,
-            }),
-            createTextRun(languagesText, {
-              size: EXEC_SIZES.body,
-              color: EXEC_COLORS.black,
-              font: EXEC_FONT,
-            }),
+            createTextRun("Project Software: ", { bold: true, size: EXEC_SIZES.body, color: EXEC_COLORS.black, font: EXEC_FONT }),
+            createTextRun(extData.technicalSkills.projectSoftware, { size: EXEC_SIZES.body, color: EXEC_COLORS.black, font: EXEC_FONT }),
           ],
           spacing: { after: 40 },
         }),
       );
     }
-
-    // Technical Skills categories
-    if (extData.technicalSkills) {
-      if (extData.technicalSkills.projectSoftware) {
-        children.push(
-          new Paragraph({
-            children: [
-              createTextRun("Project Software: ", {
-                bold: true,
-                size: EXEC_SIZES.body,
-                color: EXEC_COLORS.black,
-                font: EXEC_FONT,
-              }),
-              createTextRun(extData.technicalSkills.projectSoftware, {
-                size: EXEC_SIZES.body,
-                color: EXEC_COLORS.black,
-                font: EXEC_FONT,
-              }),
-            ],
-            spacing: { after: 40 },
-          }),
-        );
-      }
-      if (extData.technicalSkills.technical) {
-        children.push(
-          new Paragraph({
-            children: [
-              createTextRun("Technical: ", {
-                bold: true,
-                size: EXEC_SIZES.body,
-                color: EXEC_COLORS.black,
-                font: EXEC_FONT,
-              }),
-              createTextRun(extData.technicalSkills.technical, {
-                size: EXEC_SIZES.body,
-                color: EXEC_COLORS.black,
-                font: EXEC_FONT,
-              }),
-            ],
-            spacing: { after: 40 },
-          }),
-        );
-      }
-      if (extData.technicalSkills.standards) {
-        children.push(
-          new Paragraph({
-            children: [
-              createTextRun("Standards: ", {
-                bold: true,
-                size: EXEC_SIZES.body,
-                color: EXEC_COLORS.black,
-                font: EXEC_FONT,
-              }),
-              createTextRun(extData.technicalSkills.standards, {
-                size: EXEC_SIZES.body,
-                color: EXEC_COLORS.black,
-                font: EXEC_FONT,
-              }),
-            ],
-            spacing: { after: 40 },
-          }),
-        );
-      }
+    if (extData.technicalSkills.technical) {
+      children.push(
+        new Paragraph({
+          children: [
+            createTextRun("Technical: ", { bold: true, size: EXEC_SIZES.body, color: EXEC_COLORS.black, font: EXEC_FONT }),
+            createTextRun(extData.technicalSkills.technical, { size: EXEC_SIZES.body, color: EXEC_COLORS.black, font: EXEC_FONT }),
+          ],
+          spacing: { after: 40 },
+        }),
+      );
+    }
+    if (extData.technicalSkills.standards) {
+      children.push(
+        new Paragraph({
+          children: [
+            createTextRun("Standards: ", { bold: true, size: EXEC_SIZES.body, color: EXEC_COLORS.black, font: EXEC_FONT }),
+            createTextRun(extData.technicalSkills.standards, { size: EXEC_SIZES.body, color: EXEC_COLORS.black, font: EXEC_FONT }),
+          ],
+          spacing: { after: 40 },
+        }),
+      );
     }
   }
 
