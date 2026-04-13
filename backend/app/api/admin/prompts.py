@@ -130,20 +130,26 @@ async def update_llm_config(
             "gpt-4-turbo",                     # GPT-4 Turbo - Enhanced performance
             "gpt-4",                           # GPT-4 Standard
             "gpt-3.5-turbo",                   # GPT-3.5 Turbo - Fastest/Cheapest
+        ],
+        LLMProvider.CUSTOM: [
+            settings.CUSTOM_LLM_MODEL or "gemma4:31b",  # Custom model from env
         ]
     }
 
-    if config_update.model not in valid_models.get(config_update.provider, []):
+    # For custom provider, accept any model name
+    if config_update.provider == LLMProvider.CUSTOM:
+        pass  # Allow any model name for custom endpoint
+    elif config_update.model not in valid_models.get(config_update.provider, []):
         raise HTTPException(
             status_code=400,
             detail=f"Invalid model '{config_update.model}' for provider '{config_update.provider}'"
         )
 
     # Update runtime settings
-    # Note: These changes won't persist after restart
     provider_name = {
         LLMProvider.ANTHROPIC: "claude",
         LLMProvider.OPENAI: "openai",
+        LLMProvider.CUSTOM: "custom",
     }
 
     # Update the settings object (runtime only)
@@ -152,6 +158,8 @@ async def update_llm_config(
         settings.CLAUDE_MODEL = config_update.model
     elif config_update.provider == LLMProvider.OPENAI:
         settings.OPENAI_MODEL = config_update.model
+    elif config_update.provider == LLMProvider.CUSTOM:
+        settings.CUSTOM_LLM_MODEL = config_update.model
 
     logger.info(f"LLM config updated successfully")
 

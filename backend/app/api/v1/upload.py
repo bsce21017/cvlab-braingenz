@@ -36,14 +36,14 @@ class S3UploadRequest(BaseModel):
     ip_address: Optional[str] = None
 
 
-def _require_openai_key() -> None:
-    """Fail fast when OCR dependency is not configured."""
-    if not settings.OPENAI_API_KEY:
+def _require_ocr_config() -> None:
+    """Fail fast when no OCR backend is configured."""
+    if not settings.CUSTOM_LLM_ENDPOINT and not settings.OPENAI_API_KEY:
         raise HTTPException(
             status_code=503,
             detail=(
-                "OPENAI_API_KEY is not configured on backend. "
-                "Resume analysis cannot start. Please set OPENAI_API_KEY and restart backend and celery worker."
+                "No OCR backend is configured on backend. "
+                "Please set CUSTOM_LLM_ENDPOINT/CUSTOM_LLM_MODEL or OPENAI_API_KEY and restart backend and celery worker."
             )
         )
 
@@ -74,7 +74,7 @@ async def upload_resume(
         ResumeUploadResponse with resume details
     """
     try:
-        _require_openai_key()
+        _require_ocr_config()
         user_id = current_user.id if current_user else f"guest-{uuid4()}"
         logger.info(f"Uploading resume: {file.filename} for user: {user_id}")
 
@@ -146,7 +146,7 @@ async def upload_resume_from_s3(
         ResumeUploadResponse with resume details
     """
     try:
-        _require_openai_key()
+        _require_ocr_config()
         user_id = current_user.id if current_user else f"guest-{uuid4()}"
         logger.info(f"Registering S3 resume: {request.original_filename}, key={request.s3_key} for user: {user_id}")
 

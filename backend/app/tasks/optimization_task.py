@@ -87,7 +87,8 @@ def optimize_resume_task(self, resume_id: int) -> Dict[str, Any]:
                 cv_text=resume.extracted_text,
                 analysis_report=analysis.report_json,
                 questions=question.questions_json.get("questions", []),
-                user_answers=answer.answers_json.get("answers", [])
+                user_answers=answer.answers_json.get("answers", []),
+                reference_id=resume_id,
             )
             _log(f"[CRAFTSMAN] Completed in {time.time()-t0:.1f}s")
 

@@ -112,7 +112,10 @@ def analyze_resume_task(self, resume_id: int) -> Dict[str, Any]:
 
         try:
             t0 = time.time()
-            analysis_result = analyst_agent.analyze_cv(extracted_text)
+            analysis_result = analyst_agent.analyze_cv(
+                extracted_text,
+                reference_id=resume_id,
+            )
             _log(f"[ANALYST] Completed in {time.time()-t0:.1f}s — "
                  f"total_issues={analysis_result.get('total_issues', 'N/A')}")
 
@@ -141,7 +144,11 @@ def analyze_resume_task(self, resume_id: int) -> Dict[str, Any]:
 
         try:
             t0 = time.time()
-            questions_result = gatherer_agent.generate_questions(extracted_text, analysis_result)
+            questions_result = gatherer_agent.generate_questions(
+                extracted_text,
+                analysis_result,
+                reference_id=resume_id,
+            )
             _log(f"[GATHERER] Completed in {time.time()-t0:.1f}s — "
                  f"total_questions={questions_result.get('total_questions', 'N/A')}")
 

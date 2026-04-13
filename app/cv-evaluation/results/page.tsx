@@ -109,7 +109,7 @@ export default function EvalResultsPage() {
               {t('cvEval.results.title')}
             </h1>
             <p className="text-muted-foreground text-lg">
-              {t('cvEval.results.subtitle')} — {results.total_cvs} CVs analyzed
+              {t('cvEval.results.subtitle')} — {results.total_cvs} {t('cvEval.results.cvsAnalyzed')}
             </p>
           </div>
 
@@ -176,7 +176,7 @@ export default function EvalResultsPage() {
                       {/* Score Breakdown */}
                       {candidate.score_breakdown && (
                         <div>
-                          <h4 className="text-sm font-semibold text-foreground mb-3">Score Breakdown</h4>
+                          <h4 className="text-sm font-semibold text-foreground mb-3">{t('cvEval.results.scoreBreakdown')}</h4>
                           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                             {[
                               { label: 'Hard Skills', value: candidate.score_breakdown.hard_skills, color: 'bg-brand-blue' },
@@ -205,7 +205,7 @@ export default function EvalResultsPage() {
                         <div className="grid sm:grid-cols-2 gap-4">
                           {candidate.skills_matched && candidate.skills_matched.length > 0 && (
                             <div>
-                              <h4 className="text-sm font-semibold text-foreground mb-2">Skills Matched</h4>
+                              <h4 className="text-sm font-semibold text-foreground mb-2">{t('cvEval.results.skillsMatched')}</h4>
                               <div className="flex flex-wrap gap-1.5">
                                 {candidate.skills_matched.map((s, j) => (
                                   <span key={j} className="px-2.5 py-1 rounded-full bg-green-50 border border-green-200 text-[11px] font-medium text-green-700">
@@ -217,7 +217,7 @@ export default function EvalResultsPage() {
                           )}
                           {candidate.skills_missing && candidate.skills_missing.length > 0 && (
                             <div>
-                              <h4 className="text-sm font-semibold text-foreground mb-2">Skills Missing</h4>
+                              <h4 className="text-sm font-semibold text-foreground mb-2">{t('cvEval.results.skillsMissing')}</h4>
                               <div className="flex flex-wrap gap-1.5">
                                 {candidate.skills_missing.map((s, j) => (
                                   <span key={j} className="px-2.5 py-1 rounded-full bg-red-50 border border-red-200 text-[11px] font-medium text-red-600">
@@ -233,12 +233,12 @@ export default function EvalResultsPage() {
                       {/* Why Selected */}
                       {candidate.why_selected && candidate.why_selected.length > 0 && (
                         <div>
-                          <h4 className="text-sm font-semibold text-brand-green mb-2">Why This Candidate</h4>
+                          <h4 className="text-sm font-semibold text-brand-green mb-2">{t('cvEval.results.whySelected')}</h4>
                           <ul className="space-y-1.5">
                             {candidate.why_selected.map((w, j) => (
                               <li key={j} className="flex items-start gap-2 text-sm text-muted-foreground">
                                 <CheckCircle className="w-4 h-4 text-brand-green flex-shrink-0 mt-0.5" />
-                                {w}
+                                <span dir="ltr" className="text-left">{w}</span>
                               </li>
                             ))}
                           </ul>
@@ -248,14 +248,14 @@ export default function EvalResultsPage() {
                       {/* Why Not Others */}
                       {candidate.why_not_others && candidate.why_not_others.length > 0 && (
                         <div>
-                          <h4 className="text-sm font-semibold text-brand-blue mb-2">Compared to Others</h4>
+                          <h4 className="text-sm font-semibold text-brand-blue mb-2">{t('cvEval.results.comparedToOthers')}</h4>
                           <ul className="space-y-1.5">
                             {candidate.why_not_others.map((w, j) => (
                               <li key={j} className="flex items-start gap-2 text-sm text-muted-foreground">
                                 <span className="w-4 h-4 rounded-full bg-brand-blue/10 flex items-center justify-center flex-shrink-0 mt-0.5">
                                   <span className="text-[10px] font-bold text-brand-blue">vs</span>
                                 </span>
-                                {w}
+                                <span dir="ltr" className="text-left">{w}</span>
                               </li>
                             ))}
                           </ul>
@@ -267,7 +267,7 @@ export default function EvalResultsPage() {
                         <h4 className="text-sm font-semibold text-foreground mb-2">
                           {t('cvEval.results.reasoning')}
                         </h4>
-                        <p className="text-sm text-muted-foreground leading-relaxed">
+                        <p className="text-sm text-muted-foreground leading-relaxed" dir="ltr">
                           {candidate.reasoning}
                         </p>
                       </div>
@@ -290,7 +290,7 @@ export default function EvalResultsPage() {
                       {/* Gaps */}
                       {candidate.gaps && candidate.gaps.length > 0 && (
                         <div>
-                          <h4 className="text-sm font-semibold text-foreground mb-2">Gaps & Concerns</h4>
+                          <h4 className="text-sm font-semibold text-foreground mb-2">{t('cvEval.results.gaps')}</h4>
                           <div className="flex flex-wrap gap-2">
                             {candidate.gaps.map((g, j) => (
                               <span key={j} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-red-50 border border-red-100 text-xs font-medium text-red-700">

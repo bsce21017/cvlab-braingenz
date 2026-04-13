@@ -32,7 +32,8 @@ export default function Footer() {
             <h4 className="text-xs font-bold tracking-[0.15em] uppercase text-brand-yellow">{t('quickLinks')}</h4>
             <ul className="space-y-3">
               {[
-                { href: '/', label: t('home') },
+                { href: '/', label: t('cvOptimized') || 'CV Optimized' },
+                { href: '/cv-evaluation', label: t('cvEvaluation') || 'CV Evaluation' },
                 { href: '/about-us', label: t('about') },
                 { href: '/contact-us', label: t('contact') },
               ].map((link) => (
