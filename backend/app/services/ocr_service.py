@@ -716,12 +716,11 @@ Instructions:
 
     def _extract_from_pdf(self, file_path: str) -> str:
         """
-        Extract text from PDF using the configured OCR client as the primary method.
+        Extract text from PDF.
 
-        For custom/Ollama providers: skips direct PDF upload (not supported),
-        goes straight to page-by-page image vision extraction.
-
-        For OpenAI: uses direct PDF file upload (GPT-4o supports it natively).
+        Priority:
+        1. pdfplumber (fast, free, works for text-based PDFs)
+        2. If pdfplumber gets insufficient text → use OCR vision model
 
         Args:
             file_path: Path to PDF file
@@ -730,14 +729,32 @@ Instructions:
             str: Extracted text
         """
         text = ""
-        provider = settings.CV_OPTIMIZATION_OCR_PROVIDER.lower()
+        provider = getattr(settings, 'CV_OPTIMIZATION_OCR_PROVIDER', 'custom').lower()
 
+        # STEP 1: Always try pdfplumber first (fast, free, no LLM needed)
+        try:
+            import pdfplumber
+            with pdfplumber.open(file_path) as pdf:
+                pages_text = []
+                for page in pdf.pages:
+                    page_text = page.extract_text()
+                    if page_text:
+                        pages_text.append(page_text)
+                text = "\n".join(pages_text)
+                if text and len(text.strip()) >= 50:
+                    logger.info(f"pdfplumber extracted {len(text)} chars — using local extraction (no LLM needed)")
+                    return text.strip()
+                else:
+                    logger.info(f"pdfplumber got only {len(text) if text else 0} chars — falling back to OCR vision")
+        except Exception as e:
+            logger.info(f"pdfplumber failed: {e} — falling back to OCR vision")
+
+        # STEP 2: Fallback to OCR vision for scanned/image PDFs
         if not self.ocr_client:
             raise Exception("No OCR model is configured. Set CUSTOM_LLM_ENDPOINT/CUSTOM_LLM_MODEL or OPENAI_API_KEY.")
 
         if provider == "custom":
-            # Custom/Ollama doesn't support direct PDF upload — go straight to image extraction
-            logger.info(f"Custom OCR provider: skipping PDF direct upload, using page-by-page vision (model={self._get_vision_model()})...")
+            logger.info(f"Custom OCR provider: using page-by-page vision (model={self._get_vision_model()})...")
             text = self.extract_text_from_pdf_openai_vision(file_path)
             if text and len(text) >= 50:
                 logger.info(f"OCR vision extraction successful: {len(text)} chars")
