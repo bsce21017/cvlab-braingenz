@@ -259,6 +259,22 @@ export function ClassicPDFTemplate({ data }: { data: ResumeData }) {
           </View>
         )}
 
+        {/* Skills — before Education to match preview order */}
+        {data.skills && data.skills.length > 0 && (
+          <View style={classicStyles.section}>
+            <Text style={classicStyles.sectionHeading}>SKILLS</Text>
+            <View style={classicStyles.sectionUnderline} />
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+              {data.skills.map((skill, idx) => (
+                <View key={idx} style={{ width: '50%', flexDirection: 'row', marginBottom: 2 }}>
+                  <Text style={classicStyles.bulletChar}>•</Text>
+                  <Text style={classicStyles.bulletText}>{skill}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
+
         {/* Education */}
         {data.education && data.education.length > 0 && (
           <View style={classicStyles.section}>
@@ -276,6 +292,12 @@ export function ClassicPDFTemplate({ data }: { data: ResumeData }) {
                 {(edu as any).honors && (
                   <Text style={classicStyles.bodyText}>{(edu as any).honors}</Text>
                 )}
+                {edu.details && edu.details.length > 0 && edu.details.map((detail, dIdx) => (
+                  <View key={dIdx} style={classicStyles.bulletRow}>
+                    <Text style={classicStyles.bulletChar}>•</Text>
+                    <Text style={classicStyles.bulletText}>{detail}</Text>
+                  </View>
+                ))}
               </View>
             ))}
             {extData.executiveEducation && (
@@ -289,15 +311,6 @@ export function ClassicPDFTemplate({ data }: { data: ResumeData }) {
           </View>
         )}
 
-        {/* Skills */}
-        {data.skills && data.skills.length > 0 && (
-          <View style={classicStyles.section}>
-            <Text style={classicStyles.sectionHeading}>SKILLS</Text>
-            <View style={classicStyles.sectionUnderline} />
-            <Text style={classicStyles.bodyText}>{data.skills.join(' • ')}</Text>
-          </View>
-        )}
-
         {/* Certifications */}
         {data.certifications && data.certifications.length > 0 && (
           <View style={classicStyles.section}>
@@ -307,6 +320,31 @@ export function ClassicPDFTemplate({ data }: { data: ResumeData }) {
               <View key={idx} style={classicStyles.bulletRow}>
                 <Text style={classicStyles.bulletChar}>•</Text>
                 <Text style={classicStyles.bulletText}>{cert}</Text>
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* Projects */}
+        {data.projects && data.projects.length > 0 && (
+          <View style={classicStyles.section}>
+            <Text style={classicStyles.sectionHeading}>PROJECTS</Text>
+            <View style={classicStyles.sectionUnderline} />
+            {data.projects.map((project, idx) => (
+              <View key={idx} style={classicStyles.experienceItem}>
+                <View style={classicStyles.expHeaderRow}>
+                  <Text style={classicStyles.expTitle}>{project.name}</Text>
+                  {project.period && <Text style={classicStyles.expPeriod}>{project.period}</Text>}
+                </View>
+                {(project as any).organization && (
+                  <Text style={classicStyles.expCompany}>{(project as any).organization}</Text>
+                )}
+                {project.details && project.details.map((detail, dIdx) => (
+                  <View key={dIdx} style={classicStyles.bulletRow}>
+                    <Text style={classicStyles.bulletChar}>•</Text>
+                    <Text style={classicStyles.bulletText}>{detail}</Text>
+                  </View>
+                ))}
               </View>
             ))}
           </View>
@@ -563,6 +601,18 @@ export function ModernPDFTemplate({ data }: { data: ResumeData }) {
           </View>
         )}
 
+        {/* Skills — before Education, 3-column grid to match preview */}
+        {data.skills && data.skills.length > 0 && (
+          <View style={modernStyles.section}>
+            <SectionHeading title="Skills" />
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+              {data.skills.map((skill, idx) => (
+                <Text key={idx} style={{ width: '33%', fontSize: 10, color: '#333333', marginBottom: 3 }}>{skill}</Text>
+              ))}
+            </View>
+          </View>
+        )}
+
         {/* Education */}
         {data.education && data.education.length > 0 && (
           <View style={modernStyles.section}>
@@ -574,12 +624,64 @@ export function ModernPDFTemplate({ data }: { data: ResumeData }) {
                   <Text style={modernStyles.yearText}>{edu.period || ''}</Text>
                 </View>
                 <Text style={modernStyles.institutionLine}>{edu.institution}</Text>
+                {edu.details && edu.details.length > 0 && edu.details.map((detail, dIdx) => (
+                  <View key={dIdx} style={modernStyles.bulletRow}>
+                    <Text style={modernStyles.bulletChar}>•</Text>
+                    <Text style={modernStyles.bulletText}>{detail}</Text>
+                  </View>
+                ))}
               </View>
             ))}
           </View>
         )}
 
-        {/* Additional */}
+        {/* Projects */}
+        {data.projects && data.projects.length > 0 && (
+          <View style={modernStyles.section}>
+            <SectionHeading title="Projects" />
+            {data.projects.map((project, idx) => (
+              <View key={idx} style={modernStyles.experienceItem}>
+                <View style={modernStyles.titleRow}>
+                  <Text style={modernStyles.titleText}>{project.name}</Text>
+                  {project.period && <Text style={modernStyles.dateText}>{project.period}</Text>}
+                </View>
+                {(project as any).organization && (
+                  <Text style={modernStyles.companyLine}>{(project as any).organization}</Text>
+                )}
+                {project.details && project.details.map((detail, dIdx) => (
+                  <View key={dIdx} style={modernStyles.bulletRow}>
+                    <Text style={modernStyles.bulletChar}>•</Text>
+                    <Text style={modernStyles.bulletText}>{detail}</Text>
+                  </View>
+                ))}
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* Certifications */}
+        {data.certifications && data.certifications.length > 0 && (
+          <View style={modernStyles.section}>
+            <SectionHeading title="Certifications" />
+            {data.certifications.map((cert, idx) => (
+              <View key={idx} style={modernStyles.bulletRow}>
+                <Text style={modernStyles.bulletChar}>•</Text>
+                <Text style={modernStyles.bulletText}>{cert}</Text>
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* Languages */}
+        {data.languages && data.languages.length > 0 && (
+          <View style={modernStyles.section}>
+            <SectionHeading title="Languages" />
+            <Text style={modernStyles.summaryText}>{data.languages.join(', ')}</Text>
+          </View>
+        )}
+
+        {/* Additional — only show if has extra data beyond standard fields */}
+        {(extData.boardRoles?.length > 0 || extData.speaking?.length > 0) && (
         <View style={modernStyles.section}>
           <SectionHeading title="Additional" />
           {extData.boardRoles && extData.boardRoles.length > 0 && (
@@ -588,25 +690,14 @@ export function ModernPDFTemplate({ data }: { data: ResumeData }) {
               <Text style={modernStyles.additionalValue}>{extData.boardRoles.join(' · ')}</Text>
             </View>
           )}
-          {data.certifications && data.certifications.length > 0 && (
-            <View style={modernStyles.additionalRow}>
-              <Text style={modernStyles.additionalLabel}>Certifications: </Text>
-              <Text style={modernStyles.additionalValue}>{data.certifications.join(' · ')}</Text>
-            </View>
-          )}
           {extData.speaking && extData.speaking.length > 0 && (
             <View style={modernStyles.additionalRow}>
               <Text style={modernStyles.additionalLabel}>Speaking: </Text>
               <Text style={modernStyles.additionalValue}>{extData.speaking.join(' · ')}</Text>
             </View>
           )}
-          {data.languages && data.languages.length > 0 && (
-            <View style={modernStyles.additionalRow}>
-              <Text style={modernStyles.additionalLabel}>Languages: </Text>
-              <Text style={modernStyles.additionalValue}>{data.languages.join(' · ')}</Text>
-            </View>
-          )}
         </View>
+        )}
       </Page>
     </Document>
   );
@@ -750,15 +841,7 @@ export function ExecutivePDFTemplate({ data }: { data: ResumeData }) {
           </View>
         )}
 
-        {/* Core Competencies */}
-        {data.skills && data.skills.length > 0 && (
-          <View style={executiveStyles.section}>
-            <Text style={executiveStyles.sectionHeading}>CORE COMPETENCIES</Text>
-            <Text style={executiveStyles.coreCompetencies}>{data.skills.join(' | ')}</Text>
-          </View>
-        )}
-
-        {/* Professional Experience */}
+        {/* Professional Experience — before Core Competencies to match preview order */}
         {data.experience && data.experience.length > 0 && (
           <View style={executiveStyles.section}>
             <Text style={executiveStyles.sectionHeading}>PROFESSIONAL EXPERIENCE</Text>
@@ -778,6 +861,14 @@ export function ExecutivePDFTemplate({ data }: { data: ResumeData }) {
                 ))}
               </View>
             ))}
+          </View>
+        )}
+
+        {/* Core Competencies — after Experience to match preview order */}
+        {data.skills && data.skills.length > 0 && (
+          <View style={executiveStyles.section}>
+            <Text style={executiveStyles.sectionHeading}>CORE COMPETENCIES</Text>
+            <Text style={executiveStyles.coreCompetencies}>{data.skills.join(' | ')}</Text>
           </View>
         )}
 
@@ -804,6 +895,33 @@ export function ExecutivePDFTemplate({ data }: { data: ResumeData }) {
                 <Text style={executiveStyles.institutionText}>
                   {[edu.institution, edu.period].filter(Boolean).join(', ')}
                 </Text>
+                {edu.details && edu.details.length > 0 && edu.details.map((detail, dIdx) => (
+                  <View key={dIdx} style={executiveStyles.bulletRow}>
+                    <Text style={executiveStyles.bulletChar}>•</Text>
+                    <Text style={executiveStyles.bulletText}>{detail}</Text>
+                  </View>
+                ))}
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* Projects */}
+        {data.projects && data.projects.length > 0 && (
+          <View style={executiveStyles.section}>
+            <Text style={executiveStyles.sectionHeading}>PROJECTS</Text>
+            {data.projects.map((project, idx) => (
+              <View key={idx} style={executiveStyles.experienceItem}>
+                <Text style={executiveStyles.jobTitle}>{project.name}</Text>
+                {(project as any).organization && (
+                  <Text style={executiveStyles.companyLine}>{(project as any).organization}{project.period ? ` | ${project.period}` : ''}</Text>
+                )}
+                {project.details && project.details.map((detail, dIdx) => (
+                  <View key={dIdx} style={executiveStyles.bulletRow}>
+                    <Text style={executiveStyles.bulletChar}>•</Text>
+                    <Text style={executiveStyles.bulletText}>{detail}</Text>
+                  </View>
+                ))}
               </View>
             ))}
           </View>
@@ -835,34 +953,35 @@ export function ExecutivePDFTemplate({ data }: { data: ResumeData }) {
           </View>
         )}
 
-        {/* Languages & Technical Skills */}
-        {(extData.languages || extData.technicalSkills) && (
+        {/* Languages */}
+        {data.languages && data.languages.length > 0 && (
           <View style={executiveStyles.section}>
-            <Text style={executiveStyles.sectionHeading}>LANGUAGES & TECHNICAL SKILLS</Text>
-            {extData.languages && (
-              <View style={executiveStyles.skillsRow}>
-                <Text style={executiveStyles.skillsLabel}>
-                  Languages: <Text style={executiveStyles.skillsValue}>
-                    {typeof extData.languages === 'string' ? extData.languages : extData.languages.join(' | ')}
-                  </Text>
-                </Text>
-              </View>
-            )}
-            {extData.technicalSkills?.projectSoftware && (
+            <Text style={executiveStyles.sectionHeading}>LANGUAGES</Text>
+            <Text style={executiveStyles.summaryText}>
+              {data.languages.join(' | ')}
+            </Text>
+          </View>
+        )}
+
+        {/* Technical Skills — only if extData has this specific field */}
+        {extData.technicalSkills && (extData.technicalSkills.projectSoftware || extData.technicalSkills.technical || extData.technicalSkills.standards) && (
+          <View style={executiveStyles.section}>
+            <Text style={executiveStyles.sectionHeading}>TECHNICAL SKILLS</Text>
+            {extData.technicalSkills.projectSoftware && (
               <View style={executiveStyles.skillsRow}>
                 <Text style={executiveStyles.skillsLabel}>
                   Project Software: <Text style={executiveStyles.skillsValue}>{extData.technicalSkills.projectSoftware}</Text>
                 </Text>
               </View>
             )}
-            {extData.technicalSkills?.technical && (
+            {extData.technicalSkills.technical && (
               <View style={executiveStyles.skillsRow}>
                 <Text style={executiveStyles.skillsLabel}>
                   Technical: <Text style={executiveStyles.skillsValue}>{extData.technicalSkills.technical}</Text>
                 </Text>
               </View>
             )}
-            {extData.technicalSkills?.standards && (
+            {extData.technicalSkills.standards && (
               <View style={executiveStyles.skillsRow}>
                 <Text style={executiveStyles.skillsLabel}>
                   Standards: <Text style={executiveStyles.skillsValue}>{extData.technicalSkills.standards}</Text>
