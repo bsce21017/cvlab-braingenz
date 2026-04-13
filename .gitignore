@@ -17,6 +17,7 @@
 # next.js
 /.next/
 /out/
+postcss.config.js
 
 # production
 /build
@@ -112,3 +113,5 @@ redis_data/
 temp_auto_push.bat
 temp_interactive_push.bat
 backend/.env.example
+postcss.config.js
+branch_structure.json
